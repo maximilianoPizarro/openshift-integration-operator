@@ -5,6 +5,9 @@ metadata:
   labels:
     {{- include "operator.labels" . | nindent 4 }}
 rules:
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
   - apiGroups: ["platform.io"]
     resources: ["integrationflows"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
