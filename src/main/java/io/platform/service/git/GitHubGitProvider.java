@@ -22,14 +22,14 @@ public class GitHubGitProvider implements GitProvider {
 
     private static final Logger LOG = Logger.getLogger(GitHubGitProvider.class);
 
-    @ConfigProperty(name = "GITHUB_URL", defaultValue = "https://api.github.com")
+    @ConfigProperty(name = "github.url", defaultValue = "https://api.github.com")
     String githubUrl;
 
-    @ConfigProperty(name = "GIT_PASSWORD")
+    @ConfigProperty(name = "git.password")
     Optional<String> gitPassword;
 
-    @ConfigProperty(name = "GITHUB_TOKEN", defaultValue = "")
-    String githubToken;
+    @ConfigProperty(name = "github.token")
+    Optional<String> githubToken;
 
     private final HttpClient httpClient = buildTrustAllClient();
 
@@ -45,7 +45,9 @@ public class GitHubGitProvider implements GitProvider {
     }
 
     private String token() {
-        return gitPassword.filter(s -> !s.isBlank()).orElse(githubToken);
+        return gitPassword.filter(s -> !s.isBlank())
+                .or(() -> githubToken.filter(s -> !s.isBlank()))
+                .orElse("");
     }
 
     private String authHeader() {

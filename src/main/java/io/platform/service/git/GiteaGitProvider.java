@@ -22,28 +22,28 @@ public class GiteaGitProvider implements GitProvider {
 
     private static final Logger LOG = Logger.getLogger(GiteaGitProvider.class);
 
-    @ConfigProperty(name = "GIT_URL")
+    @ConfigProperty(name = "git.url")
     Optional<String> gitUrl;
 
-    @ConfigProperty(name = "GITEA_URL", defaultValue = "https://gitea-gitea.apps.cluster.local")
+    @ConfigProperty(name = "gitea.url", defaultValue = "https://gitea-gitea.apps.cluster.local")
     String giteaUrl;
 
-    @ConfigProperty(name = "GIT_USERNAME")
+    @ConfigProperty(name = "git.username")
     Optional<String> gitUsername;
 
-    @ConfigProperty(name = "GITEA_USERNAME", defaultValue = "user1")
+    @ConfigProperty(name = "gitea.username", defaultValue = "user1")
     String giteaUsername;
 
-    @ConfigProperty(name = "GIT_PASSWORD")
+    @ConfigProperty(name = "git.password")
     Optional<String> gitPassword;
 
-    @ConfigProperty(name = "GITEA_PASSWORD", defaultValue = "password")
+    @ConfigProperty(name = "gitea.password", defaultValue = "password")
     String giteaPassword;
 
-    @ConfigProperty(name = "GIT_ORG")
+    @ConfigProperty(name = "git.org")
     Optional<String> gitOrg;
 
-    @ConfigProperty(name = "GITEA_ORG", defaultValue = "user1")
+    @ConfigProperty(name = "gitea.org", defaultValue = "user1")
     String giteaOrg;
 
     private final HttpClient httpClient = buildTrustAllClient();

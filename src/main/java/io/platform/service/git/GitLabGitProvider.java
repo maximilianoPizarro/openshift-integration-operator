@@ -23,14 +23,14 @@ public class GitLabGitProvider implements GitProvider {
 
     private static final Logger LOG = Logger.getLogger(GitLabGitProvider.class);
 
-    @ConfigProperty(name = "GITLAB_URL", defaultValue = "https://gitlab.com")
+    @ConfigProperty(name = "gitlab.url", defaultValue = "https://gitlab.com")
     String gitlabUrl;
 
-    @ConfigProperty(name = "GIT_PASSWORD")
+    @ConfigProperty(name = "git.password")
     Optional<String> gitPassword;
 
-    @ConfigProperty(name = "GITLAB_TOKEN", defaultValue = "")
-    String gitlabToken;
+    @ConfigProperty(name = "gitlab.token")
+    Optional<String> gitlabToken;
 
     private final HttpClient httpClient = buildTrustAllClient();
 
@@ -41,7 +41,9 @@ public class GitLabGitProvider implements GitProvider {
     }
 
     private String token() {
-        return gitPassword.filter(s -> !s.isBlank()).orElse(gitlabToken);
+        return gitPassword.filter(s -> !s.isBlank())
+                .or(() -> gitlabToken.filter(s -> !s.isBlank()))
+                .orElse("");
     }
 
     private String encodedProjectId(String owner, String repo) {

@@ -197,6 +197,20 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
           )}
           {activeTab === 'kaoto' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '8px 12px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                  Kaoto Designer — <strong>{flowName}</strong>
+                </span>
+                <a
+                  href={KAOTO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pf-c-button pf-m-link pf-m-small"
+                  style={{ fontSize: '12px', marginLeft: 'auto' }}
+                >
+                  Open in new tab &#x2197;
+                </a>
+              </div>
               <iframe
                 src={KAOTO_URL}
                 style={{

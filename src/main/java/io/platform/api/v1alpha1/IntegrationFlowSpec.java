@@ -1,5 +1,6 @@
 package io.platform.api.v1alpha1;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class IntegrationFlowSpec {
@@ -33,6 +34,7 @@ public class IntegrationFlowSpec {
         this.integrationType = integrationType;
     }
 
+    @JsonIgnore
     public IntegrationType getResolvedType() {
         if (integrationType != null) return integrationType;
         return IntegrationType.fromEngineType(engine);

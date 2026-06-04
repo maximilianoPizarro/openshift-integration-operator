@@ -50,6 +50,14 @@ spec:
               value: {{ .Values.gitea.password | default .Values.git.password | default "" }}
             - name: GITEA_ORG
               value: {{ .Values.gitea.org | default .Values.git.org | default "" }}
+            - name: GITHUB_URL
+              value: {{ .Values.github.url | default "https://api.github.com" }}
+            - name: GITHUB_TOKEN
+              value: {{ .Values.github.token | default "" | quote }}
+            - name: GITLAB_URL
+              value: {{ .Values.gitlab.url | default "https://gitlab.com" }}
+            - name: GITLAB_TOKEN
+              value: {{ .Values.gitlab.token | default "" | quote }}
           livenessProbe:
             httpGet:
               path: /q/health/live

@@ -15,7 +15,7 @@ public class DefaultGitOpsService implements GitOpsService {
     @Inject
     GitProviderFactory factory;
 
-    @ConfigProperty(name = "GIT_PROVIDER", defaultValue = "auto")
+    @ConfigProperty(name = "git.provider", defaultValue = "auto")
     String gitProvider;
 
     @Override
