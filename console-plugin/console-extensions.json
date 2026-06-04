@@ -1,0 +1,38 @@
+[
+  {
+    "type": "console.navigation/section",
+    "properties": {
+      "id": "integration-platform",
+      "name": "Integration Platform"
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "integration-flows",
+      "name": "Integration Flows",
+      "href": "/integration-flows",
+      "section": "integration-platform"
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/integration-flows",
+      "component": {
+        "$codeRef": "integrationFlowPage.IntegrationFlowPage"
+      }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/integration-flows/:name",
+      "component": {
+        "$codeRef": "flowDesignerPage.FlowDesignerPage"
+      }
+    }
+  }
+]

@@ -1,0 +1,51 @@
+operator:
+  image:
+    repository: quay.io/maximilianopizarro/openshift-integration-operator
+    tag: v0.1.0
+    pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  serviceAccount:
+    create: true
+    name: integration-operator-sa
+
+workers:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilization: 70
+  targetMemoryUtilization: 80
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+telemetry:
+  otelCollectorEndpoint: http://otel-collector:4317
+  enabled: true
+
+argocd:
+  enabled: true
+  namespace: openshift-gitops
+
+kaoto:
+  enabled: true
+  instanceUrl: ""
+
+consolePlugin:
+  enabled: true
+  image:
+    repository: quay.io/maximilianopizarro/integration-console-plugin
+    tag: v0.1.0
+  replicas: 1
+
+namespace: openshift-integration

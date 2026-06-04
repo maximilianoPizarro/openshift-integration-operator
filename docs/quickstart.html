@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Quick Start Guide — OpenShift Integration Operator">
+  <title>Quick Start | OpenShift Integration Operator</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-elevated: #161b22;
+      --bg-card: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #388bfd;
+      --accent-hover: #58a6ff;
+      --accent-soft: rgba(56, 139, 253, 0.12);
+      --gradient: linear-gradient(135deg, #388bfd 0%, #1f6feb 50%, #8957e5 100%);
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --max-width: 900px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-hover); }
+
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 1.5rem; }
+
+    nav.top-nav {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      background: rgba(13, 17, 23, 0.85);
+    }
+
+    nav.top-nav .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    nav.top-nav .logo { font-weight: 700; color: var(--text); font-size: 0.95rem; }
+    nav.top-nav ul { list-style: none; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    nav.top-nav a { color: var(--text-muted); font-size: 0.9rem; }
+    nav.top-nav a:hover { color: var(--accent-hover); }
+
+    header.page-header {
+      padding: 3rem 0 2rem;
+      border-bottom: 1px solid var(--border);
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(56, 139, 253, 0.12), transparent),
+        var(--bg);
+    }
+
+    header.page-header h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    header.page-header p { color: var(--text-muted); }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .back-link:hover { color: var(--accent-hover); }
+
+    main { padding: 2.5rem 0 4rem; }
+
+    section.step {
+      margin-bottom: 3rem;
+      padding-bottom: 3rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section.step:last-of-type { border-bottom: none; }
+
+    h2 {
+      font-size: 1.35rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent-soft);
+      border: 1px solid rgba(56, 139, 253, 0.35);
+      border-radius: 50%;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-hover);
+      flex-shrink: 0;
+    }
+
+    p { margin-bottom: 1rem; color: var(--text-muted); }
+
+    .prereq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+    }
+
+    .prereq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .prereq-item strong { color: var(--text); display: block; margin-bottom: 0.15rem; }
+
+    pre {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      margin: 1rem 0;
+      box-shadow: var(--shadow);
+    }
+
+    code {
+      font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+      color: var(--text);
+    }
+
+    .comment { color: #8b949e; }
+
+    h3 {
+      font-size: 1.05rem;
+      margin: 1.5rem 0 0.75rem;
+      color: var(--accent-hover);
+    }
+
+    footer {
+      padding: 2rem 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="container">
+      <a href="index.html" class="logo">OpenShift Integration Operator</a>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <div class="container">
+      <a href="index.html" class="back-link">← Back to Home</a>
+      <h1>Quick Start Guide</h1>
+      <p>Install the operator and deploy your first IntegrationFlow in minutes.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <section class="step" id="prerequisites">
+        <h2><span class="step-num">✓</span> Prerequisites</h2>
+        <p>Ensure the following components are available in your environment before installing:</p>
+        <div class="prereq-grid">
+          <div class="prereq-item"><strong>OpenShift 4.14+</strong> Cluster with cluster-admin or sufficient RBAC</div>
+          <div class="prereq-item"><strong>Helm 3</strong> Package manager for operator installation</div>
+          <div class="prereq-item"><strong>oc CLI</strong> OpenShift command-line tool, logged in</div>
+          <div class="prereq-item"><strong>Gitea</strong> Git server for scaffolded worker source</div>
+          <div class="prereq-item"><strong>ArgoCD</strong> GitOps controller (e.g. OpenShift GitOps)</div>
+          <div class="prereq-item"><strong>Tekton Pipelines</strong> CI pipeline for container builds</div>
+        </div>
+      </section>
+
+      <section class="step" id="step-1">
+        <h2><span class="step-num">1</span> Add Helm Repository</h2>
+        <p>Add the GitHub Pages-hosted Helm chart repository and update your local index:</p>
+        <pre><code>helm repo add integration-platform \
+  https://maximilianopizarro.github.io/openshift-integration-operator/
+
+helm repo update</code></pre>
+      </section>
+
+      <section class="step" id="step-2">
+        <h2><span class="step-num">2</span> Install Operator</h2>
+        <p>Install the operator into the <code>openshift-integration</code> namespace:</p>
+        <pre><code>helm install integration-operator \
+  integration-platform/openshift-integration-operator \
+  --namespace openshift-integration \
+  --create-namespace</code></pre>
+        <p>Optional: override image tag or worker scaling limits:</p>
+        <pre><code>helm install integration-operator \
+  integration-platform/openshift-integration-operator \
+  --namespace openshift-integration \
+  --create-namespace \
+  --set operator.image.tag=v0.1.0 \
+  --set workers.maxReplicas=20</code></pre>
+      </section>
+
+      <section class="step" id="step-3">
+        <h2><span class="step-num">3</span> Create an IntegrationFlow CR</h2>
+        <p>Apply an <code>IntegrationFlow</code> custom resource to trigger scaffolding, build, and deployment.</p>
+
+        <h3>CAMEL Engine Example</h3>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: sample-camel-flow
+  namespace: openshift-integration
+spec:
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
+  branch: main
+  targetClusters:
+    - local
+  kaotoDesign: |
+    - route:
+        from:
+          uri: timer:tick
+          parameters:
+            period: 5000
+          steps:
+            - set-body:
+                simple: "Hello from IntegrationFlow at ${header.firedTime}"
+            - log:
+                message: "${body}"</code></pre>
+
+        <h3>SONATAFLOW Engine Example</h3>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: sample-sonataflow
+  namespace: openshift-integration
+spec:
+  engine: SONATAFLOW
+  gitRepository: https://gitea.example.com/demo/sample-sonataflow-worker.git
+  branch: main
+  targetClusters:
+    - local
+  kaotoDesign: |
+    id: order-processing
+    specVersion: "0.8"
+    name: Order Processing Workflow
+    start: EvaluateRequest
+    states:
+      - name: EvaluateRequest
+        type: switch
+        dataConditions:
+          - condition: "${ .priority == \"high\" }"
+            transition: CallExternalAPI
+        defaultCondition:
+          transition: TransformData
+      - name: CallExternalAPI
+        type: operation
+        actions:
+          - name: invoke-api
+            functionRef: httpCall
+        transition: NotifyResult
+      - name: TransformData
+        type: inject
+        data:
+          processed: true
+        transition: NotifyResult
+      - name: NotifyResult
+        type: operation
+        actions:
+          - name: notify
+            functionRef: logMessage
+        end: true</code></pre>
+
+        <p>Apply with:</p>
+        <pre><code>oc apply -f integrationflow-camel.yaml
+<span class="comment"># or</span>
+oc apply -f integrationflow-sonataflow.yaml</code></pre>
+      </section>
+
+      <section class="step" id="step-4">
+        <h2><span class="step-num">4</span> Verify Deployment</h2>
+        <p>Confirm the operator, CRD, and IntegrationFlow status:</p>
+        <pre><code><span class="comment"># Check operator pods</span>
+oc get pods -n openshift-integration
+
+<span class="comment"># Verify CRD is registered</span>
+oc get crd integrationflows.platform.io
+
+<span class="comment"># Watch IntegrationFlow status</span>
+oc get integrationflows -n openshift-integration
+oc describe integrationflow sample-camel-flow -n openshift-integration
+
+<span class="comment"># Check Tekton PipelineRun</span>
+oc get pipelineruns -n openshift-integration -l platform.io/component=build
+
+<span class="comment"># Verify worker deployment (after ArgoCD sync)</span>
+oc get deployments -n openshift-integration</code></pre>
+        <p>Expected status phases: <code>Scaffolding</code> → <code>Building</code> → <code>Deploying</code> → <code>Running</code>.</p>
+      </section>
+
+      <section class="step" id="step-5">
+        <h2><span class="step-num">5</span> Access the Console Plugin</h2>
+        <p>
+          The OpenShift Console plugin adds an <strong>Integration Platform</strong> section with
+          <strong>Integration Flows</strong> navigation.
+        </p>
+        <pre><code><span class="comment"># Verify ConsolePlugin is enabled</span>
+oc get consoleplugin -n openshift-integration
+
+<span class="comment"># Check plugin pod status</span>
+oc get pods -n openshift-integration -l app.kubernetes.io/component=console-plugin</code></pre>
+        <p>
+          Open the OpenShift Console and navigate to <strong>Integration Platform → Integration Flows</strong>.
+          Select a flow to open the Kaoto designer with live telemetry overlay.
+        </p>
+        <p>
+          Direct routes:
+        </p>
+        <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li><code>/integration-flows</code> — List all IntegrationFlows</li>
+          <li><code>/integration-flows/&lt;name&gt;</code> — Flow designer with Kaoto canvas</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>
+        <a href="index.html">← Back to Home</a>
+        · <a href="architecture.html">Architecture</a>
+        · Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

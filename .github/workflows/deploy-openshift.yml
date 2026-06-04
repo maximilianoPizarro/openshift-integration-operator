@@ -1,0 +1,99 @@
+name: Deploy to OpenShift
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (e.g. v0.1.0)'
+        required: false
+        default: 'v0.1.0'
+        type: string
+  workflow_run:
+    workflows: ["Build and push to Quay.io"]
+    types: [completed]
+
+env:
+  QUAY_REGISTRY: quay.io
+  QUAY_NAMESPACE: maximilianopizarro
+  IMAGE_NAME: openshift-integration-operator
+  NAMESPACE: openshift-integration
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+            if [ -z "$TAG" ]; then TAG=v0.1.0; fi
+          else
+            TAG=v0.1.0
+          fi
+          echo "IMAGE_TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: "4.14"
+
+      - name: Login to OpenShift
+        run: |
+          oc login --token=${{ secrets.OC_TOKEN }} --server=${{ secrets.OC_SERVER }} --insecure-skip-tls-verify=true
+
+      - name: Create namespace if not exists
+        run: |
+          oc new-project ${{ env.NAMESPACE }} || oc project ${{ env.NAMESPACE }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Deploy operator via Helm
+        run: |
+          helm upgrade --install openshift-integration-operator \
+            helm/openshift-integration-operator \
+            --namespace ${{ env.NAMESPACE }} \
+            --set operator.image.repository=${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ env.IMAGE_NAME }} \
+            --set operator.image.tag=${{ env.IMAGE_TAG }} \
+            --wait --timeout 5m
+
+      - name: Verify deployment
+        run: |
+          oc rollout status deployment/openshift-integration-operator -n ${{ env.NAMESPACE }} --timeout=300s
+          echo "--- Operator pods ---"
+          oc get pods -n ${{ env.NAMESPACE }} -l app.kubernetes.io/name=openshift-integration-operator
+          echo "--- CRD status ---"
+          oc get crd integrationflows.platform.io || echo "CRD will be created on first operator start"
+
+      - name: Create sample IntegrationFlow
+        run: |
+          cat <<'EOF' | oc apply -n ${{ env.NAMESPACE }} -f -
+          apiVersion: platform.io/v1alpha1
+          kind: IntegrationFlow
+          metadata:
+            name: sample-camel-flow
+          spec:
+            engine: CAMEL
+            gitRepository: https://gitea.apps.cluster-xtvzv.dynamic.redhatworkshops.io/demo/sample-camel-worker.git
+            branch: main
+            targetClusters:
+              - local
+            kaotoDesign: |
+              - route:
+                  from:
+                    uri: timer:tick
+                    parameters:
+                      period: 5000
+                    steps:
+                      - set-body:
+                          simple: "Hello from IntegrationFlow at ${header.firedTime}"
+                      - log:
+                          message: "${body}"
+          EOF
+          echo "Sample IntegrationFlow created"

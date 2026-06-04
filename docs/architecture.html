@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Architecture — OpenShift Integration Operator">
+  <title>Architecture | OpenShift Integration Operator</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-elevated: #161b22;
+      --bg-card: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #388bfd;
+      --accent-hover: #58a6ff;
+      --accent-soft: rgba(56, 139, 253, 0.12);
+      --gradient: linear-gradient(135deg, #388bfd 0%, #1f6feb 50%, #8957e5 100%);
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --max-width: 900px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-hover); }
+
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 1.5rem; }
+
+    nav.top-nav {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      background: rgba(13, 17, 23, 0.85);
+    }
+
+    nav.top-nav .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    nav.top-nav .logo { font-weight: 700; color: var(--text); font-size: 0.95rem; }
+    nav.top-nav ul { list-style: none; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    nav.top-nav a { color: var(--text-muted); font-size: 0.9rem; }
+    nav.top-nav a:hover { color: var(--accent-hover); }
+
+    header.page-header {
+      padding: 3rem 0 2rem;
+      border-bottom: 1px solid var(--border);
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(56, 139, 253, 0.12), transparent),
+        var(--bg);
+    }
+
+    header.page-header h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    header.page-header p { color: var(--text-muted); }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .back-link:hover { color: var(--accent-hover); }
+
+    main { padding: 2.5rem 0 4rem; }
+
+    section.doc-section {
+      margin-bottom: 3rem;
+      padding-bottom: 3rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section.doc-section:last-of-type { border-bottom: none; }
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      margin: 1.5rem 0 0.75rem;
+      color: var(--accent-hover);
+    }
+
+    p { margin-bottom: 1rem; color: var(--text-muted); }
+
+    ul, ol {
+      margin: 0 0 1rem 1.25rem;
+      color: var(--text-muted);
+    }
+
+    li { margin-bottom: 0.5rem; }
+
+    code {
+      font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.875em;
+      color: #79c0ff;
+    }
+
+    pre {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      margin: 1rem 0;
+      box-shadow: var(--shadow);
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+    }
+
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .component-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+
+    .component-card h4 {
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    .component-card p {
+      font-size: 0.875rem;
+      margin: 0;
+    }
+
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      margin-left: 0;
+    }
+
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent-soft);
+      border: 1px solid rgba(56, 139, 253, 0.35);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--accent-hover);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--bg-card);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    td { color: var(--text-muted); }
+
+    .diagram-placeholder {
+      background: var(--bg-card);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      margin: 1.5rem 0;
+    }
+
+    .diagram-placeholder img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .diagram-placeholder p {
+      font-size: 0.85rem;
+      margin: 0;
+    }
+
+    .note {
+      background: var(--accent-soft);
+      border: 1px solid rgba(56, 139, 253, 0.25);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    footer {
+      padding: 2rem 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="container">
+      <a href="index.html" class="logo">OpenShift Integration Operator</a>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="quickstart.html">Quick Start</a></li>
+        <li><a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <div class="container">
+      <a href="index.html" class="back-link">← Back to Home</a>
+      <h1>Architecture</h1>
+      <p>How the OpenShift Integration Operator orchestrates design, build, deploy, and observability.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <section class="doc-section" id="high-level">
+        <h2>High-Level Architecture</h2>
+        <p>
+          The platform is composed of four primary layers that work together to deliver end-to-end integration
+          workflow lifecycle management on OpenShift.
+        </p>
+
+        <div class="diagram-placeholder">
+          <img src="images/architecture-high-level.png" alt="High-level architecture diagram" width="800" height="450">
+          <p>Placeholder: <code>docs/images/architecture-high-level.png</code></p>
+        </div>
+
+        <div class="component-grid">
+          <div class="component-card">
+            <h4>Operator</h4>
+            <p>Quarkus-based Kubernetes operator that watches <code>IntegrationFlow</code> CRs, scaffolds worker projects, pushes to Git, triggers Tekton builds, and tracks ArgoCD applications.</p>
+          </div>
+          <div class="component-card">
+            <h4>Console Plugin</h4>
+            <p>Dynamic OpenShift Console plugin with Integration Flows list view, embedded Kaoto designer, and live telemetry overlay on the canvas.</p>
+          </div>
+          <div class="component-card">
+            <h4>Workers</h4>
+            <p>Runtime pods executing Camel routes or SonataFlow definitions. Scaled by HPA based on CPU and memory metrics.</p>
+          </div>
+          <div class="component-card">
+            <h4>GitOps Layer</h4>
+            <p>Gitea stores scaffolded source; Tekton <code>integration-flow-build</code> pipeline builds container images; ArgoCD syncs deployments to target clusters.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="doc-section" id="crd-model">
+        <h2>CRD Model</h2>
+        <p>
+          The <code>IntegrationFlow</code> custom resource (<code>platform.io/v1alpha1</code>, short name
+          <code>iflow</code>) is namespaced and drives the full lifecycle.
+        </p>
+
+        <h3>Spec Fields</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>gitRepository</code></td>
+              <td>string</td>
+              <td>Git remote URL where scaffolded worker source is pushed</td>
+            </tr>
+            <tr>
+              <td><code>branch</code></td>
+              <td>string</td>
+              <td>Git branch to push and build (default: <code>main</code>)</td>
+            </tr>
+            <tr>
+              <td><code>targetClusters</code></td>
+              <td>[]string</td>
+              <td>Clusters where ArgoCD should deploy the worker</td>
+            </tr>
+            <tr>
+              <td><code>engine</code></td>
+              <td>enum</td>
+              <td><code>CAMEL</code> or <code>SONATAFLOW</code></td>
+            </tr>
+            <tr>
+              <td><code>kaotoDesign</code></td>
+              <td>string</td>
+              <td>Raw Kaoto design — YAML for Camel routes, JSON/YAML for SonataFlow</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Status Fields</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>phase</code></td>
+              <td>enum</td>
+              <td><code>Scaffolding</code>, <code>Building</code>, <code>Deploying</code>, <code>Running</code>, or <code>Error</code></td>
+            </tr>
+            <tr>
+              <td><code>gitCommitHash</code></td>
+              <td>string</td>
+              <td>SHA of the last successful Git push</td>
+            </tr>
+            <tr>
+              <td><code>argoApplicationName</code></td>
+              <td>string</td>
+              <td>ArgoCD Application name (e.g. <code>iflow-&lt;name&gt;</code>)</td>
+            </tr>
+            <tr>
+              <td><code>message</code></td>
+              <td>string</td>
+              <td>Human-readable status or error message</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="doc-section" id="reconciliation">
+        <h2>Reconciliation Loop</h2>
+        <p>
+          When an <code>IntegrationFlow</code> is created or updated, the reconciler executes the following
+          steps in order:
+        </p>
+
+        <div class="diagram-placeholder">
+          <img src="images/reconciliation-loop.png" alt="Reconciliation loop diagram" width="800" height="300">
+          <p>Placeholder: <code>docs/images/reconciliation-loop.png</code></p>
+        </div>
+
+        <ol class="steps">
+          <li>
+            <strong>Scaffold</strong> — The <code>ScaffoldingService</code> generates a worker project from the
+            selected engine (<code>CAMEL</code> or <code>SONATAFLOW</code>) and the Kaoto design payload.
+            Status phase: <code>Scaffolding</code>.
+          </li>
+          <li>
+            <strong>Git Push</strong> — The <code>GitOpsService</code> commits and pushes scaffolded source to
+            the configured Git repository and branch. On failure, phase is set to <code>Error</code>.
+          </li>
+          <li>
+            <strong>Tekton</strong> — A <code>PipelineRun</code> is created referencing the cluster Pipeline
+            <code>integration-flow-build</code>, passing git URL, branch, commit SHA, and flow name as parameters.
+            Status phase: <code>Building</code>.
+          </li>
+          <li>
+            <strong>ArgoCD</strong> — The ArgoCD Application name (<code>iflow-&lt;flowName&gt;</code>) is recorded
+            in status for tracking. ArgoCD syncs the built image to the target cluster(s).
+            Status phase: <code>Deploying</code> → <code>Running</code>.
+          </li>
+          <li>
+            <strong>Deploy</strong> — Worker pods start executing the integration flow. HPA monitors load and
+            scales replicas within configured bounds.
+          </li>
+        </ol>
+      </section>
+
+      <section class="doc-section" id="telemetry">
+        <h2>Telemetry Pipeline</h2>
+        <p>
+          Runtime observability flows from OpenTelemetry collectors through the operator API to the console
+          plugin, enabling real-time visual feedback on the Kaoto canvas.
+        </p>
+
+        <div class="diagram-placeholder">
+          <img src="images/telemetry-pipeline.png" alt="Telemetry pipeline diagram" width="800" height="250">
+          <p>Placeholder: <code>docs/images/telemetry-pipeline.png</code></p>
+        </div>
+
+        <ol>
+          <li><strong>OpenTelemetry</strong> — Worker pods emit traces and metrics to the OTel collector (<code>otel-collector:4317</code> by default).</li>
+          <li><strong>Operator API</strong> — The operator exposes <code>/api/telemetry/stream/{flowId}</code> as a Server-Sent Events (SSE) stream and <code>/api/telemetry/snapshot/{flowId}</code> for point-in-time node status.</li>
+          <li><strong>Console Canvas</strong> — The <code>TelemetryOverlay</code> component subscribes to the SSE stream and colors Kaoto nodes based on per-node health (<code>healthy</code>, <code>degraded</code>, <code>error</code>) and latency.</li>
+        </ol>
+      </section>
+
+      <section class="doc-section" id="mcp-bridge">
+        <h2>MCP Bridge</h2>
+        <p>
+          The Model Context Protocol (MCP) bridge enables AI-powered workflow steps by connecting integration
+          flows to external MCP tool servers.
+        </p>
+
+        <div class="diagram-placeholder">
+          <img src="images/mcp-bridge.png" alt="MCP bridge diagram" width="800" height="250">
+          <p>Placeholder: <code>docs/images/mcp-bridge.png</code></p>
+        </div>
+
+        <h3>Tool Discovery</h3>
+        <p>
+          <code>GET /api/mcp/tools?serverUrl=&lt;mcp-server&gt;</code> sends a JSON-RPC 2.0
+          <code>tools/list</code> request to the MCP server and returns available tool definitions with name,
+          description, and input schema.
+        </p>
+
+        <h3>Tool Invocation</h3>
+        <p>
+          <code>POST /api/mcp/tools/{toolName}/call?serverUrl=&lt;mcp-server&gt;</code> sends a JSON-RPC 2.0
+          <code>tools/call</code> request with the tool name and arguments. The response content can be
+          consumed by Camel processors or SonataFlow function states in the worker runtime.
+        </p>
+
+        <pre><code>POST /api/mcp/tools/web_search/call?serverUrl=https://mcp.example.com
+Content-Type: application/json
+
+{ "query": "OpenShift integration patterns" }</code></pre>
+      </section>
+
+      <section class="doc-section" id="autoscaling">
+        <h2>Worker Autoscaling</h2>
+        <p>
+          Worker deployments are managed by a Kubernetes HorizontalPodAutoscaler (HPA v2) configured via Helm values.
+        </p>
+
+        <div class="diagram-placeholder">
+          <img src="images/worker-autoscaling.png" alt="Worker autoscaling diagram" width="800" height="250">
+          <p>Placeholder: <code>docs/images/worker-autoscaling.png</code></p>
+        </div>
+
+        <ul>
+          <li><strong>Min replicas:</strong> 1 (configurable via <code>workers.minReplicas</code>)</li>
+          <li><strong>Max replicas:</strong> 10 (configurable via <code>workers.maxReplicas</code>)</li>
+          <li><strong>CPU target:</strong> 70% utilization (<code>workers.targetCPUUtilization</code>)</li>
+          <li><strong>Memory target:</strong> 80% utilization (<code>workers.targetMemoryUtilization</code>)</li>
+        </ul>
+
+        <p>
+          The HPA scales the worker Deployment up during high load and scales down when utilization drops,
+          ensuring cost-efficient resource usage while maintaining throughput for integration workloads.
+        </p>
+      </section>
+
+      <div class="note">
+        Architecture diagrams generated with Nano Banana 2. Replace placeholder images in
+        <code>docs/images/</code> with generated diagrams when available.
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>
+        <a href="index.html">← Back to Home</a>
+        · Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

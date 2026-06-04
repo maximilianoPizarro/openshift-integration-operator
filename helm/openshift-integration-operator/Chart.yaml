@@ -1,0 +1,26 @@
+apiVersion: v2
+name: openshift-integration-operator
+description: Real-Time Integration & Orchestration Platform for OpenShift - Apache Camel + SonataFlow with visual Kaoto designer
+type: application
+version: 0.1.0
+appVersion: "v0.1.0"
+home: https://github.com/maximilianoPizarro/openshift-integration-operator
+sources:
+  - https://github.com/maximilianoPizarro/openshift-integration-operator
+maintainers:
+  - name: maximilianoPizarro
+    url: https://github.com/maximilianoPizarro
+keywords:
+  - openshift
+  - kubernetes
+  - operator
+  - camel
+  - sonataflow
+  - integration
+  - kaoto
+  - workflow
+icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.png
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/operator: "true"
+  artifacthub.io/operatorCapabilities: Basic Install

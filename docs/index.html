@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OpenShift Integration Operator — Real-Time Integration & Orchestration Platform for OpenShift">
+  <title>OpenShift Integration Operator</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-elevated: #161b22;
+      --bg-card: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #388bfd;
+      --accent-hover: #58a6ff;
+      --accent-soft: rgba(56, 139, 253, 0.12);
+      --gradient: linear-gradient(135deg, #388bfd 0%, #1f6feb 50%, #8957e5 100%);
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --max-width: 1120px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-hover); }
+
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 1.5rem; }
+
+    /* Header / Hero */
+    header {
+      padding: 4rem 0 3rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(56, 139, 253, 0.18), transparent),
+        var(--bg);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: var(--accent-soft);
+      color: var(--accent-hover);
+      border: 1px solid rgba(56, 139, 253, 0.3);
+      margin-bottom: 1.25rem;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+    }
+
+    .description {
+      max-width: 720px;
+      margin: 0 auto 2rem;
+      font-size: 1.05rem;
+      color: var(--text-muted);
+    }
+
+    .hero-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(56, 139, 253, 0.35);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent-hover);
+    }
+
+    /* Sections */
+    section { padding: 4rem 0; }
+    section:nth-child(even) { background: var(--bg-elevated); }
+
+    h2 {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+    }
+
+    .section-lead {
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      max-width: 640px;
+    }
+
+    /* Feature cards */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .card:hover {
+      border-color: rgba(56, 139, 253, 0.45);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Code blocks */
+    pre {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-size: 0.875rem;
+      line-height: 1.7;
+      box-shadow: var(--shadow);
+    }
+
+    code {
+      font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+      color: #79c0ff;
+    }
+
+    pre code { color: var(--text); }
+    .comment { color: #8b949e; }
+
+    /* Architecture teaser */
+    .arch-teaser {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2rem;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .arch-teaser { grid-template-columns: 1fr; }
+    }
+
+    /* Footer */
+    footer {
+      padding: 2.5rem 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    footer a { color: var(--text-muted); }
+    footer a:hover { color: var(--accent-hover); }
+
+    nav.top-nav {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      background: rgba(13, 17, 23, 0.85);
+      backdrop-filter: blur(8px);
+    }
+
+    nav.top-nav .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    nav.top-nav .logo {
+      font-weight: 700;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    nav.top-nav ul {
+      list-style: none;
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    nav.top-nav a { color: var(--text-muted); font-size: 0.9rem; }
+    nav.top-nav a:hover { color: var(--accent-hover); }
+  </style>
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="container">
+      <a href="index.html" class="logo">OpenShift Integration Operator</a>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="quickstart.html">Guide</a></li>
+        <li><a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header>
+    <div class="container">
+      <span class="badge">Apache 2.0 · Open Source</span>
+      <h1>OpenShift Integration Operator</h1>
+      <p class="subtitle">Real-Time Integration &amp; Orchestration Platform for OpenShift</p>
+      <p class="description">
+        Open-source alternative to n8n, powered by Apache Camel + CNCF SonataFlow, with visual Kaoto designer,
+        MCP/AI integration, and native Kubernetes orchestration.
+      </p>
+      <div class="hero-links">
+        <a class="btn btn-primary" href="quickstart.html">Get Started</a>
+        <a class="btn btn-secondary" href="https://github.com/maximilianoPizarro/openshift-integration-operator">View on GitHub</a>
+        <a class="btn btn-secondary" href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="features">
+      <div class="container">
+        <h2>Features</h2>
+        <p class="section-lead">Everything you need to design, deploy, and observe integration workflows on OpenShift.</p>
+        <div class="card-grid">
+          <article class="card">
+            <div class="card-icon">⚡</div>
+            <h3>Dual Engine</h3>
+            <p>Run Apache Camel routes or CNCF SonataFlow workflows from a single IntegrationFlow CR.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">🎨</div>
+            <h3>Visual Designer</h3>
+            <p>Embedded Kaoto canvas in the OpenShift Console for drag-and-drop flow design.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">🔄</div>
+            <h3>GitOps Native</h3>
+            <p>Tekton builds container images; ArgoCD syncs worker deployments from Git.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">🤖</div>
+            <h3>MCP/AI Ready</h3>
+            <p>Model Context Protocol bridge for discovering and invoking AI tools in flows.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">📊</div>
+            <h3>Observable</h3>
+            <p>OpenTelemetry instrumentation with real-time SSE telemetry for canvas coloring.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">📈</div>
+            <h3>Auto-scaling Workers</h3>
+            <p>HPA-driven worker pods scale on CPU and memory utilization.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">🌐</div>
+            <h3>Multi-cluster</h3>
+            <p>Target multiple clusters from a single IntegrationFlow spec via GitOps.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">📜</div>
+            <h3>Apache 2.0 License</h3>
+            <p>Free to use, modify, and distribute in enterprise and community environments.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="quickstart">
+      <div class="container">
+        <h2>Quick Start</h2>
+        <p class="section-lead">Install the operator with Helm in under a minute.</p>
+        <pre><code><span class="comment"># Add the Helm repository</span>
+helm repo add integration-platform \
+  https://maximilianopizarro.github.io/openshift-integration-operator/
+
+helm repo update
+
+<span class="comment"># Install the operator</span>
+helm install integration-operator \
+  integration-platform/openshift-integration-operator \
+  --namespace openshift-integration \
+  --create-namespace
+
+<span class="comment"># Verify the deployment</span>
+oc get pods -n openshift-integration
+oc get crd integrationflows.platform.io</code></pre>
+        <p style="margin-top: 1.25rem; color: var(--text-muted);">
+          See the full <a href="quickstart.html">Quick Start Guide</a> for IntegrationFlow examples and console plugin access.
+        </p>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <div class="container">
+        <h2>Architecture</h2>
+        <p class="section-lead">A Kubernetes-native platform that connects visual design, GitOps, and runtime observability.</p>
+        <div class="arch-teaser">
+          <div>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+              The operator reconciles <code>IntegrationFlow</code> custom resources through scaffolding, Git push,
+              Tekton builds, and ArgoCD deployment. The console plugin embeds Kaoto and streams live telemetry
+              over SSE to color canvas nodes in real time.
+            </p>
+            <a class="btn btn-primary" href="architecture.html">Read Architecture Docs →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>
+        <a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a>
+        · <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>
+        · <a href="architecture.html">Architecture</a>
+        · <a href="quickstart.html">Quick Start</a>
+      </p>
+      <p style="margin-top: 0.75rem;">
+        Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

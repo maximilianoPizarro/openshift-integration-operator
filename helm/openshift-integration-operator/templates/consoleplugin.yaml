@@ -1,0 +1,69 @@
+{{- if .Values.consolePlugin.enabled }}
+apiVersion: console.openshift.io/v1
+kind: ConsolePlugin
+metadata:
+  name: integration-console-plugin
+  labels:
+    {{- include "operator.labels" . | nindent 4 }}
+spec:
+  displayName: "Integration Platform"
+  backend:
+    type: Service
+    service:
+      name: integration-console-plugin
+      namespace: {{ .Values.namespace }}
+      port: 9443
+      basePath: "/"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: integration-console-plugin
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: integration-console-plugin
+    {{- include "operator.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.consolePlugin.replicas }}
+  selector:
+    matchLabels:
+      app: integration-console-plugin
+  template:
+    metadata:
+      labels:
+        app: integration-console-plugin
+    spec:
+      containers:
+        - name: console-plugin
+          image: "{{ .Values.consolePlugin.image.repository }}:{{ .Values.consolePlugin.image.tag }}"
+          ports:
+            - containerPort: 9443
+              protocol: TCP
+          volumeMounts:
+            - name: plugin-serving-cert
+              readOnly: true
+              mountPath: /var/serving-cert
+      volumes:
+        - name: plugin-serving-cert
+          secret:
+            secretName: integration-console-plugin-cert
+            defaultMode: 420
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: integration-console-plugin
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: integration-console-plugin
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: integration-console-plugin-cert
+spec:
+  ports:
+    - name: 9443-tcp
+      protocol: TCP
+      port: 9443
+      targetPort: 9443
+  selector:
+    app: integration-console-plugin
+{{- end }}
