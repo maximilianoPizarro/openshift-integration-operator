@@ -1,10 +1,11 @@
 apiVersion: v2
 name: openshift-integration-operator
-description: Real-Time Integration & Orchestration Platform for OpenShift - Apache Camel + SonataFlow with visual Kaoto designer
+description: Real-Time Integration & Orchestration Platform for OpenShift - Apache Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and OpenTelemetry observability
 type: application
 version: 0.1.0
 appVersion: "v0.1.0"
-home: https://github.com/maximilianoPizarro/openshift-integration-operator
+kubeVersion: ">=1.27.0-0"
+home: https://maximilianopizarro.github.io/openshift-integration-operator/
 sources:
   - https://github.com/maximilianoPizarro/openshift-integration-operator
 maintainers:
@@ -15,12 +16,78 @@ keywords:
   - kubernetes
   - operator
   - camel
+  - apache-camel
   - sonataflow
   - integration
   - kaoto
   - workflow
+  - gitops
+  - tekton
+  - argocd
+  - mcp
+  - ai
+  - opentelemetry
+  - n8n-alternative
 icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.svg
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/operator: "true"
   artifacthub.io/operatorCapabilities: Basic Install
+  artifacthub.io/prerelease: "true"
+  artifacthub.io/containsSecurityUpdates: "false"
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://maximilianopizarro.github.io/openshift-integration-operator/
+    - name: Architecture
+      url: https://maximilianopizarro.github.io/openshift-integration-operator/architecture.html
+    - name: Quick Start
+      url: https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html
+    - name: Source Code
+      url: https://github.com/maximilianoPizarro/openshift-integration-operator
+  artifacthub.io/images: |
+    - name: operator
+      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.1.0
+    - name: console-plugin
+      image: quay.io/maximilianopizarro/integration-console-plugin:v0.1.0
+  artifacthub.io/crds: |
+    - kind: IntegrationFlow
+      version: v1alpha1
+      name: integrationflows.platform.io
+      displayName: Integration Flow
+      description: Defines an integration workflow using Apache Camel or SonataFlow engine with Kaoto visual design
+  artifacthub.io/crdsExamples: |
+    - apiVersion: platform.io/v1alpha1
+      kind: IntegrationFlow
+      metadata:
+        name: sample-camel-flow
+      spec:
+        engine: CAMEL
+        gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
+        branch: main
+        targetClusters:
+          - local
+        kaotoDesign: |
+          - route:
+              from:
+                uri: timer:tick
+                parameters:
+                  period: 5000
+                steps:
+                  - log:
+                      message: "Hello from IntegrationFlow"
+  artifacthub.io/recommendations: |
+    - url: https://artifacthub.io/packages/helm/openshift-gitops/openshift-gitops
+    - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial release with Quarkus operator, IntegrationFlow CRD, Camel and SonataFlow scaffolding
+    - kind: added
+      description: OpenShift Console Dynamic Plugin with visual designer and telemetry overlay
+    - kind: added
+      description: MCP Bridge for AI tool discovery and invocation
+    - kind: added
+      description: OpenTelemetry integration with SSE real-time streaming
+    - kind: added
+      description: HPA v2 worker autoscaling with configurable thresholds
+    - kind: added
+      description: GitOps pipeline with Tekton builds and ArgoCD deployments
