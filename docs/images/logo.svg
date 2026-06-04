@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1f6feb"/>
+      <stop offset="50%" style="stop-color:#388bfd"/>
+      <stop offset="100%" style="stop-color:#8957e5"/>
+    </linearGradient>
+    <linearGradient id="inner" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#58a6ff"/>
+      <stop offset="100%" style="stop-color:#bc8cff"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bg)"/>
+  <!-- OpenShift-style gear outer ring -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#ffffff" stroke-width="8" opacity="0.2"/>
+  <!-- Integration flow arrows (three converging paths) -->
+  <!-- Left arrow -->
+  <path d="M100 200 L180 256 L100 312" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <!-- Center hub -->
+  <circle cx="256" cy="256" r="60" fill="url(#inner)" opacity="0.9"/>
+  <!-- Right arrow -->
+  <path d="M412 200 L332 256 L412 312" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <!-- Top connector -->
+  <line x1="256" y1="100" x2="256" y2="196" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.7"/>
+  <polygon points="240,196 256,180 272,196" fill="#ffffff" opacity="0.7"/>
+  <!-- Bottom connector -->
+  <line x1="256" y1="316" x2="256" y2="412" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.7"/>
+  <polygon points="240,316 256,332 272,316" fill="#ffffff" opacity="0.7"/>
+  <!-- Left connector -->
+  <line x1="180" y1="256" x2="196" y2="256" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.8"/>
+  <!-- Right connector -->
+  <line x1="316" y1="256" x2="332" y2="256" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.8"/>
+  <!-- Center icon: flow/integration symbol -->
+  <text x="256" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff">IO</text>
+  <!-- Small nodes around the hub -->
+  <circle cx="256" cy="130" r="16" fill="#58a6ff"/>
+  <circle cx="256" cy="382" r="16" fill="#8957e5"/>
+  <circle cx="130" cy="256" r="16" fill="#58a6ff"/>
+  <circle cx="382" cy="256" r="16" fill="#8957e5"/>
+</svg>

@@ -19,7 +19,7 @@ keywords:
   - integration
   - kaoto
   - workflow
-icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.png
+icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.svg
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/operator: "true"

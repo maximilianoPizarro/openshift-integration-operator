@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/logo.png" alt="OpenShift Integration Operator" width="120" height="120">
+  <img src="docs/images/logo.svg" alt="OpenShift Integration Operator" width="120" height="120">
 </p>
 
 <h1 align="center">OpenShift Integration Operator</h1>
