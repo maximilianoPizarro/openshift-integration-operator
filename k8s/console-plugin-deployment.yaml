@@ -1,3 +1,188 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: integration-plugin-nginx
+  namespace: openshift-integration
+data:
+  tls.conf: |
+    server {
+        listen 8443 ssl;
+        ssl_certificate /var/serving-cert/tls.crt;
+        ssl_certificate_key /var/serving-cert/tls.key;
+        root /opt/app-root/src;
+
+        location ~* \.json$ {
+            default_type application/json;
+            add_header Cache-Control "no-cache";
+            add_header Access-Control-Allow-Origin "*";
+        }
+
+        location ~* \.js$ {
+            default_type application/javascript;
+            add_header Cache-Control "no-cache";
+            add_header Access-Control-Allow-Origin "*";
+        }
+
+        location / {
+            add_header Cache-Control "no-cache";
+            add_header Access-Control-Allow-Origin "*";
+        }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: integration-plugin-content
+  namespace: openshift-integration
+data:
+  plugin-manifest.json: |
+    {
+      "name": "integration-console-plugin",
+      "version": "0.1.0",
+      "displayName": "Integration Platform",
+      "description": "Real-Time Integration & Orchestration Platform - Apache Camel + SonataFlow with Kaoto designer",
+      "extensions": [
+        {
+          "type": "console.navigation/section",
+          "properties": {
+            "id": "integration-platform",
+            "name": "Integration Platform"
+          }
+        },
+        {
+          "type": "console.navigation/href",
+          "properties": {
+            "id": "integration-flows",
+            "name": "Integration Flows",
+            "href": "/integration-flows",
+            "section": "integration-platform"
+          }
+        },
+        {
+          "type": "console.page/route",
+          "properties": {
+            "exact": true,
+            "path": "/integration-flows",
+            "component": { "$codeRef": "integrationFlowPage.default" }
+          }
+        }
+      ],
+      "dependencies": {
+        "@console/pluginAPI": "*"
+      }
+    }
+  plugin-entry.js: |
+    (function() {
+      var React;
+
+      var moduleMap = {
+        "./integrationFlowPage": function() {
+          return {
+            default: function IntegrationFlowPage() {
+              return React.createElement("div", {
+                style: {
+                  padding: "32px",
+                  fontFamily: "RedHatText, Overpass, overpass, helvetica, arial, sans-serif"
+                }
+              },
+                React.createElement("h1", {
+                  style: { fontSize: "24px", fontWeight: 400, marginBottom: "16px" }
+                }, "Integration Flows"),
+                React.createElement("div", {
+                  style: {
+                    background: "#fff",
+                    border: "1px solid #d2d2d2",
+                    borderRadius: "3px",
+                    padding: "24px"
+                  }
+                },
+                  React.createElement("p", {
+                    style: { marginBottom: "16px", color: "#6a6e73" }
+                  }, "Manage your Apache Camel and SonataFlow integration workflows."),
+                  React.createElement("div", {
+                    style: {
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                      gap: "16px"
+                    }
+                  },
+                    React.createElement("div", {
+                      style: {
+                        border: "1px solid #d2d2d2",
+                        borderRadius: "3px",
+                        padding: "16px"
+                      }
+                    },
+                      React.createElement("h3", {
+                        style: { fontSize: "16px", marginBottom: "8px" }
+                      }, "Apache Camel"),
+                      React.createElement("p", {
+                        style: { color: "#6a6e73", fontSize: "14px" }
+                      }, "Enterprise integration patterns for routing and mediation.")
+                    ),
+                    React.createElement("div", {
+                      style: {
+                        border: "1px solid #d2d2d2",
+                        borderRadius: "3px",
+                        padding: "16px"
+                      }
+                    },
+                      React.createElement("h3", {
+                        style: { fontSize: "16px", marginBottom: "8px" }
+                      }, "SonataFlow"),
+                      React.createElement("p", {
+                        style: { color: "#6a6e73", fontSize: "14px" }
+                      }, "CNCF Serverless Workflow orchestration engine.")
+                    )
+                  )
+                )
+              );
+            }
+          };
+        }
+      };
+
+      window["integration-console-plugin"] = {
+        init: function(shareScope) {
+          var reactVersions = shareScope["react"];
+          if (reactVersions) {
+            var version = Object.keys(reactVersions)[0];
+            if (version && reactVersions[version] && reactVersions[version].get) {
+              return reactVersions[version].get().then(function(factory) {
+                React = factory();
+              });
+            }
+          }
+          return Promise.resolve();
+        },
+        get: function(module) {
+          if (moduleMap[module]) {
+            return Promise.resolve(moduleMap[module]);
+          }
+          return Promise.reject(new Error("Module " + module + " not found in integration-console-plugin"));
+        }
+      };
+    })();
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: integration-console-plugin
+  namespace: openshift-integration
+  labels:
+    app: integration-console-plugin
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: integration-console-plugin-cert
+spec:
+  selector:
+    app: integration-console-plugin
+  ports:
+    - name: 8443-tcp
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,47 +202,8 @@ spec:
     spec:
       containers:
         - name: plugin
-          image: registry.access.redhat.com/ubi8/nginx-120:latest
-          command:
-            - /bin/bash
-            - -c
-            - |
-              mkdir -p /tmp/content
-              cp /opt/app-root/src/* /tmp/content/ 2>/dev/null || true
-              cat > /tmp/nginx.conf <<'NGINX'
-              worker_processes auto;
-              error_log /dev/stderr;
-              pid /tmp/nginx.pid;
-              events {
-                worker_connections 1024;
-              }
-              http {
-                include /etc/nginx/mime.types;
-                default_type application/octet-stream;
-                access_log /dev/stdout;
-                server {
-                  listen 8443 ssl;
-                  ssl_certificate /var/serving-cert/tls.crt;
-                  ssl_certificate_key /var/serving-cert/tls.key;
-                  root /tmp/content;
-                  location ~* \.json$ {
-                    default_type application/json;
-                    add_header Cache-Control "no-cache";
-                    add_header Access-Control-Allow-Origin "*";
-                  }
-                  location ~* \.js$ {
-                    default_type application/javascript;
-                    add_header Cache-Control "no-cache";
-                    add_header Access-Control-Allow-Origin "*";
-                  }
-                  location / {
-                    add_header Cache-Control "no-cache";
-                    add_header Access-Control-Allow-Origin "*";
-                  }
-                }
-              }
-              NGINX
-              nginx -c /tmp/nginx.conf -g 'daemon off;'
+          image: registry.access.redhat.com/ubi9/nginx-124:latest
+          command: ["nginx", "-g", "daemon off;"]
           ports:
             - containerPort: 8443
               protocol: TCP
@@ -65,9 +211,12 @@ spec:
             - name: plugin-serving-cert
               readOnly: true
               mountPath: /var/serving-cert
+            - name: plugin-nginx-conf
+              readOnly: true
+              mountPath: /opt/app-root/etc/nginx.d
             - name: plugin-content
               readOnly: true
-              mountPath: /opt/app-root/src/
+              mountPath: /opt/app-root/src
           resources:
             requests:
               cpu: 50m
@@ -80,6 +229,23 @@ spec:
           secret:
             secretName: integration-console-plugin-cert
             defaultMode: 420
+        - name: plugin-nginx-conf
+          configMap:
+            name: integration-plugin-nginx
         - name: plugin-content
           configMap:
             name: integration-plugin-content
+---
+apiVersion: console.openshift.io/v1
+kind: ConsolePlugin
+metadata:
+  name: integration-console-plugin
+spec:
+  displayName: Integration Platform
+  backend:
+    type: Service
+    service:
+      name: integration-console-plugin
+      namespace: openshift-integration
+      port: 8443
+      basePath: /
