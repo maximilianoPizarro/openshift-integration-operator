@@ -1,0 +1,13 @@
+{
+  "name": "integration-console-plugin",
+  "version": "0.1.0",
+  "displayName": "Integration Platform",
+  "description": "Real-Time Integration & Orchestration Platform — Apache Camel + SonataFlow with visual Kaoto designer",
+  "exposedModules": {
+    "integrationFlowPage": "./components/IntegrationFlowPage",
+    "flowDesignerPage": "./components/FlowDesignerPage"
+  },
+  "dependencies": {
+    "@console/pluginAPI": "*"
+  }
+}
