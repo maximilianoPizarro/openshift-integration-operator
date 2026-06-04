@@ -2,26 +2,94 @@ apiVersion: v1
 entries:
   openshift-integration-operator:
   - annotations:
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial release with Quarkus operator, IntegrationFlow CRD, Camel and SonataFlow scaffolding
+        - kind: added
+          description: OpenShift Console Dynamic Plugin with visual designer and telemetry overlay
+        - kind: added
+          description: MCP Bridge for AI tool discovery and invocation
+        - kind: added
+          description: OpenTelemetry integration with SSE real-time streaming
+        - kind: added
+          description: HPA v2 worker autoscaling with configurable thresholds
+        - kind: added
+          description: GitOps pipeline with Tekton builds and ArgoCD deployments
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/crds: |
+        - kind: IntegrationFlow
+          version: v1alpha1
+          name: integrationflows.platform.io
+          displayName: Integration Flow
+          description: Defines an integration workflow using Apache Camel or SonataFlow engine with Kaoto visual design
+      artifacthub.io/crdsExamples: |
+        - apiVersion: platform.io/v1alpha1
+          kind: IntegrationFlow
+          metadata:
+            name: sample-camel-flow
+          spec:
+            engine: CAMEL
+            gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
+            branch: main
+            targetClusters:
+              - local
+            kaotoDesign: |
+              - route:
+                  from:
+                    uri: timer:tick
+                    parameters:
+                      period: 5000
+                    steps:
+                      - log:
+                          message: "Hello from IntegrationFlow"
+      artifacthub.io/images: |
+        - name: operator
+          image: quay.io/maximilianopizarro/openshift-integration-operator:v0.1.0
+        - name: console-plugin
+          image: quay.io/maximilianopizarro/integration-console-plugin:v0.1.0
       artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Documentation
+          url: https://maximilianopizarro.github.io/openshift-integration-operator/
+        - name: Architecture
+          url: https://maximilianopizarro.github.io/openshift-integration-operator/architecture.html
+        - name: Quick Start
+          url: https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html
+        - name: Source Code
+          url: https://github.com/maximilianoPizarro/openshift-integration-operator
       artifacthub.io/operator: "true"
       artifacthub.io/operatorCapabilities: Basic Install
+      artifacthub.io/prerelease: "true"
+      artifacthub.io/recommendations: |
+        - url: https://artifacthub.io/packages/helm/openshift-gitops/openshift-gitops
+        - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: v0.1.0
-    created: "2026-06-04T17:52:17.487627177Z"
+    created: "2026-06-04T18:11:11.809084866Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
-      Camel + SonataFlow with visual Kaoto designer
-    digest: c4a93e8c297c13b504fae0eea35a7487283c1ed1e2226c2ff0c984b1051f0a76
-    home: https://github.com/maximilianoPizarro/openshift-integration-operator
+      Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
+      OpenTelemetry observability
+    digest: b5a733ea4bb8d43c41e09a89bfe8c847d04cf4a2e66a01391c49691d8884ed84
+    home: https://maximilianopizarro.github.io/openshift-integration-operator/
     icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.svg
     keywords:
     - openshift
     - kubernetes
     - operator
     - camel
+    - apache-camel
     - sonataflow
     - integration
     - kaoto
     - workflow
+    - gitops
+    - tekton
+    - argocd
+    - mcp
+    - ai
+    - opentelemetry
+    - n8n-alternative
+    kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro
       url: https://github.com/maximilianoPizarro
@@ -32,4 +100,4 @@ entries:
     urls:
     - https://maximilianopizarro.github.io/openshift-integration-operator/openshift-integration-operator-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-04T17:52:17.487082125Z"
+generated: "2026-06-04T18:11:11.808329373Z"
