@@ -65,11 +65,11 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: v0.1.0
-    created: "2026-06-04T18:11:11.809084866Z"
+    created: "2026-06-04T18:22:34.902333101Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
-    digest: b5a733ea4bb8d43c41e09a89bfe8c847d04cf4a2e66a01391c49691d8884ed84
+    digest: d849864fa380b517b5787e2965a4508e98beea795a62ed39f3ea614f5adfff75
     home: https://maximilianopizarro.github.io/openshift-integration-operator/
     icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.svg
     keywords:
@@ -100,4 +100,4 @@ entries:
     urls:
     - https://maximilianopizarro.github.io/openshift-integration-operator/openshift-integration-operator-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-04T18:11:11.808329373Z"
+generated: "2026-06-04T18:22:34.901780228Z"
