@@ -190,6 +190,8 @@ metadata:
   namespace: openshift-integration
   labels:
     app: integration-console-plugin
+    app.kubernetes.io/part-of: integration-platform
+    app.openshift.io/runtime: nginx
 spec:
   replicas: 1
   selector:
