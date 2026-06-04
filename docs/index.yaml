@@ -7,10 +7,10 @@ entries:
       artifacthub.io/operatorCapabilities: Basic Install
     apiVersion: v2
     appVersion: v0.1.0
-    created: "2026-06-04T17:41:59.888197788Z"
+    created: "2026-06-04T17:50:50.987315211Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer
-    digest: 4f74acf26fd1d5f13b0e02e860374bcaa3fb5753f050bf4d1a0aa8431ccce81f
+    digest: 16912c5a767c7757b388f4a82f9eb46131d531e89dbe3bf39bbb8c7f1bff62f0
     home: https://github.com/maximilianoPizarro/openshift-integration-operator
     icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.svg
     keywords:
@@ -32,4 +32,4 @@ entries:
     urls:
     - https://maximilianopizarro.github.io/openshift-integration-operator/openshift-integration-operator-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-04T17:41:59.887649255Z"
+generated: "2026-06-04T17:50:50.986733467Z"
