@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Architecture — OpenShift Integration Operator">
   <title>Architecture | OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <style>
     :root {
       --bg: #0d1117;
@@ -225,23 +226,18 @@
 
     .diagram-placeholder {
       background: var(--bg-card);
-      border: 2px dashed var(--border);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 2rem;
+      padding: 1rem;
       text-align: center;
       margin: 1.5rem 0;
+      overflow: hidden;
     }
 
     .diagram-placeholder img {
       max-width: 100%;
       height: auto;
       border-radius: 8px;
-      margin-bottom: 0.75rem;
-    }
-
-    .diagram-placeholder p {
-      font-size: 0.85rem;
-      margin: 0;
     }
 
     .note {
@@ -293,8 +289,7 @@
         </p>
 
         <div class="diagram-placeholder">
-          <img src="images/architecture-high-level.png" alt="High-level architecture diagram" width="800" height="450">
-          <p>Placeholder: <code>docs/images/architecture-high-level.png</code></p>
+          <img src="images/architecture-high-level.svg" alt="High-level architecture diagram — OpenShift Integration Operator" width="900">
         </div>
 
         <div class="component-grid">
@@ -404,8 +399,7 @@
         </p>
 
         <div class="diagram-placeholder">
-          <img src="images/reconciliation-loop.png" alt="Reconciliation loop diagram" width="800" height="300">
-          <p>Placeholder: <code>docs/images/reconciliation-loop.png</code></p>
+          <img src="images/reconciliation-loop.svg" alt="IntegrationFlow reconciliation loop diagram" width="900">
         </div>
 
         <ol class="steps">
@@ -443,8 +437,7 @@
         </p>
 
         <div class="diagram-placeholder">
-          <img src="images/telemetry-pipeline.png" alt="Telemetry pipeline diagram" width="800" height="250">
-          <p>Placeholder: <code>docs/images/telemetry-pipeline.png</code></p>
+          <img src="images/telemetry-pipeline.svg" alt="Telemetry pipeline — real-time observability" width="900">
         </div>
 
         <ol>
@@ -462,8 +455,7 @@
         </p>
 
         <div class="diagram-placeholder">
-          <img src="images/mcp-bridge.png" alt="MCP bridge diagram" width="800" height="250">
-          <p>Placeholder: <code>docs/images/mcp-bridge.png</code></p>
+          <img src="images/mcp-bridge.svg" alt="MCP Bridge — AI tool integration" width="900">
         </div>
 
         <h3>Tool Discovery</h3>
@@ -493,8 +485,7 @@ Content-Type: application/json
         </p>
 
         <div class="diagram-placeholder">
-          <img src="images/worker-autoscaling.png" alt="Worker autoscaling diagram" width="800" height="250">
-          <p>Placeholder: <code>docs/images/worker-autoscaling.png</code></p>
+          <img src="images/worker-autoscaling.svg" alt="Worker autoscaling — HPA v2" width="900">
         </div>
 
         <ul>
@@ -511,8 +502,8 @@ Content-Type: application/json
       </section>
 
       <div class="note">
-        Architecture diagrams generated with Nano Banana 2. Replace placeholder images in
-        <code>docs/images/</code> with generated diagrams when available.
+        Architecture diagrams generated with Nano Banana 2. All diagrams are vector SVGs optimized for
+        dark-theme viewing and scale to any resolution.
       </div>
     </div>
   </main>

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 280" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif">
+  <defs>
+    <marker id="aw" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#388bfd"/></marker>
+    <marker id="awg" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#51cf66"/></marker>
+    <marker id="awr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#ff6b6b"/></marker>
+  </defs>
+
+  <rect width="900" height="280" rx="12" fill="#0d1117"/>
+  <text x="450" y="30" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">Worker Autoscaling  HPA v2</text>
+  <text x="450" y="48" text-anchor="middle" fill="#8b949e" font-size="11">Generated with Nano Banana 2</text>
+
+  <!-- Metrics Server -->
+  <rect x="30" y="80" width="140" height="100" rx="10" fill="#1c2128" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="100" y="108" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">Metrics Server</text>
+  <rect x="45" y="118" width="110" height="22" rx="4" fill="rgba(56,139,253,0.1)" stroke="rgba(56,139,253,0.2)" stroke-width="1"/>
+  <text x="100" y="134" text-anchor="middle" fill="#8b949e" font-size="9">CPU Utilization</text>
+  <rect x="45" y="146" width="110" height="22" rx="4" fill="rgba(56,139,253,0.1)" stroke="rgba(56,139,253,0.2)" stroke-width="1"/>
+  <text x="100" y="162" text-anchor="middle" fill="#8b949e" font-size="9">Memory Usage</text>
+
+  <!-- Arrow Metrics ’ HPA -->
+  <path d="M170,130 L230,130" stroke="#388bfd" stroke-width="2" marker-end="url(#aw)"/>
+  <text x="200" y="122" text-anchor="middle" fill="#8b949e" font-size="9">scrape</text>
+
+  <!-- HPA Controller -->
+  <rect x="235" y="70" width="190" height="120" rx="10" fill="#1c2128" stroke="#8957e5" stroke-width="2"/>
+  <text x="330" y="95" text-anchor="middle" fill="#d0bfff" font-size="13" font-weight="600">HPA v2 Controller</text>
+  <rect x="250" y="105" width="160" height="24" rx="4" fill="rgba(137,87,229,0.1)" stroke="rgba(137,87,229,0.2)" stroke-width="1"/>
+  <text x="330" y="122" text-anchor="middle" fill="#d0bfff" font-size="10">CPU target: 70%</text>
+  <rect x="250" y="135" width="160" height="24" rx="4" fill="rgba(137,87,229,0.1)" stroke="rgba(137,87,229,0.2)" stroke-width="1"/>
+  <text x="330" y="152" text-anchor="middle" fill="#d0bfff" font-size="10">Memory target: 80%</text>
+  <text x="330" y="180" text-anchor="middle" fill="#8b949e" font-size="9">min: 1 · max: 10 replicas</text>
+
+  <!-- Scale Up Arrow -->
+  <path d="M425,105 L500,80" stroke="#51cf66" stroke-width="2" marker-end="url(#awg)"/>
+  <text x="470" y="82" text-anchor="middle" fill="#69db7c" font-size="10" font-weight="500">Scale Up</text>
+
+  <!-- Scale Down Arrow -->
+  <path d="M425,155 L500,180" stroke="#ff6b6b" stroke-width="2" marker-end="url(#awr)"/>
+  <text x="470" y="178" text-anchor="middle" fill="#ff6b6b" font-size="10" font-weight="500">Scale Down</text>
+
+  <!-- Worker Deployment -->
+  <rect x="505" y="60" width="375" height="160" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+  <text x="692" y="82" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="600">Worker Deployment (Replicas)</text>
+
+  <!-- Worker pods -->
+  <rect x="525" y="95" width="80" height="55" rx="6" fill="rgba(232,89,12,0.12)" stroke="rgba(232,89,12,0.3)" stroke-width="1"/>
+  <text x="565" y="118" text-anchor="middle" fill="#ff922b" font-size="10" font-weight="500">Pod 1</text>
+  <text x="565" y="138" text-anchor="middle" fill="#8b949e" font-size="9">Camel</text>
+
+  <rect x="615" y="95" width="80" height="55" rx="6" fill="rgba(232,89,12,0.12)" stroke="rgba(232,89,12,0.3)" stroke-width="1"/>
+  <text x="655" y="118" text-anchor="middle" fill="#ff922b" font-size="10" font-weight="500">Pod 2</text>
+  <text x="655" y="138" text-anchor="middle" fill="#8b949e" font-size="9">Camel</text>
+
+  <rect x="705" y="95" width="80" height="55" rx="6" fill="rgba(47,158,68,0.12)" stroke="rgba(47,158,68,0.3)" stroke-width="1"/>
+  <text x="745" y="118" text-anchor="middle" fill="#69db7c" font-size="10" font-weight="500">Pod 3</text>
+  <text x="745" y="138" text-anchor="middle" fill="#8b949e" font-size="9">SonataFlow</text>
+
+  <rect x="795" y="95" width="70" height="55" rx="6" fill="rgba(56,139,253,0.08)" stroke="rgba(56,139,253,0.15)" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="830" y="118" text-anchor="middle" fill="#58a6ff" font-size="10">Pod N</text>
+  <text x="830" y="138" text-anchor="middle" fill="#8b949e" font-size="9">auto</text>
+
+  <!-- Load bar -->
+  <text x="692" y="172" text-anchor="middle" fill="#8b949e" font-size="9">Current Load</text>
+  <rect x="525" y="178" width="340" height="14" rx="3" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <rect x="525" y="178" width="238" height="14" rx="3" fill="url(#loadGrad)"/>
+  <defs>
+    <linearGradient id="loadGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2f9e44"/>
+      <stop offset="70%" stop-color="#f08c00"/>
+      <stop offset="100%" stop-color="#e8590c"/>
+    </linearGradient>
+  </defs>
+  <text x="692" y="204" text-anchor="middle" fill="#fcc419" font-size="10" font-weight="500">70% CPU  at threshold</text>
+
+  <!-- Legend -->
+  <text x="450" y="258" text-anchor="middle" fill="#8b949e" font-size="10">HPA monitors CPU and memory utilization. Scales worker pods between configurable min/max replicas to match workload demand.</text>
+</svg>

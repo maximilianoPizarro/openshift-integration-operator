@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 280" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif">
+  <defs>
+    <marker id="a1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#51cf66"/></marker>
+    <marker id="a2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#388bfd"/></marker>
+    <marker id="a3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#8957e5"/></marker>
+  </defs>
+
+  <rect width="900" height="280" rx="12" fill="#0d1117"/>
+  <text x="450" y="30" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">Telemetry Pipeline  Real-Time Observability</text>
+  <text x="450" y="48" text-anchor="middle" fill="#8b949e" font-size="11">Generated with Nano Banana 2</text>
+
+  <!-- Worker Pods -->
+  <rect x="30" y="80" width="160" height="140" rx="10" fill="#1c2128" stroke="#51cf66" stroke-width="1.5"/>
+  <text x="110" y="102" text-anchor="middle" fill="#69db7c" font-size="12" font-weight="600">Worker Pods</text>
+  <rect x="45" y="112" width="130" height="30" rx="5" fill="rgba(232,89,12,0.12)" stroke="rgba(232,89,12,0.25)" stroke-width="1"/>
+  <text x="110" y="132" text-anchor="middle" fill="#ff922b" font-size="10">Camel Route</text>
+  <rect x="45" y="148" width="130" height="30" rx="5" fill="rgba(47,158,68,0.12)" stroke="rgba(47,158,68,0.25)" stroke-width="1"/>
+  <text x="110" y="168" text-anchor="middle" fill="#69db7c" font-size="10">SonataFlow</text>
+  <rect x="45" y="184" width="130" height="28" rx="5" fill="rgba(56,139,253,0.1)" stroke="rgba(56,139,253,0.25)" stroke-width="1"/>
+  <text x="110" y="203" text-anchor="middle" fill="#58a6ff" font-size="10">OTel SDK</text>
+
+  <!-- Arrow Workers ’ Collector -->
+  <path d="M190,150 L250,150" stroke="#51cf66" stroke-width="2" marker-end="url(#a1)"/>
+  <text x="220" y="142" text-anchor="middle" fill="#8b949e" font-size="9">gRPC</text>
+  <text x="220" y="162" text-anchor="middle" fill="#8b949e" font-size="9">:4317</text>
+
+  <!-- OTel Collector -->
+  <rect x="255" y="100" width="150" height="100" rx="10" fill="#1c2128" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="330" y="125" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">OTel Collector</text>
+  <text x="330" y="148" text-anchor="middle" fill="#8b949e" font-size="10">Traces</text>
+  <text x="330" y="164" text-anchor="middle" fill="#8b949e" font-size="10">Metrics</text>
+  <text x="330" y="180" text-anchor="middle" fill="#8b949e" font-size="10">Logs</text>
+
+  <!-- Arrow Collector ’ Operator -->
+  <path d="M405,150 L460,150" stroke="#388bfd" stroke-width="2" marker-end="url(#a2)"/>
+  <text x="433" y="142" text-anchor="middle" fill="#8b949e" font-size="9">OTLP</text>
+
+  <!-- Operator Telemetry API -->
+  <rect x="465" y="80" width="180" height="140" rx="10" fill="#1c2128" stroke="#8957e5" stroke-width="1.5"/>
+  <text x="555" y="102" text-anchor="middle" fill="#d0bfff" font-size="12" font-weight="600">Operator API</text>
+  <rect x="480" y="112" width="150" height="30" rx="5" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.25)" stroke-width="1"/>
+  <text x="555" y="132" text-anchor="middle" fill="#d0bfff" font-size="10">/stream/{flowId}</text>
+  <text x="555" y="150" text-anchor="middle" fill="#8b949e" font-size="9">Server-Sent Events</text>
+  <rect x="480" y="158" width="150" height="30" rx="5" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.25)" stroke-width="1"/>
+  <text x="555" y="178" text-anchor="middle" fill="#d0bfff" font-size="10">/snapshot/{flowId}</text>
+  <text x="555" y="196" text-anchor="middle" fill="#8b949e" font-size="9">REST JSON</text>
+
+  <!-- Arrow Operator ’ Console -->
+  <path d="M645,150 L700,150" stroke="#8957e5" stroke-width="2" marker-end="url(#a3)"/>
+  <text x="673" y="142" text-anchor="middle" fill="#8b949e" font-size="9">SSE</text>
+
+  <!-- Console Canvas -->
+  <rect x="705" y="80" width="175" height="140" rx="10" fill="#1c2128" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="792" y="102" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">Console Plugin</text>
+  <rect x="720" y="112" width="145" height="44" rx="6" fill="rgba(56,139,253,0.08)" stroke="rgba(56,139,253,0.2)" stroke-width="1"/>
+  <text x="792" y="132" text-anchor="middle" fill="#58a6ff" font-size="10">Kaoto Canvas</text>
+  <text x="792" y="148" text-anchor="middle" fill="#8b949e" font-size="9">+ TelemetryOverlay</text>
+  <circle cx="740" cy="186" r="8" fill="#2f9e44" opacity="0.8"/><text x="755" y="190" fill="#69db7c" font-size="9">healthy</text>
+  <circle cx="740" cy="205" r="8" fill="#e8590c" opacity="0.8"/><text x="760" y="209" fill="#ff922b" font-size="9">degraded</text>
+  <rect x="808" y="178" width="58" height="34" rx="4" fill="rgba(56,139,253,0.08)" stroke="rgba(56,139,253,0.2)" stroke-width="1"/>
+  <text x="837" y="192" text-anchor="middle" fill="#8b949e" font-size="8">latency</text>
+  <text x="837" y="205" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="600">p99</text>
+
+  <!-- Legend -->
+  <text x="450" y="260" text-anchor="middle" fill="#8b949e" font-size="10">Workers emit OpenTelemetry traces/metrics ’ Collector aggregates ’ Operator API serves SSE ’ Console colors canvas nodes in real time</text>
+</svg>

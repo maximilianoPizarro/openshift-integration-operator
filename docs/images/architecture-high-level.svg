@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif">
+  <defs>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#388bfd"/>
+      <stop offset="100%" stop-color="#8957e5"/>
+    </linearGradient>
+    <linearGradient id="camel" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e8590c"/>
+      <stop offset="100%" stop-color="#f76707"/>
+    </linearGradient>
+    <linearGradient id="sonata" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2f9e44"/>
+      <stop offset="100%" stop-color="#51cf66"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="900" height="520" rx="12" fill="#0d1117"/>
+  <text x="450" y="35" text-anchor="middle" fill="#e6edf3" font-size="18" font-weight="700">OpenShift Integration Operator  High-Level Architecture</text>
+  <text x="450" y="55" text-anchor="middle" fill="#8b949e" font-size="12">Generated with Nano Banana 2</text>
+
+  <!-- Layer 1: OpenShift Console -->
+  <rect x="30" y="70" width="840" height="90" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+  <text x="55" y="92" fill="#388bfd" font-size="11" font-weight="600">OPENSHIFT CONSOLE</text>
+  <rect x="55" y="102" width="160" height="42" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)" stroke-width="1"/>
+  <text x="135" y="128" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">Console Plugin</text>
+  <rect x="235" y="102" width="160" height="42" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)" stroke-width="1"/>
+  <text x="315" y="128" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">Kaoto Designer</text>
+  <rect x="415" y="102" width="160" height="42" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)" stroke-width="1"/>
+  <text x="495" y="128" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">Telemetry Overlay</text>
+  <rect x="595" y="102" width="160" height="42" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)" stroke-width="1"/>
+  <text x="675" y="128" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">MCP Tools Panel</text>
+
+  <!-- Arrow Console ’ Operator -->
+  <line x1="450" y1="160" x2="450" y2="185" stroke="#388bfd" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <defs><marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#388bfd"/></marker></defs>
+
+  <!-- Layer 2: Operator -->
+  <rect x="30" y="185" width="840" height="100" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+  <text x="55" y="207" fill="#8957e5" font-size="11" font-weight="600">QUARKUS OPERATOR (JOSDK + Fabric8)</text>
+  <rect x="55" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)" stroke-width="1"/>
+  <text x="120" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">Reconciler</text>
+  <text x="120" y="253" text-anchor="middle" fill="#8b949e" font-size="9">IntegrationFlow</text>
+  <rect x="205" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)" stroke-width="1"/>
+  <text x="270" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">Scaffolding</text>
+  <text x="270" y="253" text-anchor="middle" fill="#8b949e" font-size="9">Camel / SonataFlow</text>
+  <rect x="355" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)" stroke-width="1"/>
+  <text x="420" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">GitOps Service</text>
+  <text x="420" y="253" text-anchor="middle" fill="#8b949e" font-size="9">Push to Gitea</text>
+  <rect x="505" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)" stroke-width="1"/>
+  <text x="570" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">Telemetry API</text>
+  <text x="570" y="253" text-anchor="middle" fill="#8b949e" font-size="9">SSE + OTel</text>
+  <rect x="655" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)" stroke-width="1"/>
+  <text x="720" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">MCP Bridge</text>
+  <text x="720" y="253" text-anchor="middle" fill="#8b949e" font-size="9">AI Tool Gateway</text>
+
+  <!-- Arrow Operator ’ GitOps -->
+  <line x1="450" y1="285" x2="450" y2="310" stroke="#388bfd" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <!-- Layer 3: GitOps Pipeline -->
+  <rect x="30" y="310" width="840" height="90" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+  <text x="55" y="332" fill="#f08c00" font-size="11" font-weight="600">GITOPS PIPELINE</text>
+  <rect x="55" y="342" width="190" height="42" rx="6" fill="rgba(240,140,0,0.1)" stroke="rgba(240,140,0,0.3)" stroke-width="1"/>
+  <text x="150" y="368" text-anchor="middle" fill="#fcc419" font-size="12" font-weight="500">Gitea Repository</text>
+  <path d="M255,363 L295,363" stroke="#fcc419" stroke-width="1.5" marker-end="url(#arrowYellow)"/>
+  <defs><marker id="arrowYellow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#fcc419"/></marker></defs>
+  <rect x="305" y="342" width="190" height="42" rx="6" fill="rgba(240,140,0,0.1)" stroke="rgba(240,140,0,0.3)" stroke-width="1"/>
+  <text x="400" y="368" text-anchor="middle" fill="#fcc419" font-size="12" font-weight="500">Tekton Pipeline</text>
+  <path d="M505,363 L545,363" stroke="#fcc419" stroke-width="1.5" marker-end="url(#arrowYellow)"/>
+  <rect x="555" y="342" width="190" height="42" rx="6" fill="rgba(240,140,0,0.1)" stroke="rgba(240,140,0,0.3)" stroke-width="1"/>
+  <text x="650" y="368" text-anchor="middle" fill="#fcc419" font-size="12" font-weight="500">ArgoCD Sync</text>
+  <rect x="770" y="342" width="85" height="42" rx="6" fill="rgba(240,140,0,0.1)" stroke="rgba(240,140,0,0.3)" stroke-width="1"/>
+  <text x="812" y="368" text-anchor="middle" fill="#fcc419" font-size="11" font-weight="500">Quay.io</text>
+
+  <!-- Arrow GitOps ’ Workers -->
+  <line x1="450" y1="400" x2="450" y2="425" stroke="#388bfd" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <!-- Layer 4: Workers -->
+  <rect x="30" y="425" width="840" height="85" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+  <text x="55" y="447" fill="#51cf66" font-size="11" font-weight="600">RUNTIME WORKERS (HPA Auto-scaled)</text>
+  <rect x="55" y="457" width="180" height="38" rx="6" fill="rgba(232,89,12,0.12)" stroke="rgba(232,89,12,0.3)" stroke-width="1"/>
+  <text x="145" y="481" text-anchor="middle" fill="#ff922b" font-size="12" font-weight="500">Apache Camel Workers</text>
+  <rect x="255" y="457" width="180" height="38" rx="6" fill="rgba(47,158,68,0.12)" stroke="rgba(47,158,68,0.3)" stroke-width="1"/>
+  <text x="345" y="481" text-anchor="middle" fill="#69db7c" font-size="12" font-weight="500">SonataFlow Workers</text>
+  <rect x="455" y="457" width="140" height="38" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)" stroke-width="1"/>
+  <text x="525" y="481" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">OTel Collector</text>
+  <rect x="615" y="457" width="120" height="38" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)" stroke-width="1"/>
+  <text x="675" y="481" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">HPA v2</text>
+  <rect x="755" y="457" width="100" height="38" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)" stroke-width="1"/>
+  <text x="805" y="481" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">Metrics</text>
+</svg>

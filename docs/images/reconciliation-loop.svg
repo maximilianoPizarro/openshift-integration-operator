@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#388bfd"/></marker>
+    <linearGradient id="gr1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#388bfd"/><stop offset="100%" stop-color="#8957e5"/></linearGradient>
+  </defs>
+
+  <rect width="900" height="300" rx="12" fill="#0d1117"/>
+  <text x="450" y="30" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">IntegrationFlow Reconciliation Loop</text>
+  <text x="450" y="48" text-anchor="middle" fill="#8b949e" font-size="11">Generated with Nano Banana 2</text>
+
+  <!-- CRD trigger -->
+  <rect x="20" y="90" width="120" height="70" rx="8" fill="#1c2128" stroke="#8957e5" stroke-width="2"/>
+  <text x="80" y="118" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="600">IntegrationFlow</text>
+  <text x="80" y="136" text-anchor="middle" fill="#8b949e" font-size="10">CR Created</text>
+  <text x="80" y="150" text-anchor="middle" fill="#8b949e" font-size="10">/ Updated</text>
+
+  <!-- Arrow -->
+  <path d="M140,125 L175,125" stroke="#388bfd" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Step 1: Scaffold -->
+  <rect x="180" y="80" width="130" height="90" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+  <circle cx="202" cy="100" r="12" fill="rgba(56,139,253,0.15)" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="202" y="104" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="700">1</text>
+  <text x="255" y="104" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="600">Scaffold</text>
+  <text x="245" y="124" text-anchor="middle" fill="#8b949e" font-size="10">Generate pom.xml</text>
+  <text x="245" y="138" text-anchor="middle" fill="#8b949e" font-size="10">+ source from</text>
+  <text x="245" y="152" text-anchor="middle" fill="#ff922b" font-size="10" font-weight="500">Camel / SonataFlow</text>
+
+  <path d="M310,125 L335,125" stroke="#388bfd" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Step 2: Git Push -->
+  <rect x="340" y="80" width="130" height="90" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+  <circle cx="362" cy="100" r="12" fill="rgba(56,139,253,0.15)" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="362" y="104" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="700">2</text>
+  <text x="415" y="104" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="600">Git Push</text>
+  <text x="405" y="124" text-anchor="middle" fill="#8b949e" font-size="10">Commit scaffolded</text>
+  <text x="405" y="138" text-anchor="middle" fill="#8b949e" font-size="10">source to</text>
+  <text x="405" y="152" text-anchor="middle" fill="#fcc419" font-size="10" font-weight="500">Gitea repo</text>
+
+  <path d="M470,125 L495,125" stroke="#388bfd" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Step 3: Tekton -->
+  <rect x="500" y="80" width="130" height="90" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+  <circle cx="522" cy="100" r="12" fill="rgba(56,139,253,0.15)" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="522" y="104" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="700">3</text>
+  <text x="575" y="104" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="600">Tekton</text>
+  <text x="565" y="124" text-anchor="middle" fill="#8b949e" font-size="10">PipelineRun</text>
+  <text x="565" y="138" text-anchor="middle" fill="#8b949e" font-size="10">builds container</text>
+  <text x="565" y="152" text-anchor="middle" fill="#e8590c" font-size="10" font-weight="500">image ’ Quay.io</text>
+
+  <path d="M630,125 L655,125" stroke="#388bfd" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Step 4: ArgoCD -->
+  <rect x="660" y="80" width="120" height="90" rx="8" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+  <circle cx="682" cy="100" r="12" fill="rgba(56,139,253,0.15)" stroke="#388bfd" stroke-width="1.5"/>
+  <text x="682" y="104" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="700">4</text>
+  <text x="730" y="104" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="600">ArgoCD</text>
+  <text x="720" y="124" text-anchor="middle" fill="#8b949e" font-size="10">Sync deployment</text>
+  <text x="720" y="138" text-anchor="middle" fill="#8b949e" font-size="10">to target</text>
+  <text x="720" y="152" text-anchor="middle" fill="#51cf66" font-size="10" font-weight="500">cluster(s)</text>
+
+  <path d="M780,125 L805,125" stroke="#388bfd" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Step 5: Running -->
+  <rect x="810" y="80" width="75" height="90" rx="8" fill="rgba(47,158,68,0.15)" stroke="#51cf66" stroke-width="2"/>
+  <text x="847" y="120" text-anchor="middle" fill="#69db7c" font-size="13" font-weight="700">Running</text>
+  <text x="847" y="140" text-anchor="middle" fill="#8b949e" font-size="10">Workers</text>
+  <text x="847" y="154" text-anchor="middle" fill="#8b949e" font-size="10">active</text>
+
+  <!-- Status phases bar -->
+  <text x="450" y="210" text-anchor="middle" fill="#8b949e" font-size="11">Status Phases</text>
+  <rect x="100" y="222" width="130" height="26" rx="5" fill="rgba(137,87,229,0.15)" stroke="rgba(137,87,229,0.3)" stroke-width="1"/>
+  <text x="165" y="240" text-anchor="middle" fill="#d0bfff" font-size="11">Scaffolding</text>
+  <rect x="250" y="222" width="130" height="26" rx="5" fill="rgba(232,89,12,0.15)" stroke="rgba(232,89,12,0.3)" stroke-width="1"/>
+  <text x="315" y="240" text-anchor="middle" fill="#ff922b" font-size="11">Building</text>
+  <rect x="400" y="222" width="130" height="26" rx="5" fill="rgba(56,139,253,0.15)" stroke="rgba(56,139,253,0.3)" stroke-width="1"/>
+  <text x="465" y="240" text-anchor="middle" fill="#58a6ff" font-size="11">Deploying</text>
+  <rect x="550" y="222" width="130" height="26" rx="5" fill="rgba(47,158,68,0.15)" stroke="rgba(47,158,68,0.3)" stroke-width="1"/>
+  <text x="615" y="240" text-anchor="middle" fill="#69db7c" font-size="11">Running</text>
+  <rect x="700" y="222" width="100" height="26" rx="5" fill="rgba(255,0,0,0.1)" stroke="rgba(255,100,100,0.3)" stroke-width="1"/>
+  <text x="750" y="240" text-anchor="middle" fill="#ff6b6b" font-size="11">Error</text>
+
+  <!-- Arrows between phases -->
+  <path d="M230,235 L248,235" stroke="#8b949e" stroke-width="1" marker-end="url(#arrSm)"/>
+  <path d="M380,235 L398,235" stroke="#8b949e" stroke-width="1" marker-end="url(#arrSm)"/>
+  <path d="M530,235 L548,235" stroke="#8b949e" stroke-width="1" marker-end="url(#arrSm)"/>
+  <path d="M680,235 L698,235" stroke="#8b949e" stroke-width="1" stroke-dasharray="4,3"/>
+  <defs><marker id="arrSm" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="#8b949e"/></marker></defs>
+
+  <!-- Feedback loop -->
+  <path d="M847,170 C847,270 80,270 80,170" stroke="#30363d" stroke-width="1.5" fill="none" stroke-dasharray="6,4"/>
+  <text x="450" y="282" text-anchor="middle" fill="#8b949e" font-size="10" font-style="italic">Reconciler re-watches for status changes and drift</text>
+</svg>
