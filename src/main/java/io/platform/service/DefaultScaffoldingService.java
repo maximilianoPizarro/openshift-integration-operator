@@ -295,6 +295,22 @@ public class DefaultScaffoldingService implements ScaffoldingService {
         };
     }
 
+    private static final String CAMEL_BOM_BLOCK = """
+                        <dependency>
+                            <groupId>io.quarkus.platform</groupId>
+                            <artifactId>quarkus-bom</artifactId>
+                            <version>${quarkus.platform.version}</version>
+                            <type>pom</type>
+                            <scope>import</scope>
+                        </dependency>
+                        <dependency>
+                            <groupId>io.quarkus.platform</groupId>
+                            <artifactId>quarkus-camel-bom</artifactId>
+                            <version>${quarkus.platform.version}</version>
+                            <type>pom</type>
+                            <scope>import</scope>
+                        </dependency>""";
+
     private String generateCamelRoutePom(String flowName) {
         return """
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -310,13 +326,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     </properties>
                     <dependencyManagement>
                         <dependencies>
-                            <dependency>
-                                <groupId>io.quarkus.platform</groupId>
-                                <artifactId>quarkus-bom</artifactId>
-                                <version>${quarkus.platform.version}</version>
-                                <type>pom</type>
-                                <scope>import</scope>
-                            </dependency>
+                %s
                         </dependencies>
                     </dependencyManagement>
                     <dependencies>
@@ -338,7 +348,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         </dependency>
                     </dependencies>
                 </project>
-                """.formatted(flowName);
+                """.formatted(flowName, CAMEL_BOM_BLOCK);
     }
 
     private String generateCamelKameletPom(String flowName) {
@@ -356,13 +366,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     </properties>
                     <dependencyManagement>
                         <dependencies>
-                            <dependency>
-                                <groupId>io.quarkus.platform</groupId>
-                                <artifactId>quarkus-bom</artifactId>
-                                <version>${quarkus.platform.version}</version>
-                                <type>pom</type>
-                                <scope>import</scope>
-                            </dependency>
+                %s
                         </dependencies>
                     </dependencyManagement>
                     <dependencies>
@@ -388,7 +392,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         </dependency>
                     </dependencies>
                 </project>
-                """.formatted(flowName);
+                """.formatted(flowName, CAMEL_BOM_BLOCK);
     }
 
     private String generateCamelPipePom(String flowName) {
@@ -406,13 +410,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     </properties>
                     <dependencyManagement>
                         <dependencies>
-                            <dependency>
-                                <groupId>io.quarkus.platform</groupId>
-                                <artifactId>quarkus-bom</artifactId>
-                                <version>${quarkus.platform.version}</version>
-                                <type>pom</type>
-                                <scope>import</scope>
-                            </dependency>
+                %s
                         </dependencies>
                     </dependencyManagement>
                     <dependencies>
@@ -438,7 +436,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         </dependency>
                     </dependencies>
                 </project>
-                """.formatted(flowName);
+                """.formatted(flowName, CAMEL_BOM_BLOCK);
     }
 
     private String generateCamelTestPom(String flowName) {
@@ -456,13 +454,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     </properties>
                     <dependencyManagement>
                         <dependencies>
-                            <dependency>
-                                <groupId>io.quarkus.platform</groupId>
-                                <artifactId>quarkus-bom</artifactId>
-                                <version>${quarkus.platform.version}</version>
-                                <type>pom</type>
-                                <scope>import</scope>
-                            </dependency>
+                %s
                         </dependencies>
                     </dependencyManagement>
                     <dependencies>
@@ -492,7 +484,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         </dependency>
                     </dependencies>
                 </project>
-                """.formatted(flowName);
+                """.formatted(flowName, CAMEL_BOM_BLOCK);
     }
 
     private String generateSonataFlowPom(String flowName) {

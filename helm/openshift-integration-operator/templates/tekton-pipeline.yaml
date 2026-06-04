@@ -1,0 +1,97 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: integration-flow-build
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/part-of: integration-platform
+    platform.io/component: build
+    {{- include "operator.labels" . | nindent 4 }}
+spec:
+  params:
+    - name: git-url
+      type: string
+      description: Git repository URL
+    - name: git-revision
+      type: string
+      default: main
+    - name: commit-sha
+      type: string
+      default: ""
+    - name: flow-name
+      type: string
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: fetch-source
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: URL
+          value: $(params.git-url)
+        - name: REVISION
+          value: $(params.git-revision)
+        - name: SSL_VERIFY
+          value: "false"
+        - name: DELETE_EXISTING
+          value: "false"
+        - name: SUBDIRECTORY
+          value: src
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+
+    - name: build-maven
+      runAfter:
+        - fetch-source
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: maven
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: GOALS
+          value:
+            - package
+            - -DskipTests
+        - name: SUBDIRECTORY
+          value: src
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build-image
+      runAfter:
+        - build-maven
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/{{ .Values.namespace }}/$(params.flow-name):$(params.commit-sha)
+        - name: CONTEXT
+          value: src
+        - name: TLS_VERIFY
+          value: "false"
+        - name: SKIP_PUSH
+          value: "false"
+      workspaces:
+        - name: source
+          workspace: shared-workspace

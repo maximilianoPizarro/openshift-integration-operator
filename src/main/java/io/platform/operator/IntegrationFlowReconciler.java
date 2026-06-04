@@ -226,6 +226,14 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                 Map.of("name", "commit-sha", "value", commitHash),
                 Map.of("name", "flow-name", "value", flowName)
         ));
+        pipelineRunSpec.put("workspaces", java.util.List.of(
+                Map.of("name", "shared-workspace",
+                       "volumeClaimTemplate", Map.of(
+                               "spec", Map.of(
+                                       "accessModes", java.util.List.of("ReadWriteOnce"),
+                                       "resources", Map.of(
+                                               "requests", Map.of("storage", "1Gi")))))
+        ));
         pipelineRun.setAdditionalProperties(Map.of("spec", pipelineRunSpec));
 
         kubernetesClient.resource(pipelineRun).inNamespace(namespace).create();
