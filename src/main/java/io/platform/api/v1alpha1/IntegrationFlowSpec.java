@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class IntegrationFlowSpec {
 
     private EngineType engine;
+    private IntegrationType integrationType;
     private String gitRepository;
     private String branch = "main";
     private DesignRef designRef;
@@ -13,6 +14,7 @@ public class IntegrationFlowSpec {
     private String kaotoDesign;
     private TargetingSpec targeting;
     private String gitCredentialsSecret;
+    private String gitProvider = "auto";
     private Integer replicas;
 
     public EngineType getEngine() {
@@ -21,6 +23,19 @@ public class IntegrationFlowSpec {
 
     public void setEngine(EngineType engine) {
         this.engine = engine;
+    }
+
+    public IntegrationType getIntegrationType() {
+        return integrationType;
+    }
+
+    public void setIntegrationType(IntegrationType integrationType) {
+        this.integrationType = integrationType;
+    }
+
+    public IntegrationType getResolvedType() {
+        if (integrationType != null) return integrationType;
+        return IntegrationType.fromEngineType(engine);
     }
 
     public String getGitRepository() {
@@ -73,6 +88,14 @@ public class IntegrationFlowSpec {
 
     public void setGitCredentialsSecret(String gitCredentialsSecret) {
         this.gitCredentialsSecret = gitCredentialsSecret;
+    }
+
+    public String getGitProvider() {
+        return gitProvider;
+    }
+
+    public void setGitProvider(String gitProvider) {
+        this.gitProvider = gitProvider;
     }
 
     public Integer getReplicas() {

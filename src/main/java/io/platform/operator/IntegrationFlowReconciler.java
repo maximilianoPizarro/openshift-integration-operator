@@ -8,6 +8,7 @@ import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.platform.api.v1alpha1.IntegrationFlow;
 import io.platform.api.v1alpha1.IntegrationFlowStatus;
+import io.platform.api.v1alpha1.IntegrationType;
 import io.platform.api.v1alpha1.TargetingSpec;
 import io.platform.service.ArgoService;
 import io.platform.service.GitOpsService;
@@ -52,12 +53,14 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
         String flowName = resource.getMetadata().getName();
         String namespace = resource.getMetadata().getNamespace();
-        LOG.infof("Reconciling IntegrationFlow '%s/%s' engine=%s", namespace, flowName, spec.getEngine());
+        IntegrationType type = spec.getResolvedType();
+        LOG.infof("Reconciling IntegrationFlow '%s/%s' integrationType=%s engine=%s",
+                namespace, flowName, type, spec.getEngine());
 
         try {
             // Step 1: Scaffold the worker project
             status.setPhase(IntegrationFlowStatus.Phase.Scaffolding);
-            var scaffoldResult = scaffoldingService.scaffold(spec.getEngine(), spec.getKaotoDesign());
+            var scaffoldResult = scaffoldingService.scaffold(type, spec.getKaotoDesign());
             updateCondition(status, "Scaffolded", "True", "ScaffoldComplete", "Worker project scaffolded");
 
             // Step 2: Push to Git via GitOps service

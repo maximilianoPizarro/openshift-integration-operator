@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Operations & Validation Guide — OpenShift Integration Operator">
+  <title>Operations | OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-elevated: #161b22;
+      --bg-card: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #388bfd;
+      --accent-hover: #58a6ff;
+      --accent-soft: rgba(56, 139, 253, 0.12);
+      --gradient: linear-gradient(135deg, #388bfd 0%, #1f6feb 50%, #8957e5 100%);
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --max-width: 900px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-hover); }
+
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 1.5rem; }
+
+    nav.top-nav {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      background: rgba(13, 17, 23, 0.85);
+    }
+
+    nav.top-nav .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    nav.top-nav .logo { font-weight: 700; color: var(--text); font-size: 0.95rem; }
+    nav.top-nav ul { list-style: none; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    nav.top-nav a { color: var(--text-muted); font-size: 0.9rem; }
+    nav.top-nav a:hover { color: var(--accent-hover); }
+
+    header.page-header {
+      padding: 3rem 0 2rem;
+      border-bottom: 1px solid var(--border);
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(56, 139, 253, 0.12), transparent),
+        var(--bg);
+    }
+
+    header.page-header h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    header.page-header p { color: var(--text-muted); }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .back-link:hover { color: var(--accent-hover); }
+
+    main { padding: 2.5rem 0 4rem; }
+
+    section.doc-section {
+      margin-bottom: 3rem;
+      padding-bottom: 3rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section.doc-section:last-of-type { border-bottom: none; }
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      margin: 1.5rem 0 0.75rem;
+      color: var(--accent-hover);
+    }
+
+    h4 {
+      font-size: 1rem;
+      margin: 1.25rem 0 0.5rem;
+      color: var(--text);
+    }
+
+    p { margin-bottom: 1rem; color: var(--text-muted); }
+
+    ul, ol {
+      margin: 0 0 1rem 1.25rem;
+      color: var(--text-muted);
+    }
+
+    li { margin-bottom: 0.5rem; }
+
+    code {
+      font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.875em;
+      color: #79c0ff;
+    }
+
+    pre {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      margin: 1rem 0;
+      box-shadow: var(--shadow);
+    }
+
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+    }
+
+    .comment { color: #8b949e; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--bg-card);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    td { color: var(--text-muted); }
+
+    td code {
+      font-size: 0.8em;
+    }
+
+    .checklist {
+      list-style: none;
+      margin-left: 0;
+      padding: 0;
+    }
+
+    .checklist li {
+      position: relative;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.2s;
+    }
+
+    .checklist li:hover {
+      border-color: rgba(56, 139, 253, 0.45);
+    }
+
+    .checklist li strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      margin-left: 0;
+    }
+
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent-soft);
+      border: 1px solid rgba(56, 139, 253, 0.35);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--accent-hover);
+    }
+
+    .note {
+      background: var(--accent-soft);
+      border: 1px solid rgba(56, 139, 253, 0.25);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .troubleshoot-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .troubleshoot-item h4 {
+      margin-top: 0;
+      color: var(--accent-hover);
+    }
+
+    .troubleshoot-item p:last-child {
+      margin-bottom: 0;
+    }
+
+    .status-badge {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #3fb950;
+      margin-right: 0.35rem;
+      vertical-align: middle;
+    }
+
+    footer {
+      padding: 2rem 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    footer a { color: var(--text-muted); }
+    footer a:hover { color: var(--accent-hover); }
+  </style>
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="container">
+      <a href="index.html" class="logo"><img src="images/logo.svg" alt="" width="24" height="24" style="vertical-align: middle; margin-right: 6px;">OpenShift Integration Operator</a>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="quickstart.html">Quick Start</a></li>
+        <li><a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a></li>
+        <li><a href="operations.html">Operations</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <div class="container">
+      <a href="index.html" class="back-link">&larr; Back to Home</a>
+      <h1>Operations &amp; Validation Guide</h1>
+      <p>Verify that all platform components are operational.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+
+      <!-- Section 1: Pre-flight Checklist -->
+      <section class="doc-section" id="preflight">
+        <h2>Pre-flight Checklist</h2>
+        <p>Run these commands before deploying workloads to confirm the platform is ready.</p>
+
+        <ul class="checklist">
+          <li>
+            <strong>Operator pod running</strong>
+            <pre><code>oc get pods -n openshift-integration -l app.kubernetes.io/name=openshift-integration-operator</code></pre>
+          </li>
+          <li>
+            <strong>CRD registered</strong>
+            <pre><code>oc get crd integrationflows.platform.io</code></pre>
+          </li>
+          <li>
+            <strong>Console plugin active</strong>
+            <pre><code>oc get consoleplugin integration-console-plugin -o jsonpath='{.metadata.name}'</code></pre>
+          </li>
+          <li>
+            <strong>Kaoto accessible</strong>
+            <pre><code>oc get route kaoto -n openshift-integration -o jsonpath='{.spec.host}'</code></pre>
+          </li>
+          <li>
+            <strong>ArgoCD namespace accessible</strong>
+            <pre><code>oc get namespace openshift-gitops</code></pre>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Section 2: Health Checks -->
+      <section class="doc-section" id="health-checks">
+        <h2>Health Checks</h2>
+        <p>Probe the operator's Quarkus health endpoints from inside the cluster.</p>
+
+        <h3>Liveness &amp; Readiness</h3>
+        <pre><code><span class="comment"># Liveness probe</span>
+oc exec deploy/openshift-integration-operator -n openshift-integration \
+  -- curl -s http://localhost:8080/q/health/live
+
+<span class="comment"># Readiness probe</span>
+oc exec deploy/openshift-integration-operator -n openshift-integration \
+  -- curl -s http://localhost:8080/q/health/ready</code></pre>
+
+        <h3>OpenAPI Spec</h3>
+        <pre><code><span class="comment"># Verify the API spec is served</span>
+oc exec deploy/openshift-integration-operator -n openshift-integration \
+  -- curl -s http://localhost:8080/q/openapi | head -5</code></pre>
+
+        <div class="note">
+          Both endpoints return JSON with <code>"status": "UP"</code> when healthy.
+          If either returns <code>"status": "DOWN"</code>, check the operator logs for details.
+        </div>
+      </section>
+
+      <!-- Section 3: End-to-End Smoke Test -->
+      <section class="doc-section" id="smoke-test">
+        <h2>End-to-End Smoke Test</h2>
+        <p>Walk through the full lifecycle — create, reconcile, verify, and clean up — to confirm all components work together.</p>
+
+        <ol class="steps">
+          <li>
+            <strong>Create a test flow</strong>
+            <pre><code>oc apply -f - &lt;&lt;'EOF'
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: smoke-test
+  namespace: openshift-integration
+spec:
+  engine: CAMEL
+  gitRepository: https://gitea-gitea.apps.example.com/user1/smoke-test
+  branch: main
+  kaotoDesign: |
+    - route:
+        id: smoke-test
+        from:
+          uri: "timer:tick?period=10000"
+          steps:
+            - log:
+                message: "Smoke test OK"
+EOF</code></pre>
+          </li>
+
+          <li>
+            <strong>Verify reconciliation</strong>
+            <pre><code><span class="comment"># Wait for scaffolding</span>
+oc get iflow smoke-test -n openshift-integration -o jsonpath='{.status.phase}'
+<span class="comment"># Expected: Building or Deploying</span>
+
+<span class="comment"># Check conditions</span>
+oc get iflow smoke-test -n openshift-integration -o jsonpath='{.status.conditions[*].type}'
+<span class="comment"># Expected: Scaffolded GitPushed ApplicationSetReady</span></code></pre>
+          </li>
+
+          <li>
+            <strong>Verify Git repository</strong>
+            <pre><code><span class="comment"># Check files were pushed (replace with your git provider URL)</span>
+curl -s -u "user1:password" \
+  "https://gitea.example.com/api/v1/repos/user1/smoke-test/contents/" \
+  | jq '.[].path'
+<span class="comment"># Expected: README.md, pom.xml, src, kaoto-config.json, base</span></code></pre>
+          </li>
+
+          <li>
+            <strong>Verify ApplicationSet</strong>
+            <pre><code>oc get applicationsets -n openshift-gitops | grep smoke-test
+<span class="comment"># Expected: smoke-test-appset</span></code></pre>
+          </li>
+
+          <li>
+            <strong>Verify Console Plugin</strong>
+            <ul>
+              <li>Navigate to <strong>OpenShift Console &rarr; Integration Platform &rarr; Integration Flows</strong></li>
+              <li>Verify <code>smoke-test</code> appears in the list</li>
+              <li>Click on <code>smoke-test</code> &rarr; <strong>Visual Flow</strong> tab shows the route</li>
+              <li>Switch to <strong>Kaoto Designer</strong> tab &rarr; Kaoto loads</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Verify Telemetry</strong>
+            <ul>
+              <li>In the flow detail page, check the <strong>"Node Telemetry"</strong> sidebar</li>
+              <li><span class="status-badge"></span> Green dot = connected, node metrics visible</li>
+            </ul>
+          </li>
+
+          <li>
+            <strong>Clean up</strong>
+            <pre><code>oc delete iflow smoke-test -n openshift-integration</code></pre>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Section 4: Component Validation Matrix -->
+      <section class="doc-section" id="validation-matrix">
+        <h2>Component Validation Matrix</h2>
+        <p>Use this matrix to systematically verify every platform component.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Command / Action</th>
+              <th>Expected Result</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Operator</strong></td>
+              <td><code>oc logs deploy/openshift-integration-operator -n openshift-integration --tail=5</code></td>
+              <td>"controller started", no errors</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>CRD</strong></td>
+              <td><code>oc explain integrationflow.spec</code></td>
+              <td>Shows engine, gitRepository, branch fields</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>Console Plugin</strong></td>
+              <td>Browser: <code>/integration-flows</code></td>
+              <td>List page with table renders</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>Kaoto</strong></td>
+              <td>Browser: flow detail &rarr; Kaoto Designer tab</td>
+              <td>Kaoto editor loads with route/kamelet options</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>GitOps Push</strong></td>
+              <td>Check git repo after creating flow</td>
+              <td>pom.xml, kaoto-config.json, workflow YAML present</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>Telemetry SSE</strong></td>
+              <td>Sidebar shows "Node Telemetry" with green dot</td>
+              <td>Latency, throughput, status per node</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>ArgoCD</strong></td>
+              <td><code>oc get applicationsets -n openshift-gitops</code></td>
+              <td>AppSet created per flow</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>RBAC</strong></td>
+              <td><code>oc auth can-i create integrationflows --as=system:serviceaccount:openshift-integration:integration-operator-sa</code></td>
+              <td>yes</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Section 5: Troubleshooting -->
+      <section class="doc-section" id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <p>Common issues and their resolutions.</p>
+
+        <div class="troubleshoot-item">
+          <h4>1. Console plugin not loading / React error</h4>
+          <p><strong>Check:</strong> Verify the ConsolePlugin resource exists and is properly configured.</p>
+          <pre><code>oc get consoleplugin integration-console-plugin -o yaml</code></pre>
+          <p><strong>Check:</strong> Ensure all JS chunk files are present in the ConfigMap.</p>
+          <pre><code>oc get cm integration-plugin-content -n openshift-integration \
+  -o jsonpath='{.data}' \
+  | python3 -c "import sys,json; [print(k) for k in json.loads(sys.stdin.read())]"</code></pre>
+          <p><strong>Fix:</strong> Rebuild the plugin and recreate the ConfigMap with all <code>dist/*.js</code> files.</p>
+        </div>
+
+        <div class="troubleshoot-item">
+          <h4>2. 403 Forbidden on Create/Delete</h4>
+          <p><strong>Cause:</strong> Missing CSRF token.</p>
+          <p>The plugin uses <code>X-CSRFToken</code> from cookies automatically.
+             Open browser DevTools &rarr; <strong>Network</strong> tab &rarr; verify the header is present on mutation requests.</p>
+        </div>
+
+        <div class="troubleshoot-item">
+          <h4>3. Git push fails</h4>
+          <p><strong>Check operator logs:</strong></p>
+          <pre><code>oc logs deploy/openshift-integration-operator -n openshift-integration \
+  | grep -i "git\|push\|fail"</code></pre>
+          <p><strong>Verify credentials:</strong></p>
+          <pre><code>oc get deploy openshift-integration-operator -n openshift-integration \
+  -o jsonpath='{.spec.template.spec.containers[0].env}'</code></pre>
+          <p><strong>Common cause:</strong> TLS certificate issues — the operator uses trust-all for dev environments.</p>
+        </div>
+
+        <div class="troubleshoot-item">
+          <h4>4. ApplicationSet not created</h4>
+          <p><strong>Check RBAC:</strong></p>
+          <pre><code>oc get role -n openshift-gitops | grep integration</code></pre>
+          <p><strong>Check:</strong> Operator service account has permissions in the <code>openshift-gitops</code> namespace.</p>
+          <p><strong>Logs:</strong></p>
+          <pre><code>oc logs deploy/openshift-integration-operator \
+  | grep -i "appset\|argo"</code></pre>
+        </div>
+
+        <div class="troubleshoot-item">
+          <h4>5. Telemetry not connecting</h4>
+          <p>The SSE stream goes through the console proxy. Verify the ConsolePlugin has proxy configuration:</p>
+          <pre><code>oc get consoleplugin integration-console-plugin \
+  -o jsonpath='{.spec.proxy}'</code></pre>
+          <p><strong>Check operator health:</strong></p>
+          <pre><code>oc exec deploy/openshift-integration-operator -n openshift-integration \
+  -- curl -s http://localhost:8080/q/health/ready</code></pre>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p style="margin-bottom: 0.5rem;">
+        Built by <a href="https://github.com/maximilianoPizarro" style="font-weight: 600;">maximilianoPizarro</a>
+      </p>
+      <p>
+        <a href="https://maximilianopizarro.github.io/openshift-integration-operator/">Documentation</a>
+        · <a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a>
+        · <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>
+        · <a href="architecture.html">Architecture</a>
+        · <a href="quickstart.html">Quick Start</a>
+        · <a href="operations.html">Operations</a>
+      </p>
+      <p style="margin-top: 0.75rem;">
+        Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

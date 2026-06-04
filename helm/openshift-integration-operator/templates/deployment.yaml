@@ -32,14 +32,24 @@ spec:
               value: {{ .Values.telemetry.otelCollectorEndpoint }}
             - name: QUARKUS_OTEL_SERVICE_NAME
               value: openshift-integration-operator
+            - name: GIT_PROVIDER
+              value: {{ .Values.git.provider | default "auto" }}
+            - name: GIT_URL
+              value: {{ .Values.git.url | default .Values.gitea.url | default "" }}
+            - name: GIT_USERNAME
+              value: {{ .Values.git.username | default .Values.gitea.username | default "" }}
+            - name: GIT_PASSWORD
+              value: {{ .Values.git.password | default .Values.gitea.password | default "" }}
+            - name: GIT_ORG
+              value: {{ .Values.git.org | default .Values.gitea.org | default "" }}
             - name: GITEA_URL
-              value: {{ .Values.gitea.url }}
+              value: {{ .Values.gitea.url | default .Values.git.url | default "" }}
             - name: GITEA_USERNAME
-              value: {{ .Values.gitea.username }}
+              value: {{ .Values.gitea.username | default .Values.git.username | default "" }}
             - name: GITEA_PASSWORD
-              value: {{ .Values.gitea.password }}
+              value: {{ .Values.gitea.password | default .Values.git.password | default "" }}
             - name: GITEA_ORG
-              value: {{ .Values.gitea.org }}
+              value: {{ .Values.gitea.org | default .Values.git.org | default "" }}
           livenessProbe:
             httpGet:
               path: /q/health/live

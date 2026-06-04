@@ -22,20 +22,22 @@
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/">Documentation</a> ·
   <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a> ·
   <a href="docs/architecture.html">Architecture</a> ·
-  <a href="docs/quickstart.html">Quick Start</a>
+  <a href="docs/quickstart.html">Quick Start</a> ·
+  <a href="docs/operations.html">Operations</a>
 </p>
 
 ---
 
 ## Features
 
-- **Dual Engine** — Run Apache Camel routes or CNCF SonataFlow workflows from a single `IntegrationFlow` CR
+- **Five Integration Types** — Run Camel Routes, Kamelets, Pipes, Tests, or SonataFlow workflows from a single `IntegrationFlow` CR
+- **Multi-Provider Git** — Connect to Gitea, GitHub, or GitLab for scaffolded worker source with auto-detection
 - **Visual Designer** — Embedded Kaoto canvas in the OpenShift Console for drag-and-drop flow design
 - **GitOps Native** — Tekton builds container images; ArgoCD syncs worker deployments from Git
 - **MCP/AI Ready** — Model Context Protocol bridge for discovering and invoking AI tools in flows
 - **Observable** — OpenTelemetry instrumentation with real-time SSE telemetry for canvas node coloring
-- **Auto-scaling Workers** — HPA-driven worker pods scale on CPU and memory utilization
-- **Multi-cluster** — Target multiple clusters from a single IntegrationFlow spec via GitOps
+- **Auto-scaling Workers** — HPA v2-driven worker pods scale on CPU and memory utilization
+- **Multi-cluster** — Target multiple clusters from a single IntegrationFlow spec via ArgoCD ApplicationSets
 - **Apache 2.0 License** — Free to use, modify, and distribute
 
 ## Architecture Overview
@@ -57,7 +59,7 @@ flowchart TB
     end
 
     subgraph GitOpsLayer["GitOps Layer"]
-        Gitea["Gitea"]
+        Git["Git Provider (Gitea/GitHub/GitLab)"]
         Tekton["Tekton Pipelines"]
         ArgoCD["ArgoCD"]
     end
@@ -76,7 +78,7 @@ flowchart TB
     User -->|IntegrationFlow CR| Reconciler
     Reconciler --> Scaffold
     Scaffold --> GitOps
-    GitOps --> Gitea
+    GitOps --> Git
     GitOps --> Tekton
     Tekton -->|Build image| ArgoCD
     ArgoCD --> Workers
@@ -97,7 +99,7 @@ See the full [Architecture Documentation](docs/architecture.html) for CRD detail
 - OpenShift 4.14+
 - Helm 3
 - `oc` CLI
-- Gitea, ArgoCD, and Tekton Pipelines installed on the cluster
+- A Git server (Gitea, GitHub, or GitLab), ArgoCD, and Tekton Pipelines installed on the cluster
 
 ### Install with Helm
 
@@ -113,7 +115,7 @@ helm install integration-operator \
   --create-namespace
 ```
 
-### Create an IntegrationFlow
+### Create a Camel Route
 
 ```bash
 oc apply -f - <<'EOF'
@@ -123,11 +125,9 @@ metadata:
   name: sample-camel-flow
   namespace: openshift-integration
 spec:
-  engine: CAMEL
+  integrationType: CAMEL_ROUTE
   gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
   branch: main
-  targetClusters:
-    - local
   kaotoDesign: |
     - route:
         from:
@@ -142,33 +142,72 @@ spec:
 EOF
 ```
 
-See the [Quick Start Guide](docs/quickstart.html) for SONATAFLOW examples and console plugin access.
+### Create a Kamelet
+
+```bash
+oc apply -f - <<'EOF'
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: custom-source-kamelet
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_KAMELET
+  gitRepository: https://github.com/my-org/custom-source.git
+  branch: main
+  kaotoDesign: |
+    apiVersion: camel.apache.org/v1
+    kind: Kamelet
+    metadata:
+      name: custom-source
+      labels:
+        camel.apache.org/kamelet.type: source
+    spec:
+      definition:
+        title: Custom Source
+        properties:
+          message:
+            title: Message
+            type: string
+            default: "Hello from Kamelet"
+      template:
+        from:
+          uri: "timer:tick?period=5000"
+          steps:
+            - setBody:
+                simple: "{{message}}"
+            - to: "kamelet:sink"
+EOF
+```
+
+See the [Quick Start Guide](docs/quickstart.html) for Pipe, Test, and SonataFlow examples, and the [Operations Guide](docs/operations.html) for validation steps.
 
 ## Project Structure
 
 ```
 openshift-integration-operator/
 ├── src/main/java/io/platform/
-│   ├── api/v1alpha1/          # IntegrationFlow CRD types
+│   ├── api/v1alpha1/          # IntegrationFlow CRD types + IntegrationType enum
 │   ├── operator/              # Reconciler controller
 │   ├── service/               # Scaffolding & GitOps services
+│   │   └── git/               # GitProvider interface + Gitea/GitHub/GitLab impls
 │   ├── telemetry/             # SSE telemetry API
 │   └── mcp/                   # MCP bridge API
 ├── console-plugin/            # OpenShift Console dynamic plugin
 │   ├── src/components/        # React UI (Kaoto, telemetry overlay)
 │   └── console-extensions.json
 ├── helm/openshift-integration-operator/
-│   ├── templates/             # Operator, HPA, ConsolePlugin manifests
+│   ├── templates/             # Operator, HPA, ConsolePlugin, Kaoto manifests
 │   ├── values.yaml
 │   └── Chart.yaml
 ├── docs/                        # GitHub Pages site
 │   ├── index.html
 │   ├── architecture.html
 │   ├── quickstart.html
+│   ├── operations.html
 │   └── artifacthub-repo.yml
 ├── .github/workflows/
-│   ├── build-push-quay.yml    # CI: build, test, push to Quay.io
-│   └── deploy-openshift.yml   # CD: Helm deploy to OpenShift
+│   └── build-push-quay.yml    # CI: build, test, push to Quay.io
 └── pom.xml                      # Quarkus + Operator SDK
 ```
 
@@ -248,3 +287,11 @@ Please follow existing code conventions and keep changes focused.
 ## License
 
 This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+
+---
+
+<p align="center">
+  Built by <a href="https://github.com/maximilianoPizarro"><strong>maximilianoPizarro</strong></a>
+  ·
+  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/">GitHub Pages</a>
+</p>

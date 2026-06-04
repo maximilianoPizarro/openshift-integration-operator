@@ -24,6 +24,7 @@ interface IntegrationFlow {
   metadata: { name: string; namespace: string; creationTimestamp: string; uid: string };
   spec: {
     engine: string;
+    integrationType?: string;
     gitRepository: string;
     branch: string;
     targetClusters?: string[];
@@ -54,17 +55,74 @@ function k8sFetch(url: string, opts: RequestInit = {}): Promise<Response> {
   return fetch(url, { ...opts, headers });
 }
 
-const ENGINES = ['CAMEL', 'SONATAFLOW'] as const;
+const INTEGRATION_TYPES = [
+  { value: 'CAMEL_ROUTE', label: 'Camel Route', color: '#f0ab00', bgColor: 'rgba(232,89,12,0.2)' },
+  { value: 'CAMEL_KAMELET', label: 'Kamelet', color: '#8476d1', bgColor: 'rgba(137,87,229,0.15)' },
+  { value: 'CAMEL_PIPE', label: 'Pipe', color: '#2b9af3', bgColor: 'rgba(56,139,253,0.15)' },
+  { value: 'CAMEL_TEST', label: 'Test', color: '#3e8635', bgColor: 'rgba(47,158,68,0.15)' },
+  { value: 'SONATAFLOW', label: 'SonataFlow', color: '#009596', bgColor: 'rgba(0,149,150,0.15)' },
+] as const;
 
 const defaultDesign: Record<string, string> = {
-  CAMEL: `- route:
+  CAMEL_ROUTE: `- route:
+    id: new-route
     from:
       uri: "timer:tick?period=5000"
       steps:
         - log:
-            message: "Hello from Camel integration"
+            message: "Hello from Camel Route"
         - to:
             uri: "log:info"`,
+  CAMEL_KAMELET: `apiVersion: camel.apache.org/v1
+kind: Kamelet
+metadata:
+  name: custom-source
+  labels:
+    camel.apache.org/kamelet.type: source
+spec:
+  definition:
+    title: Custom Source
+    description: A custom Kamelet source connector
+    properties:
+      message:
+        title: Message
+        type: string
+        default: "Hello from Kamelet"
+  template:
+    from:
+      uri: "timer:tick?period=5000"
+      steps:
+        - setBody:
+            simple: "{{message}}"
+        - to: "kamelet:sink"`,
+  CAMEL_PIPE: `apiVersion: camel.apache.org/v1
+kind: Pipe
+metadata:
+  name: source-to-sink
+spec:
+  source:
+    ref:
+      apiVersion: camel.apache.org/v1
+      kind: Kamelet
+      name: timer-source
+    properties:
+      message: "Hello from Pipe"
+  sink:
+    ref:
+      apiVersion: camel.apache.org/v1
+      kind: Kamelet
+      name: log-sink`,
+  CAMEL_TEST: `# Camel Test Definition
+test:
+  name: route-test
+  description: "Verify route processes messages"
+  from:
+    uri: "direct:test-input"
+    body: '{"event":"test"}'
+  assertions:
+    - endpoint: "mock:output"
+      expectedCount: 1
+  timeout: 30000`,
   SONATAFLOW: `id: new-workflow
 version: "1.0"
 specVersion: "0.8"
@@ -104,7 +162,7 @@ const IntegrationFlowPage: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [showCreate, setShowCreate] = React.useState(false);
   const [newName, setNewName] = React.useState('');
-  const [newEngine, setNewEngine] = React.useState<string>('CAMEL');
+  const [newEngine, setNewEngine] = React.useState<string>('CAMEL_ROUTE');
   const [creating, setCreating] = React.useState(false);
 
   const fetchFlows = React.useCallback(async () => {
@@ -137,7 +195,8 @@ const IntegrationFlowPage: React.FC = () => {
         kind: 'IntegrationFlow',
         metadata: { name: flowName, namespace: NAMESPACE },
         spec: {
-          engine: newEngine,
+          integrationType: newEngine,
+          engine: newEngine.startsWith('CAMEL') ? 'CAMEL' : 'SONATAFLOW',
           gitRepository: `https://gitea-gitea.apps.cluster-xtvzv.dynamic.redhatworkshops.io/user1/${flowName}`,
           branch: 'main',
           kaotoDesign: defaultDesign[newEngine] || '',
@@ -209,7 +268,7 @@ const IntegrationFlowPage: React.FC = () => {
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
             <select className="pf-c-form-control" style={{ width: '160px' }} value={newEngine} onChange={(e) => setNewEngine(e.target.value)}>
-              {ENGINES.map((eng) => <option key={eng} value={eng}>{eng}</option>)}
+              {INTEGRATION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <button className="pf-c-button pf-m-primary" onClick={handleCreate} disabled={creating}>
               {creating ? 'Creating...' : 'Create'}
@@ -250,9 +309,14 @@ const IntegrationFlowPage: React.FC = () => {
                     <a href={`/integration-flows/${flow.metadata.name}`} style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none' }}>{flow.metadata.name}</a>
                   </td>
                   <td style={tdStyle}>
-                    <span style={{ padding: '3px 10px', borderRadius: '3px', fontSize: '12px', fontWeight: 600, backgroundColor: flow.spec.engine === 'CAMEL' ? 'rgba(232, 89, 12, 0.2)' : 'rgba(47, 158, 68, 0.2)', color: flow.spec.engine === 'CAMEL' ? '#f0ab00' : '#5ba352' }}>
-                      {flow.spec.engine}
-                    </span>
+                    {(() => {
+                      const typeInfo = INTEGRATION_TYPES.find(t => t.value === (flow.spec.integrationType || (flow.spec.engine === 'CAMEL' ? 'CAMEL_ROUTE' : 'SONATAFLOW')));
+                      return (
+                        <span style={{ padding: '3px 10px', borderRadius: '3px', fontSize: '12px', fontWeight: 600, backgroundColor: typeInfo?.bgColor || 'rgba(232,89,12,0.2)', color: typeInfo?.color || '#f0ab00' }}>
+                          {typeInfo?.label || flow.spec.engine}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td style={tdStyle}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>

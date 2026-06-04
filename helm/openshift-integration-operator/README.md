@@ -1,15 +1,16 @@
 # OpenShift Integration Operator
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
-![AppVersion: v0.1.0](https://img.shields.io/badge/AppVersion-v0.1.0-informational?style=flat-square)
+![AppVersion: v0.2.0](https://img.shields.io/badge/AppVersion-v0.2.0-informational?style=flat-square)
 ![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)
 
 Real-Time Integration & Orchestration Platform for OpenShift — an open-source alternative to n8n, powered by Apache Camel + CNCF SonataFlow with a visual Kaoto designer embedded in the OpenShift Console.
 
 ## Features
 
-- **Dual Engine** — Run Apache Camel routes or CNCF SonataFlow workflows from a single `IntegrationFlow` Custom Resource
+- **Five Integration Types** — Run Camel Routes, Kamelets, Pipes, Tests, or SonataFlow workflows from a single `IntegrationFlow` Custom Resource
+- **Multi-Provider Git** — Connect to Gitea, GitHub, or GitLab for scaffolded worker source with auto-detection
 - **Visual Designer** — Kaoto canvas embedded in the OpenShift Console via a Dynamic Plugin
 - **GitOps Native** — Tekton builds container images; ArgoCD syncs worker deployments from Git
 - **MCP/AI Ready** — Model Context Protocol bridge for discovering and invoking AI tools within integration flows
@@ -141,6 +142,25 @@ helm uninstall integration-operator --namespace openshift-integration
 | `telemetry.enabled` | Enable OpenTelemetry integration | `true` |
 | `telemetry.otelCollectorEndpoint` | OTel Collector gRPC endpoint | `http://otel-collector:4317` |
 
+### Git
+
+| Parameter | Description | Default |
+|---|---|---|
+| `git.provider` | Git provider (`auto`, `gitea`, `github`, `gitlab`) | `auto` |
+| `git.url` | Base API URL (empty = auto-detect from `gitRepository` in CR) | `""` |
+| `git.username` | Git username | `""` |
+| `git.password` | Git password / token | `""` |
+| `git.org` | Git organization or owner | `""` |
+
+> **Backward compatibility:** The legacy `gitea.*` values still work. If both `git.*` and `gitea.*` are set, the more specific one wins for each env var.
+
+| Parameter | Description | Default |
+|---|---|---|
+| `gitea.url` | (Legacy) Gitea API URL | `""` |
+| `gitea.username` | (Legacy) Gitea username | `""` |
+| `gitea.password` | (Legacy) Gitea password | `""` |
+| `gitea.org` | (Legacy) Gitea organization | `""` |
+
 ### ArgoCD
 
 | Parameter | Description | Default |
@@ -169,6 +189,46 @@ helm uninstall integration-operator --namespace openshift-integration
 | Parameter | Description | Default |
 |---|---|---|
 | `namespace` | Target namespace for all resources | `openshift-integration` |
+
+## Multi-Provider Git
+
+The operator supports **Gitea**, **GitHub**, and **GitLab** as the backing Git provider for scaffolded worker source. Set `git.provider` to `auto` (default) and the operator will detect the provider from the `gitRepository` URL in each `IntegrationFlow` CR. You can also pin it explicitly:
+
+### Gitea (default / legacy)
+
+```bash
+helm install integration-operator \
+  integration-platform/openshift-integration-operator \
+  --set git.provider=gitea \
+  --set git.url=https://gitea.example.com \
+  --set git.username=user1 \
+  --set git.password=changeme \
+  --set git.org=user1
+```
+
+### GitHub
+
+```bash
+helm install integration-operator \
+  integration-platform/openshift-integration-operator \
+  --set git.provider=github \
+  --set git.url=https://api.github.com \
+  --set git.username=my-bot \
+  --set git.password=ghp_xxxxxxxxxxxx \
+  --set git.org=my-org
+```
+
+### GitLab
+
+```bash
+helm install integration-operator \
+  integration-platform/openshift-integration-operator \
+  --set git.provider=gitlab \
+  --set git.url=https://gitlab.com \
+  --set git.username=oauth2 \
+  --set git.password=glpat-xxxxxxxxxxxx \
+  --set git.org=my-group
+```
 
 ## Custom Resource: IntegrationFlow
 
@@ -371,3 +431,7 @@ oc describe hpa openshift-integration-operator-workers -n openshift-integration
 ## License
 
 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+
+---
+
+Built by [maximilianoPizarro](https://github.com/maximilianoPizarro) · [GitHub Pages](https://maximilianopizarro.github.io/openshift-integration-operator/)
