@@ -30,7 +30,7 @@ workers:
       memory: 2Gi
 
 telemetry:
-  otelCollectorEndpoint: http://otel-collector:4317
+  otelCollectorEndpoint: http://integration-otel-collector:4317
   enabled: true
 
 git:
