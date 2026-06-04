@@ -45,7 +45,17 @@ argocd:
 
 kaoto:
   enabled: true
-  instanceUrl: ""
+  image:
+    repository: quay.io/kaotoio/kaoto-app
+    tag: main
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 consolePlugin:
   enabled: true

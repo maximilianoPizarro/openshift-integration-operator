@@ -33,7 +33,17 @@ const phaseDot: Record<string, string> = {
   Deploying: '#0066cc', PartiallyHealthy: '#f0ab00', Error: '#c9190b',
 };
 
-const KAOTO_URL = 'https://kaoto-openshift-integration.apps.cluster-xtvzv.dynamic.redhatworkshops.io';
+function getKaotoUrl(): string {
+  const host = window.location.hostname;
+  const consoleParts = host.split('.');
+  const domainStart = consoleParts.indexOf('apps');
+  if (domainStart > 0) {
+    const baseDomain = consoleParts.slice(domainStart).join('.');
+    return `https://kaoto-openshift-integration.${baseDomain}`;
+  }
+  return 'https://kaoto-openshift-integration.apps.cluster.local';
+}
+const KAOTO_URL = getKaotoUrl();
 
 const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const flowName = match?.params?.name || extractFlowName();

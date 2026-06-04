@@ -240,6 +240,15 @@ metadata:
   name: integration-console-plugin
 spec:
   displayName: Integration Platform
+  proxy:
+    - alias: backend
+      authorization: UserToken
+      endpoint:
+        type: Service
+        service:
+          name: openshift-integration-operator
+          namespace: openshift-integration
+          port: 8080
   backend:
     type: Service
     service:
