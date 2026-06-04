@@ -172,7 +172,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     "name": "%s",
                     "engine": "%s",
                     "integrationType": "%s",
-                    "version": "0.1.0"
+                    "version": "0.2.0"
                   },
                   "deployment": {
                     "namespace": "openshift-integration",

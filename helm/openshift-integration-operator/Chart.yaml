@@ -46,9 +46,9 @@ annotations:
       url: https://github.com/maximilianoPizarro/openshift-integration-operator
   artifacthub.io/images: |
     - name: operator
-      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.1.0
+      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.2.0
     - name: console-plugin
-      image: quay.io/maximilianopizarro/integration-console-plugin:v0.1.0
+      image: quay.io/maximilianopizarro/integration-console-plugin:v0.2.0
   artifacthub.io/crds: |
     - kind: IntegrationFlow
       version: v1alpha1
@@ -80,14 +80,24 @@ annotations:
     - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
   artifacthub.io/changes: |
     - kind: added
-      description: Initial release with Quarkus operator, IntegrationFlow CRD, Camel and SonataFlow scaffolding
+      description: Five integration types — Camel Route, Kamelet, Pipe, Test, SonataFlow
     - kind: added
-      description: OpenShift Console Dynamic Plugin with visual designer and telemetry overlay
+      description: Multi-provider Git support — Gitea, GitHub, GitLab with auto-detection
+    - kind: added
+      description: Visual flow diagram with branching logic (choice, multicast, doTry) and click-to-YAML
+    - kind: added
+      description: Embedded SonataFlow Management Console for workflow monitoring
+    - kind: added
+      description: Console plugin search, filters, pagination, and resource links (Pods, Pipelines, ArgoCD)
+    - kind: added
+      description: Tekton Pipeline template (git-clone, maven, buildah) with workspace bindings
+    - kind: added
+      description: OpenTelemetry Collector deployment and operator integration
+    - kind: added
+      description: Camel BOM dependency management in scaffolded worker pom.xml
+    - kind: added
+      description: 8 production-ready example IntegrationFlows
     - kind: added
       description: MCP Bridge for AI tool discovery and invocation
     - kind: added
-      description: OpenTelemetry integration with SSE real-time streaming
-    - kind: added
       description: HPA v2 worker autoscaling with configurable thresholds
-    - kind: added
-      description: GitOps pipeline with Tekton builds and ArgoCD deployments

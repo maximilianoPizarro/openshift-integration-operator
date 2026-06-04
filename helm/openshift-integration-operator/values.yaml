@@ -1,7 +1,7 @@
 operator:
   image:
     repository: quay.io/maximilianopizarro/openshift-integration-operator
-    tag: v0.1.0
+    tag: v0.2.0
     pullPolicy: IfNotPresent
   replicas: 1
   resources:
@@ -77,7 +77,7 @@ consolePlugin:
   enabled: true
   image:
     repository: quay.io/maximilianopizarro/integration-console-plugin
-    tag: v0.1.0
+    tag: v0.2.0
   replicas: 1
 
 namespace: openshift-integration

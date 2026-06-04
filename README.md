@@ -115,72 +115,85 @@ helm install integration-operator \
   --create-namespace
 ```
 
-### Create a Camel Route
+### Example: Camel Route — REST to Kafka
 
 ```bash
 oc apply -f - <<'EOF'
 apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
-  name: sample-camel-flow
+  name: rest-to-kafka
   namespace: openshift-integration
 spec:
   integrationType: CAMEL_ROUTE
-  gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
+  gitRepository: https://gitea.example.com/user1/rest-to-kafka
   branch: main
   kaotoDesign: |
     - route:
+        id: rest-to-kafka
         from:
-          uri: timer:tick
-          parameters:
-            period: 5000
+          uri: "platform-http:/api/ingest"
           steps:
-            - set-body:
-                simple: "Hello from IntegrationFlow"
             - log:
-                message: "${body}"
+                message: "Received: ${body}"
+            - to:
+                uri: "kafka:integration-events?brokers=my-cluster-kafka-bootstrap:9092"
 EOF
 ```
 
-### Create a Kamelet
+### Example: Camel Route — Content-Based Routing
 
 ```bash
 oc apply -f - <<'EOF'
 apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
-  name: custom-source-kamelet
+  name: order-routing-cbr
   namespace: openshift-integration
 spec:
-  integrationType: CAMEL_KAMELET
-  gitRepository: https://github.com/my-org/custom-source.git
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/order-routing-cbr
   branch: main
   kaotoDesign: |
-    apiVersion: camel.apache.org/v1
-    kind: Kamelet
-    metadata:
-      name: custom-source
-      labels:
-        camel.apache.org/kamelet.type: source
-    spec:
-      definition:
-        title: Custom Source
-        properties:
-          message:
-            title: Message
-            type: string
-            default: "Hello from Kamelet"
-      template:
+    - route:
+        id: order-routing-cbr
         from:
-          uri: "timer:tick?period=5000"
+          uri: "platform-http:/api/orders"
           steps:
-            - setBody:
-                simple: "{{message}}"
-            - to: "kamelet:sink"
+            - unmarshal:
+                json: {}
+            - choice:
+                when:
+                  - simple: "${body[priority]} == 'high'"
+                    steps:
+                      - log:
+                          message: "CRITICAL: fast-track order"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Standard order processing"
 EOF
 ```
 
-See the [Quick Start Guide](docs/quickstart.html) for Pipe, Test, and SonataFlow examples, and the [Operations Guide](docs/operations.html) for validation steps.
+### Example: SonataFlow Workflow
+
+```bash
+oc apply -f - <<'EOF'
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: file-processor-workflow
+  namespace: openshift-integration
+spec:
+  integrationType: SONATAFLOW
+  gitRepository: https://gitea.example.com/user1/file-processor-workflow
+  branch: main
+EOF
+```
+
+The platform ships **8 pre-built examples** covering Camel Routes (REST, CBR, parallel enrichment, error handling with DLQ), Kamelets, Pipes, and SonataFlow workflows.
+
+See the [Quick Start Guide](docs/quickstart.html) for all 8 examples, and the [Operations Guide](docs/operations.html) for validation and troubleshooting.
 
 ## Project Structure
 

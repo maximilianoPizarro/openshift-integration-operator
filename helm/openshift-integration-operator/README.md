@@ -84,7 +84,7 @@ helm install integration-operator \
   integration-platform/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.1.0 \
+  --set operator.image.tag=v0.2.0 \
   --set workers.maxReplicas=20 \
   --set telemetry.otelCollectorEndpoint=http://my-otel:4317
 ```
@@ -111,7 +111,7 @@ helm uninstall integration-operator --namespace openshift-integration
 | Parameter | Description | Default |
 |---|---|---|
 | `operator.image.repository` | Operator container image | `quay.io/maximilianopizarro/openshift-integration-operator` |
-| `operator.image.tag` | Image tag | `v0.1.0` |
+| `operator.image.tag` | Image tag | `v0.2.0` |
 | `operator.image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `operator.replicas` | Number of operator replicas | `1` |
 | `operator.resources.requests.cpu` | CPU request | `250m` |
@@ -140,7 +140,7 @@ helm uninstall integration-operator --namespace openshift-integration
 | Parameter | Description | Default |
 |---|---|---|
 | `telemetry.enabled` | Enable OpenTelemetry integration | `true` |
-| `telemetry.otelCollectorEndpoint` | OTel Collector gRPC endpoint | `http://otel-collector:4317` |
+| `telemetry.otelCollectorEndpoint` | OTel Collector gRPC endpoint | `http://integration-otel-collector:4317` |
 
 ### Git
 
@@ -181,7 +181,7 @@ helm uninstall integration-operator --namespace openshift-integration
 |---|---|---|
 | `consolePlugin.enabled` | Deploy the OpenShift Console Dynamic Plugin | `true` |
 | `consolePlugin.image.repository` | Console plugin container image | `quay.io/maximilianopizarro/integration-console-plugin` |
-| `consolePlugin.image.tag` | Console plugin image tag | `v0.1.0` |
+| `consolePlugin.image.tag` | Console plugin image tag | `v0.2.0` |
 | `consolePlugin.replicas` | Console plugin replicas | `1` |
 
 ### General

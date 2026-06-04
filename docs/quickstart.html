@@ -231,85 +231,215 @@ helm repo update</code></pre>
   integration-platform/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.1.0 \
+  --set operator.image.tag=v0.2.0 \
   --set workers.maxReplicas=20</code></pre>
       </section>
 
       <section class="step" id="step-3">
-        <h2><span class="step-num">3</span> Create an IntegrationFlow CR</h2>
-        <p>Apply an <code>IntegrationFlow</code> custom resource to trigger scaffolding, build, and deployment.</p>
+        <h2><span class="step-num">3</span> Create IntegrationFlow CRs</h2>
+        <p>The platform supports <strong>5 integration types</strong>: Camel Route, Kamelet, Pipe, Test, and SonataFlow. Below are production-ready examples for each type.</p>
 
-        <h3>CAMEL Engine Example</h3>
+        <h3>1. Camel Route — REST to Kafka</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
-  name: sample-camel-flow
+  name: rest-to-kafka
   namespace: openshift-integration
 spec:
+  integrationType: CAMEL_ROUTE
   engine: CAMEL
-  gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
+  gitRepository: https://gitea.example.com/user1/rest-to-kafka
   branch: main
-  targetClusters:
-    - local
+  targeting:
+    strategy: explicit
+    clusters: [local]
   kaotoDesign: |
     - route:
+        id: rest-to-kafka
         from:
-          uri: timer:tick
-          parameters:
-            period: 5000
+          uri: "platform-http:/api/ingest"
           steps:
-            - set-body:
-                simple: "Hello from IntegrationFlow at ${header.firedTime}"
             - log:
-                message: "${body}"</code></pre>
+                message: "Received: ${body}"
+            - to:
+                uri: "kafka:integration-events?brokers=my-cluster-kafka-bootstrap:9092"</code></pre>
 
-        <h3>SONATAFLOW Engine Example</h3>
+        <h3>2. Camel Route — Content-Based Routing (CBR)</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
-  name: sample-sonataflow
+  name: order-routing-cbr
   namespace: openshift-integration
 spec:
-  engine: SONATAFLOW
-  gitRepository: https://gitea.example.com/demo/sample-sonataflow-worker.git
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/order-routing-cbr
   branch: main
-  targetClusters:
-    - local
+  targeting:
+    strategy: explicit
+    clusters: [local]
   kaotoDesign: |
-    id: order-processing
-    specVersion: "0.8"
-    name: Order Processing Workflow
-    start: EvaluateRequest
-    states:
-      - name: EvaluateRequest
-        type: switch
-        dataConditions:
-          - condition: "${ .priority == \"high\" }"
-            transition: CallExternalAPI
-        defaultCondition:
-          transition: TransformData
-      - name: CallExternalAPI
-        type: operation
-        actions:
-          - name: invoke-api
-            functionRef: httpCall
-        transition: NotifyResult
-      - name: TransformData
-        type: inject
-        data:
-          processed: true
-        transition: NotifyResult
-      - name: NotifyResult
-        type: operation
-        actions:
-          - name: notify
-            functionRef: logMessage
-        end: true</code></pre>
+    - route:
+        id: order-routing-cbr
+        from:
+          uri: "platform-http:/api/orders"
+          steps:
+            - log:
+                message: "Received order: ${body}"
+            - unmarshal:
+                json: {}
+            - choice:
+                when:
+                  - simple: "${body[priority]} == 'high'"
+                    steps:
+                      - log:
+                          message: "CRITICAL: order = fast-track"
+                      - setHeader:
+                          name: CamelKafkaTopic
+                          simple: "orders-priority"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Standard order processing"
+                    - setHeader:
+                        name: CamelKafkaTopic
+                        simple: "orders-standard"</code></pre>
 
-        <p>Apply with:</p>
-        <pre><code>oc apply -f integrationflow-camel.yaml
-<span class="comment"># or</span>
-oc apply -f integrationflow-sonataflow.yaml</code></pre>
+        <h3>3. Camel Route — Parallel Enrichment</h3>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: parallel-enrichment
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/parallel-enrichment
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: parallel-enrichment
+        from:
+          uri: "platform-http:/api/enrich"
+          steps:
+            - log:
+                message: "Enriching: ${body}"
+            - multicast:
+                parallelProcessing: true
+                steps:
+                  - to: "direct:enrich-geo"
+                  - to: "direct:enrich-credit"
+                  - to: "direct:enrich-inventory"
+            - log:
+                message: "Enrichment complete"</code></pre>
+
+        <h3>4. Camel Route — Error Handling with DLQ</h3>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: error-handling-dlq
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/error-handling-dlq
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: error-handling-dlq
+        from:
+          uri: "platform-http:/api/process"
+          steps:
+            - doTry:
+                steps:
+                  - log:
+                      message: "Processing: ${body}"
+                  - to:
+                      uri: "direct:risky-operation"
+                doCatch:
+                  - exception: [java.lang.Exception]
+                    steps:
+                      - log:
+                          message: "Error! Sending to DLQ"
+                      - to:
+                          uri: "kafka:dead-letter-queue?brokers=my-cluster-kafka-bootstrap:9092"
+                doFinally:
+                  steps:
+                    - log:
+                        message: "Processing finished"</code></pre>
+
+        <h3>5. Kamelet — S3 to Database</h3>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: s3-to-db-kamelet
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_KAMELET
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/s3-to-db-kamelet
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]</code></pre>
+
+        <h3>6. Pipe — ETL Pipeline</h3>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: etl-pipe
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_PIPE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/etl-pipe
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]</code></pre>
+
+        <h3>7. SonataFlow — File Processor Workflow</h3>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: file-processor-workflow
+  namespace: openshift-integration
+spec:
+  integrationType: SONATAFLOW
+  engine: SONATAFLOW
+  gitRepository: https://gitea.example.com/user1/file-processor-workflow
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]</code></pre>
+
+        <h3>8. SonataFlow — Saga Pattern</h3>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: saga-workflow
+  namespace: openshift-integration
+spec:
+  integrationType: SONATAFLOW
+  engine: SONATAFLOW
+  gitRepository: https://gitea.example.com/user1/saga-workflow
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]</code></pre>
+
+        <p>Apply any example with:</p>
+        <pre><code>oc apply -f integrationflow.yaml
+
+<span class="comment"># Watch reconciliation progress</span>
+oc get integrationflows -n openshift-integration -w</code></pre>
+        <p>Expected status phases: <code>Scaffolding</code> &rarr; <code>Building</code> &rarr; <code>Deploying</code> &rarr; <code>Running</code>.</p>
       </section>
 
       <section class="step" id="step-4">
@@ -345,15 +475,31 @@ oc get consoleplugin -n openshift-integration
 <span class="comment"># Check plugin pod status</span>
 oc get pods -n openshift-integration -l app.kubernetes.io/component=console-plugin</code></pre>
         <p>
-          Open the OpenShift Console and navigate to <strong>Integration Platform → Integration Flows</strong>.
-          Select a flow to open the Kaoto designer with live telemetry overlay.
+          Open the OpenShift Console and navigate to <strong>Integration Platform &rarr; Integration Flows</strong>.
         </p>
-        <p>
-          Direct routes:
-        </p>
+
+        <h3>List Page Features</h3>
+        <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li><strong>Search</strong> — Filter by name, repository URL, or status message</li>
+          <li><strong>Filters</strong> — Filter by integration type (CAMEL_ROUTE, CAMEL_KAMELET, etc.) and phase (Running, Building, Error)</li>
+          <li><strong>Summary badges</strong> — Click on Running/Building/Error counts to quick-filter</li>
+          <li><strong>Pagination</strong> — Navigate large lists of flows with page controls</li>
+          <li><strong>Resource links</strong> — Direct links to Pods, Tekton PipelineRuns, and ArgoCD Applications per flow</li>
+        </ul>
+
+        <h3>Flow Detail Page</h3>
+        <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li><strong>Visual Flow</strong> — SVG-based diagram with branching logic (choice, multicast, doTry), click a node to highlight the corresponding YAML section</li>
+          <li><strong>YAML Editor</strong> — View and edit the raw kaotoDesign YAML</li>
+          <li><strong>Kaoto Designer</strong> — Embedded drag-and-drop Kaoto canvas (for Camel flows)</li>
+          <li><strong>SonataFlow Console</strong> — Embedded SonataFlow Management Console (for SonataFlow workflows)</li>
+          <li><strong>Telemetry Overlay</strong> — Real-time SSE metrics per node with green/amber/red status</li>
+        </ul>
+
+        <p>Direct routes:</p>
         <ul style="margin-left: 1.25rem; color: var(--text-muted);">
           <li><code>/integration-flows</code> — List all IntegrationFlows</li>
-          <li><code>/integration-flows/&lt;name&gt;</code> — Flow designer with Kaoto canvas</li>
+          <li><code>/integration-flows/&lt;name&gt;</code> — Flow designer with visual flow, Kaoto, and telemetry</li>
         </ul>
       </section>
     </div>

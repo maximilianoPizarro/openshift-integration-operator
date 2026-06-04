@@ -337,6 +337,19 @@
             <strong>ArgoCD namespace accessible</strong>
             <pre><code>oc get namespace openshift-gitops</code></pre>
           </li>
+          <li>
+            <strong>Tekton Pipeline ready</strong>
+            <pre><code>oc get pipeline integration-flow-build -n openshift-integration</code></pre>
+          </li>
+          <li>
+            <strong>Pipeline ServiceAccount configured</strong>
+            <pre><code>oc get serviceaccount pipeline -n openshift-integration
+oc adm policy who-can use scc pipelines-scc | grep pipeline</code></pre>
+          </li>
+          <li>
+            <strong>OpenTelemetry Collector running</strong>
+            <pre><code>oc get pods -n openshift-integration -l app=integration-otel-collector</code></pre>
+          </li>
         </ul>
       </section>
 
@@ -503,6 +516,24 @@ curl -s -u "user1:password" \
               <td></td>
             </tr>
             <tr>
+              <td><strong>Tekton Pipeline</strong></td>
+              <td><code>oc get pipeline integration-flow-build -n openshift-integration</code></td>
+              <td>Pipeline exists with git-clone, maven, buildah tasks</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>PipelineRun</strong></td>
+              <td><code>oc get pipelineruns -n openshift-integration -l platform.io/component=build</code></td>
+              <td>PipelineRuns created per flow, status Succeeded</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>OTel Collector</strong></td>
+              <td><code>oc get pods -n openshift-integration -l app=integration-otel-collector</code></td>
+              <td>Pod running, receiving traces on :4317</td>
+              <td></td>
+            </tr>
+            <tr>
               <td><strong>RBAC</strong></td>
               <td><code>oc auth can-i create integrationflows --as=system:serviceaccount:openshift-integration:integration-operator-sa</code></td>
               <td>yes</td>
@@ -557,7 +588,22 @@ curl -s -u "user1:password" \
         </div>
 
         <div class="troubleshoot-item">
-          <h4>5. Telemetry not connecting</h4>
+          <h4>5. Tekton PipelineRun fails</h4>
+          <p><strong>Check PipelineRun status:</strong></p>
+          <pre><code>oc get pipelineruns -n openshift-integration
+oc describe pipelinerun &lt;name&gt; -n openshift-integration</code></pre>
+          <p><strong>Common causes:</strong></p>
+          <ul>
+            <li><code>CouldntGetPipeline</code> — Pipeline <code>integration-flow-build</code> not found. Re-deploy with Helm or apply manually.</li>
+            <li><code>PodCreationFailed</code> — Missing <code>pipeline</code> ServiceAccount or SCC. Run:<br>
+              <code>oc create sa pipeline -n openshift-integration</code><br>
+              <code>oc adm policy add-scc-to-user pipelines-scc -z pipeline -n openshift-integration</code></li>
+            <li>Maven build errors — Check <code>pom.xml</code> includes <code>quarkus-camel-bom</code> in <code>dependencyManagement</code>.</li>
+          </ul>
+        </div>
+
+        <div class="troubleshoot-item">
+          <h4>6. Telemetry not connecting</h4>
           <p>The SSE stream goes through the console proxy. Verify the ConsolePlugin has proxy configuration:</p>
           <pre><code>oc get consoleplugin integration-console-plugin \
   -o jsonpath='{.spec.proxy}'</code></pre>
