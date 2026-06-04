@@ -6,7 +6,7 @@
   </defs>
 
   <rect width="900" height="280" rx="12" fill="#0d1117"/>
-  <text x="450" y="30" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">Worker Autoscaling  HPA v2</text>
+  <text x="450" y="30" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">Worker Autoscaling  HPA v2</text>
   <text x="450" y="48" text-anchor="middle" fill="#8b949e" font-size="11">Generated with Nano Banana 2</text>
 
   <!-- Metrics Server -->
@@ -70,7 +70,7 @@
       <stop offset="100%" stop-color="#e8590c"/>
     </linearGradient>
   </defs>
-  <text x="692" y="204" text-anchor="middle" fill="#fcc419" font-size="10" font-weight="500">70% CPU  at threshold</text>
+  <text x="692" y="204" text-anchor="middle" fill="#fcc419" font-size="10" font-weight="500">70% CPU  at threshold</text>
 
   <!-- Legend -->
   <text x="450" y="258" text-anchor="middle" fill="#8b949e" font-size="10">HPA monitors CPU and memory utilization. Scales worker pods between configurable min/max replicas to match workload demand.</text>
