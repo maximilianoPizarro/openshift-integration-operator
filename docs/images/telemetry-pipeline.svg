@@ -19,7 +19,7 @@
   <rect x="45" y="184" width="130" height="28" rx="5" fill="rgba(56,139,253,0.1)" stroke="rgba(56,139,253,0.25)" stroke-width="1"/>
   <text x="110" y="203" text-anchor="middle" fill="#58a6ff" font-size="10">OTel SDK</text>
 
-  <!-- Arrow Workers ’ Collector -->
+  <!-- Arrow Workers > Collector -->
   <path d="M190,150 L250,150" stroke="#51cf66" stroke-width="2" marker-end="url(#a1)"/>
   <text x="220" y="142" text-anchor="middle" fill="#8b949e" font-size="9">gRPC</text>
   <text x="220" y="162" text-anchor="middle" fill="#8b949e" font-size="9">:4317</text>
@@ -31,7 +31,7 @@
   <text x="330" y="164" text-anchor="middle" fill="#8b949e" font-size="10">Metrics</text>
   <text x="330" y="180" text-anchor="middle" fill="#8b949e" font-size="10">Logs</text>
 
-  <!-- Arrow Collector ’ Operator -->
+  <!-- Arrow Collector > Operator -->
   <path d="M405,150 L460,150" stroke="#388bfd" stroke-width="2" marker-end="url(#a2)"/>
   <text x="433" y="142" text-anchor="middle" fill="#8b949e" font-size="9">OTLP</text>
 
@@ -45,7 +45,7 @@
   <text x="555" y="178" text-anchor="middle" fill="#d0bfff" font-size="10">/snapshot/{flowId}</text>
   <text x="555" y="196" text-anchor="middle" fill="#8b949e" font-size="9">REST JSON</text>
 
-  <!-- Arrow Operator ’ Console -->
+  <!-- Arrow Operator > Console -->
   <path d="M645,150 L700,150" stroke="#8957e5" stroke-width="2" marker-end="url(#a3)"/>
   <text x="673" y="142" text-anchor="middle" fill="#8b949e" font-size="9">SSE</text>
 
@@ -62,5 +62,5 @@
   <text x="837" y="205" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="600">p99</text>
 
   <!-- Legend -->
-  <text x="450" y="260" text-anchor="middle" fill="#8b949e" font-size="10">Workers emit OpenTelemetry traces/metrics ’ Collector aggregates ’ Operator API serves SSE ’ Console colors canvas nodes in real time</text>
+  <text x="450" y="260" text-anchor="middle" fill="#8b949e" font-size="10">Workers emit OpenTelemetry traces/metrics > Collector aggregates > Operator API serves SSE > Console colors canvas nodes in real time</text>
 </svg>

@@ -16,7 +16,7 @@
   <rect x="45" y="150" width="120" height="24" rx="4" fill="rgba(56,139,253,0.1)" stroke="rgba(56,139,253,0.2)" stroke-width="1"/>
   <text x="105" y="167" text-anchor="middle" fill="#58a6ff" font-size="9">Discover + Invoke</text>
 
-  <!-- Arrow Console ’ Operator -->
+  <!-- Arrow Console > Operator -->
   <path d="M180,140 L250,140" stroke="#388bfd" stroke-width="2" marker-end="url(#ab)"/>
   <text x="215" y="132" text-anchor="middle" fill="#8b949e" font-size="9">REST</text>
 
@@ -28,9 +28,9 @@
   <rect x="270" y="140" width="170" height="28" rx="5" fill="rgba(137,87,229,0.1)" stroke="rgba(137,87,229,0.25)" stroke-width="1"/>
   <text x="355" y="159" text-anchor="middle" fill="#d0bfff" font-size="10">POST /api/mcp/tools/{name}/call</text>
   <text x="355" y="190" text-anchor="middle" fill="#8b949e" font-size="9">JSON-RPC 2.0 Client</text>
-  <text x="355" y="203" text-anchor="middle" fill="#8b949e" font-size="9">tools/list · tools/call</text>
+  <text x="355" y="203" text-anchor="middle" fill="#8b949e" font-size="9">tools/list - tools/call</text>
 
-  <!-- Arrow Bridge ’ MCP Servers -->
+  <!-- Arrow Bridge > MCP Servers -->
   <path d="M455,110 L540,80" stroke="#8957e5" stroke-width="2" marker-end="url(#ap)"/>
   <path d="M455,140 L540,140" stroke="#8957e5" stroke-width="2" marker-end="url(#ap)"/>
   <path d="M455,170 L540,200" stroke="#8957e5" stroke-width="2" marker-end="url(#ap)"/>
@@ -50,7 +50,7 @@
   <text x="622" y="202" text-anchor="middle" fill="#e6edf3" font-size="11" font-weight="500">Custom MCP</text>
   <text x="622" y="218" text-anchor="middle" fill="#8b949e" font-size="9">any tool definition</text>
 
-  <!-- Arrow MCP ’ AI -->
+  <!-- Arrow MCP > AI -->
   <path d="M700,85 L760,85" stroke="#51cf66" stroke-width="1.5" marker-end="url(#ag)"/>
   <path d="M700,145 L760,145" stroke="#51cf66" stroke-width="1.5" marker-end="url(#ag)"/>
   <path d="M700,205 L760,205" stroke="#51cf66" stroke-width="1.5" marker-end="url(#ag)"/>

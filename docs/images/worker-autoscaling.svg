@@ -17,7 +17,7 @@
   <rect x="45" y="146" width="110" height="22" rx="4" fill="rgba(56,139,253,0.1)" stroke="rgba(56,139,253,0.2)" stroke-width="1"/>
   <text x="100" y="162" text-anchor="middle" fill="#8b949e" font-size="9">Memory Usage</text>
 
-  <!-- Arrow Metrics ’ HPA -->
+  <!-- Arrow Metrics > HPA -->
   <path d="M170,130 L230,130" stroke="#388bfd" stroke-width="2" marker-end="url(#aw)"/>
   <text x="200" y="122" text-anchor="middle" fill="#8b949e" font-size="9">scrape</text>
 
@@ -28,7 +28,7 @@
   <text x="330" y="122" text-anchor="middle" fill="#d0bfff" font-size="10">CPU target: 70%</text>
   <rect x="250" y="135" width="160" height="24" rx="4" fill="rgba(137,87,229,0.1)" stroke="rgba(137,87,229,0.2)" stroke-width="1"/>
   <text x="330" y="152" text-anchor="middle" fill="#d0bfff" font-size="10">Memory target: 80%</text>
-  <text x="330" y="180" text-anchor="middle" fill="#8b949e" font-size="9">min: 1 · max: 10 replicas</text>
+  <text x="330" y="180" text-anchor="middle" fill="#8b949e" font-size="9">min: 1 - max: 10 replicas</text>
 
   <!-- Scale Up Arrow -->
   <path d="M425,105 L500,80" stroke="#51cf66" stroke-width="2" marker-end="url(#awg)"/>

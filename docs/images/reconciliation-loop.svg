@@ -46,7 +46,7 @@
   <text x="575" y="104" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="600">Tekton</text>
   <text x="565" y="124" text-anchor="middle" fill="#8b949e" font-size="10">PipelineRun</text>
   <text x="565" y="138" text-anchor="middle" fill="#8b949e" font-size="10">builds container</text>
-  <text x="565" y="152" text-anchor="middle" fill="#e8590c" font-size="10" font-weight="500">image ’ Quay.io</text>
+  <text x="565" y="152" text-anchor="middle" fill="#e8590c" font-size="10" font-weight="500">image > Quay.io</text>
 
   <path d="M630,125 L655,125" stroke="#388bfd" stroke-width="2" marker-end="url(#arr)"/>
 
