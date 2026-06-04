@@ -45,6 +45,12 @@ function getKaotoUrl(): string {
 }
 const KAOTO_URL = getKaotoUrl();
 
+const resourceLinkStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', borderRadius: '4px', fontSize: '13px',
+  textDecoration: 'none', color: 'var(--pf-global--link--Color, #2b9af3)',
+  border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'transparent',
+};
+
 const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const flowName = match?.params?.name || extractFlowName();
   const [flow, setFlow] = React.useState<IntegrationFlow | null>(null);
@@ -258,14 +264,40 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
         </div>
 
         {/* Sidebar */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '220px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '220px', overflow: 'auto' }}>
           <div style={{ border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRadius: '6px', padding: '16px' }}>
             <TelemetryOverlay flowId={flowName} />
           </div>
-          <SidebarCard label="Git Repository" value={flow.spec.gitRepository || 'Not configured'} />
+
+          {/* Quick Links */}
+          <div style={{ border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRadius: '6px', padding: '12px' }}>
+            <div className="co-help-text" style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '8px' }}>Resources</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <a href={`/k8s/ns/${NAMESPACE}/pods?labelSelector=platform.io%2Fflow-name%3D${flowName}`}
+                style={resourceLinkStyle}>
+                <span style={{ color: '#3e8635' }}>{'\u25A3'}</span> Pods
+              </a>
+              <a href={`/k8s/ns/${NAMESPACE}/tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`}
+                style={resourceLinkStyle}>
+                <span style={{ color: '#f0ab00' }}>{'\u29D7'}</span> PipelineRuns
+              </a>
+              {flow.status?.argoApplicationName && (
+                <a href={`/k8s/ns/openshift-gitops/argoproj.io~v1alpha1~Application/${flow.status.argoApplicationName}`}
+                  style={resourceLinkStyle}>
+                  <span style={{ color: '#2b9af3' }}>{'\u21BB'}</span> ArgoCD App
+                </a>
+              )}
+              {flow.spec.gitRepository && (
+                <a href={flow.spec.gitRepository} target="_blank" rel="noopener noreferrer"
+                  style={resourceLinkStyle}>
+                  <span style={{ color: '#8476d1' }}>{'\u2197'}</span> Git Repository
+                </a>
+              )}
+            </div>
+          </div>
+
           <SidebarCard label="Target Clusters" value={(flow.spec.targetClusters || []).join(', ') || 'None'} />
           {flow.status?.gitCommitHash && <SidebarCard label="Last Commit" value={flow.status.gitCommitHash.substring(0, 8)} />}
-          {flow.status?.argoApplicationName && <SidebarCard label="ArgoCD App" value={flow.status.argoApplicationName} />}
           {flow.status?.message && (
             <div style={{ border: `1px solid ${phase === 'Error' ? '#c9190b' : 'var(--pf-global--BorderColor--100, #d2d2d2)'}`, borderRadius: '6px', padding: '12px' }}>
               <div className="co-help-text" style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>Message</div>
