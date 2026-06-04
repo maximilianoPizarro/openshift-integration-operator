@@ -2,8 +2,8 @@ apiVersion: v2
 name: openshift-integration-operator
 description: Real-Time Integration & Orchestration Platform for OpenShift - Apache Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and OpenTelemetry observability
 type: application
-version: 0.1.0
-appVersion: "v0.1.0"
+version: 0.2.0
+appVersion: "0.2.0"
 kubeVersion: ">=1.27.0-0"
 home: https://maximilianopizarro.github.io/openshift-integration-operator/
 sources:

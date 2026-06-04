@@ -6,5 +6,17 @@ public interface ScaffoldingService {
 
     ScaffoldResult scaffold(EngineType engine, String kaotoDesign);
 
-    record ScaffoldResult(String pomXml, String workflowDefinition, String projectStructureSummary) {}
+    record ScaffoldResult(
+            String pomXml,
+            String workflowDefinition,
+            String projectStructureSummary,
+            String kaotoConfig,
+            String otelDecoratorJava,
+            String kustomizeBase,
+            String applicationProperties
+    ) {
+        public ScaffoldResult(String pomXml, String workflowDefinition, String projectStructureSummary) {
+            this(pomXml, workflowDefinition, projectStructureSummary, "", "", "", "");
+        }
+    }
 }

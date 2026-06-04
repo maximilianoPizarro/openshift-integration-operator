@@ -1,86 +1,131 @@
 import * as React from 'react';
 
-interface NodeTelemetry {
+const PROXY_BASE = '/api/proxy/plugin/openshift-integration-operator/backend';
+
+interface NodeMetrics {
   nodeId: string;
-  status: 'healthy' | 'error' | 'degraded';
-  latencyP99: number;
+  clusters: Array<{
+    clusterName: string;
+    status: 'healthy' | 'error' | 'degraded' | 'unknown';
+    latencyP99Ms: number;
+    throughputRpm: number;
+    errorRate: number;
+    activeTraces: number;
+  }>;
 }
 
-interface TelemetryOverlayProps {
+interface TelemetryEvent {
+  schemaVersion: string;
   flowId: string;
-  operatorBaseUrl?: string;
+  timestamp: string;
+  nodes: NodeMetrics[];
 }
 
-const statusColors: Record<string, string> = {
-  healthy: '#4caf50',
-  degraded: '#ff9800',
-  error: '#f44336',
-};
+interface Props {
+  flowId: string;
+}
 
-/**
- * Connects to the operator SSE endpoint for real-time node telemetry.
- * Displays per-node status and latency. In the full implementation,
- * this data is also used to color the Kaoto canvas nodes.
- */
-const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
-  flowId,
-  operatorBaseUrl = '',
-}) => {
-  const [telemetry, setTelemetry] = React.useState<Map<string, NodeTelemetry>>(new Map());
+const TelemetryOverlay: React.FC<Props> = ({ flowId }) => {
+  const [telemetry, setTelemetry] = React.useState<TelemetryEvent | null>(null);
+  const [connected, setConnected] = React.useState(false);
+  const [retryCount, setRetryCount] = React.useState(0);
+  const esRef = React.useRef<EventSource | null>(null);
+  const retryTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = React.useRef(0);
 
-  React.useEffect(() => {
-    const url = `${operatorBaseUrl}/api/telemetry/stream/${encodeURIComponent(flowId)}`;
-    const eventSource = new EventSource(url);
+  const connect = React.useCallback(() => {
+    if (esRef.current) {
+      esRef.current.close();
+    }
 
-    eventSource.onmessage = (event) => {
+    const url = `${PROXY_BASE}/api/telemetry/stream/${flowId}`;
+    const es = new EventSource(url);
+    esRef.current = es;
+
+    es.onopen = () => {
+      setConnected(true);
+      retryCountRef.current = 0;
+      setRetryCount(0);
+    };
+
+    es.onmessage = (event) => {
       try {
-        const data: NodeTelemetry = JSON.parse(event.data);
-        setTelemetry((prev) => {
-          const next = new Map(prev);
-          next.set(data.nodeId, data);
-          return next;
-        });
-      } catch (e) {
-        console.error('Failed to parse telemetry event:', e);
+        const data: TelemetryEvent = JSON.parse(event.data);
+        setTelemetry(data);
+      } catch {
+        // ignore parse errors
       }
     };
 
-    eventSource.onerror = () => {
-      console.warn('Telemetry SSE connection error, will retry...');
+    es.onerror = () => {
+      es.close();
+      setConnected(false);
+      const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 30000);
+      retryCountRef.current += 1;
+      setRetryCount(retryCountRef.current);
+      retryTimerRef.current = setTimeout(connect, delay);
     };
+  }, [flowId]);
 
-    return () => eventSource.close();
-  }, [flowId, operatorBaseUrl]);
+  React.useEffect(() => {
+    connect();
+    return () => {
+      esRef.current?.close();
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, [flowId]); // only reconnect on flowId change, not on retryCount
 
-  const entries = Array.from(telemetry.values());
+  const statusColor = (s: string) => {
+    switch (s) {
+      case 'healthy': return '#3e8635';
+      case 'degraded': return '#f0ab00';
+      case 'error': return '#c9190b';
+      default: return '#6a6e73';
+    }
+  };
 
   return (
     <div>
-      <h3 style={{ marginTop: 0 }}>Node Telemetry</h3>
-      <p style={{ fontSize: '12px', color: '#666' }}>Live stream from OTel</p>
-
-      {entries.length === 0 ? (
-        <p style={{ color: '#999' }}>Waiting for telemetry data...</p>
+      <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        Node Telemetry
+        <span style={{
+          width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block',
+          backgroundColor: connected ? '#3e8635' : '#c9190b',
+        }} />
+      </div>
+      {!telemetry ? (
+        <div className="co-help-text" style={{ fontSize: '12px' }}>
+          {connected ? 'Waiting for telemetry data...' : `Connecting... (retry ${retryCount})`}
+        </div>
       ) : (
-        <div>
-          {entries.map((node) => (
-            <div
-              key={node.nodeId}
-              style={{
-                padding: '8px',
-                marginBottom: '8px',
-                borderRadius: '4px',
-                border: `2px solid ${statusColors[node.status] || '#ccc'}`,
-                backgroundColor: `${statusColors[node.status]}11`,
-              }}
-            >
-              <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{node.nodeId}</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
-                <span style={{ color: statusColors[node.status] }}>{node.status.toUpperCase()}</span>
-                <span>p99: {node.latencyP99}ms</span>
+        <div style={{ fontSize: '12px' }}>
+          {telemetry.nodes.map(node => {
+            const primary = node.clusters[0];
+            if (!primary) return null;
+            return (
+              <div key={node.nodeId} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '4px 0', borderBottom: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)',
+              }}>
+                <span style={{ color: 'var(--pf-global--Color--100, #151515)' }}>{node.nodeId}</span>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                    {primary.latencyP99Ms.toFixed(0)}ms
+                  </span>
+                  <span style={{ color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                    {primary.throughputRpm.toFixed(0)}rpm
+                  </span>
+                  <span style={{
+                    width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block',
+                    backgroundColor: statusColor(primary.status),
+                  }} />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
+          <div className="co-help-text" style={{ marginTop: '4px', fontSize: '11px' }}>
+            Updated: {new Date(telemetry.timestamp).toLocaleTimeString()}
+          </div>
         </div>
       )}
     </div>

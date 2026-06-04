@@ -1,28 +1,106 @@
 package io.platform.api.v1alpha1;
 
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class IntegrationFlowSpec {
 
+    private EngineType engine;
     private String gitRepository;
     private String branch = "main";
-    private List<String> targetClusters;
-    private EngineType engine;
-    /** Raw Kaoto design: YAML for Camel routes, JSON/YAML for SonataFlow definitions */
+    private DesignRef designRef;
+    /** @deprecated Use {@link #designRef} instead. Inline Kaoto design YAML/JSON kept for backward compatibility. */
+    @Deprecated
     private String kaotoDesign;
+    private TargetingSpec targeting;
+    private String gitCredentialsSecret;
+    private Integer replicas;
 
-    public String getGitRepository() { return gitRepository; }
-    public void setGitRepository(String gitRepository) { this.gitRepository = gitRepository; }
+    public EngineType getEngine() {
+        return engine;
+    }
 
-    public String getBranch() { return branch; }
-    public void setBranch(String branch) { this.branch = branch; }
+    public void setEngine(EngineType engine) {
+        this.engine = engine;
+    }
 
-    public List<String> getTargetClusters() { return targetClusters; }
-    public void setTargetClusters(List<String> targetClusters) { this.targetClusters = targetClusters; }
+    public String getGitRepository() {
+        return gitRepository;
+    }
 
-    public EngineType getEngine() { return engine; }
-    public void setEngine(EngineType engine) { this.engine = engine; }
+    public void setGitRepository(String gitRepository) {
+        this.gitRepository = gitRepository;
+    }
 
-    public String getKaotoDesign() { return kaotoDesign; }
-    public void setKaotoDesign(String kaotoDesign) { this.kaotoDesign = kaotoDesign; }
+    public String getBranch() {
+        return branch;
+    }
+
+    public void setBranch(String branch) {
+        this.branch = branch;
+    }
+
+    public DesignRef getDesignRef() {
+        return designRef;
+    }
+
+    public void setDesignRef(DesignRef designRef) {
+        this.designRef = designRef;
+    }
+
+    /** @deprecated Use {@link #getDesignRef()} instead. */
+    @Deprecated
+    public String getKaotoDesign() {
+        return kaotoDesign;
+    }
+
+    /** @deprecated Use {@link #setDesignRef(DesignRef)} instead. */
+    @Deprecated
+    public void setKaotoDesign(String kaotoDesign) {
+        this.kaotoDesign = kaotoDesign;
+    }
+
+    public TargetingSpec getTargeting() {
+        return targeting;
+    }
+
+    public void setTargeting(TargetingSpec targeting) {
+        this.targeting = targeting;
+    }
+
+    public String getGitCredentialsSecret() {
+        return gitCredentialsSecret;
+    }
+
+    public void setGitCredentialsSecret(String gitCredentialsSecret) {
+        this.gitCredentialsSecret = gitCredentialsSecret;
+    }
+
+    public Integer getReplicas() {
+        return replicas;
+    }
+
+    public void setReplicas(Integer replicas) {
+        this.replicas = replicas;
+    }
+
+    /**
+     * @deprecated Use {@link TargetingSpec#getClusters()} via {@link #getTargeting()} instead.
+     */
+    @Deprecated
+    @JsonProperty("targetClusters")
+    public java.util.List<String> getTargetClusters() {
+        return targeting != null ? targeting.getClusters() : null;
+    }
+
+    /**
+     * @deprecated Use {@link TargetingSpec#setClusters(java.util.List)} via {@link #setTargeting(TargetingSpec)} instead.
+     */
+    @Deprecated
+    @JsonProperty("targetClusters")
+    public void setTargetClusters(java.util.List<String> targetClusters) {
+        if (targeting == null) {
+            targeting = new TargetingSpec();
+        }
+        targeting.setClusters(targetClusters);
+    }
 }

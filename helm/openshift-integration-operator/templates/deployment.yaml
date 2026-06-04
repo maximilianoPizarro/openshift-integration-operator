@@ -32,6 +32,14 @@ spec:
               value: {{ .Values.telemetry.otelCollectorEndpoint }}
             - name: QUARKUS_OTEL_SERVICE_NAME
               value: openshift-integration-operator
+            - name: GITEA_URL
+              value: {{ .Values.gitea.url }}
+            - name: GITEA_USERNAME
+              value: {{ .Values.gitea.username }}
+            - name: GITEA_PASSWORD
+              value: {{ .Values.gitea.password }}
+            - name: GITEA_ORG
+              value: {{ .Values.gitea.org }}
           livenessProbe:
             httpGet:
               path: /q/health/live

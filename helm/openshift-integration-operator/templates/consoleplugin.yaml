@@ -7,6 +7,14 @@ metadata:
     {{- include "operator.labels" . | nindent 4 }}
 spec:
   displayName: "Integration Platform"
+  proxy:
+    - type: Service
+      alias: backend
+      authorize: true
+      service:
+        name: {{ include "operator.fullname" . }}
+        namespace: {{ .Values.namespace }}
+        port: 8080
   backend:
     type: Service
     service:

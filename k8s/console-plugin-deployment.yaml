@@ -12,21 +12,17 @@ data:
         ssl_certificate_key /var/serving-cert/tls.key;
         root /opt/app-root/src;
 
+        etag off;
+        if_modified_since off;
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+        add_header Access-Control-Allow-Origin "*";
+
         location ~* \.json$ {
             default_type application/json;
-            add_header Cache-Control "no-cache";
-            add_header Access-Control-Allow-Origin "*";
         }
 
         location ~* \.js$ {
             default_type application/javascript;
-            add_header Cache-Control "no-cache";
-            add_header Access-Control-Allow-Origin "*";
-        }
-
-        location / {
-            add_header Cache-Control "no-cache";
-            add_header Access-Control-Allow-Origin "*";
         }
     }
 ---

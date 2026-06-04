@@ -33,6 +33,12 @@ telemetry:
   otelCollectorEndpoint: http://otel-collector:4317
   enabled: true
 
+gitea:
+  url: https://gitea-gitea.apps.cluster-xtvzv.dynamic.redhatworkshops.io
+  username: user1
+  password: Welcome123!
+  org: user1
+
 argocd:
   enabled: true
   namespace: openshift-gitops
