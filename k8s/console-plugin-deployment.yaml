@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: integration-console-plugin
+  namespace: openshift-integration
+  labels:
+    app: integration-console-plugin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: integration-console-plugin
+  template:
+    metadata:
+      labels:
+        app: integration-console-plugin
+    spec:
+      containers:
+        - name: plugin
+          image: registry.access.redhat.com/ubi8/nginx-120:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              mkdir -p /tmp/content
+              cp /opt/app-root/src/* /tmp/content/ 2>/dev/null || true
+              cat > /tmp/nginx.conf <<'NGINX'
+              worker_processes auto;
+              error_log /dev/stderr;
+              pid /tmp/nginx.pid;
+              events {
+                worker_connections 1024;
+              }
+              http {
+                include /etc/nginx/mime.types;
+                default_type application/octet-stream;
+                access_log /dev/stdout;
+                server {
+                  listen 8443 ssl;
+                  ssl_certificate /var/serving-cert/tls.crt;
+                  ssl_certificate_key /var/serving-cert/tls.key;
+                  root /tmp/content;
+                  location ~* \.json$ {
+                    default_type application/json;
+                    add_header Cache-Control "no-cache";
+                    add_header Access-Control-Allow-Origin "*";
+                  }
+                  location ~* \.js$ {
+                    default_type application/javascript;
+                    add_header Cache-Control "no-cache";
+                    add_header Access-Control-Allow-Origin "*";
+                  }
+                  location / {
+                    add_header Cache-Control "no-cache";
+                    add_header Access-Control-Allow-Origin "*";
+                  }
+                }
+              }
+              NGINX
+              nginx -c /tmp/nginx.conf -g 'daemon off;'
+          ports:
+            - containerPort: 8443
+              protocol: TCP
+          volumeMounts:
+            - name: plugin-serving-cert
+              readOnly: true
+              mountPath: /var/serving-cert
+            - name: plugin-content
+              readOnly: true
+              mountPath: /opt/app-root/src/
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: plugin-serving-cert
+          secret:
+            secretName: integration-console-plugin-cert
+            defaultMode: 420
+        - name: plugin-content
+          configMap:
+            name: integration-plugin-content

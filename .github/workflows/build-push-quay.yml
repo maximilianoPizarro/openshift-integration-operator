@@ -15,6 +15,7 @@ env:
   QUAY_REGISTRY: quay.io
   QUAY_NAMESPACE: maximilianopizarro
   IMAGE_NAME: openshift-integration-operator
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-push:
@@ -33,10 +34,10 @@ jobs:
             echo "IMAGE_TAG=v0.1.0" >> "$GITHUB_ENV"
           fi
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: maven
 
@@ -98,12 +99,10 @@ jobs:
           version: v3.17.3
 
       - name: Package Helm chart
-        run: |
-          helm package helm/openshift-integration-operator --destination docs/
+        run: helm package helm/openshift-integration-operator --destination docs/
 
       - name: Update Helm repo index
-        run: |
-          helm repo index docs/ --url https://maximilianopizarro.github.io/openshift-integration-operator/
+        run: helm repo index docs/ --url https://maximilianopizarro.github.io/openshift-integration-operator/
 
       - name: Commit and push Helm chart
         run: |
