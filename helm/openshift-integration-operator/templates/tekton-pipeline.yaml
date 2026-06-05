@@ -22,6 +22,8 @@ spec:
       type: string
   workspaces:
     - name: shared-workspace
+    - name: basic-auth
+      optional: true
   tasks:
     - name: fetch-source
       taskRef:
@@ -42,11 +44,11 @@ spec:
           value: "false"
         - name: DELETE_EXISTING
           value: "false"
-        - name: SUBDIRECTORY
-          value: src
       workspaces:
         - name: output
           workspace: shared-workspace
+        - name: basic-auth
+          workspace: basic-auth
 
     - name: build-maven
       runAfter:
@@ -65,8 +67,6 @@ spec:
           value:
             - package
             - -DskipTests
-        - name: SUBDIRECTORY
-          value: src
       workspaces:
         - name: source
           workspace: shared-workspace
@@ -87,7 +87,7 @@ spec:
         - name: IMAGE
           value: image-registry.openshift-image-registry.svc:5000/{{ .Values.namespace }}/$(params.flow-name):$(params.commit-sha)
         - name: CONTEXT
-          value: src
+          value: .
         - name: TLS_VERIFY
           value: "false"
         - name: SKIP_PUSH

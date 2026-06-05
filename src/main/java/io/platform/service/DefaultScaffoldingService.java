@@ -201,28 +201,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                 package io.platform.integration;
 
                 import jakarta.enterprise.context.ApplicationScoped;
-                import org.apache.camel.Exchange;
-                import org.apache.camel.tracing.SpanDecorator;
-                import io.opentelemetry.api.trace.Span;
 
+                /** Placeholder for future Camel OpenTelemetry span customization. */
                 @ApplicationScoped
-                public class KaotoOtelDecorator implements SpanDecorator {
-                    @Override
-                    public String getComponent() { return "kaoto"; }
-
-                    @Override
-                    public void pre(Span span, Exchange exchange, String operationName) {
-                        String nodeId = exchange.getProperty("CamelToEndpoint", String.class);
-                        if (nodeId == null) nodeId = operationName;
-                        span.setAttribute("kaoto.node.id", nodeId);
-                        span.setAttribute("kaoto.integration.name",
-                            System.getenv().getOrDefault("KAOTO_INTEGRATION_NAME", "unknown"));
-                        span.setAttribute("kaoto.canvas.version",
-                            System.getenv().getOrDefault("KAOTO_CANVAS_VERSION", "1.0"));
-                    }
-
-                    @Override
-                    public void post(Span span, Exchange exchange, String operationName) {}
+                public class KaotoOtelDecorator {
                 }
                 """;
     }
@@ -232,38 +214,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                 package io.platform.integration;
 
                 import jakarta.enterprise.context.ApplicationScoped;
-                import org.apache.camel.Exchange;
-                import org.apache.camel.tracing.SpanDecorator;
-                import io.opentelemetry.api.trace.Span;
 
+                /** Placeholder for future SonataFlow OpenTelemetry span customization. */
                 @ApplicationScoped
-                public class KaotoOtelDecorator implements SpanDecorator {
-                    @Override
-                    public String getComponent() { return "kaoto-sonataflow"; }
-
-                    @Override
-                    public void pre(Span span, Exchange exchange, String operationName) {
-                        String nodeId = exchange.getIn().getHeader("kogitoNodeInstanceId", String.class);
-                        if (nodeId == null) {
-                            nodeId = exchange.getIn().getHeader("kogitoReferenceId", String.class);
-                        }
-                        if (nodeId == null) {
-                            nodeId = exchange.getProperty("kogitoProcessInstanceId", String.class);
-                        }
-                        if (nodeId == null) nodeId = operationName;
-                        span.setAttribute("kaoto.node.id", nodeId);
-                        span.setAttribute("kaoto.integration.name",
-                            System.getenv().getOrDefault("KAOTO_INTEGRATION_NAME", "unknown"));
-                        span.setAttribute("kaoto.canvas.version",
-                            System.getenv().getOrDefault("KAOTO_CANVAS_VERSION", "1.0"));
-                        String stateName = exchange.getIn().getHeader("kogitoProcessReferenceId", String.class);
-                        if (stateName != null) {
-                            span.setAttribute("sonataflow.state.name", stateName);
-                        }
-                    }
-
-                    @Override
-                    public void post(Span span, Exchange exchange, String operationName) {}
+                public class KaotoOtelDecorator {
                 }
                 """;
     }
@@ -376,6 +330,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-opentelemetry</artifactId>
                         </dependency>
+                        <dependency>
+                            <groupId>org.apache.camel.quarkus</groupId>
+                            <artifactId>camel-quarkus-opentelemetry</artifactId>
+                        </dependency>
                     </dependencies>
                 </project>
                 """.formatted(flowName, CAMEL_BOM_BLOCK);
@@ -420,6 +378,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-opentelemetry</artifactId>
                         </dependency>
+                        <dependency>
+                            <groupId>org.apache.camel.quarkus</groupId>
+                            <artifactId>camel-quarkus-opentelemetry</artifactId>
+                        </dependency>
                     </dependencies>
                 </project>
                 """.formatted(flowName, CAMEL_BOM_BLOCK);
@@ -463,6 +425,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         <dependency>
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-opentelemetry</artifactId>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.apache.camel.quarkus</groupId>
+                            <artifactId>camel-quarkus-opentelemetry</artifactId>
                         </dependency>
                     </dependencies>
                 </project>
@@ -512,6 +478,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-opentelemetry</artifactId>
                         </dependency>
+                        <dependency>
+                            <groupId>org.apache.camel.quarkus</groupId>
+                            <artifactId>camel-quarkus-opentelemetry</artifactId>
+                        </dependency>
                     </dependencies>
                 </project>
                 """.formatted(flowName, CAMEL_BOM_BLOCK);
@@ -553,6 +523,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         <dependency>
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-opentelemetry</artifactId>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.apache.camel.quarkus</groupId>
+                            <artifactId>camel-quarkus-opentelemetry</artifactId>
                         </dependency>
                     </dependencies>
                 </project>

@@ -120,13 +120,30 @@ function resolveSonataFlowConsoleUrl(config: PlatformConfig | null): string {
   return `https://${host}.${getBaseAppsDomain()}`;
 }
 
-type TabId = 'visual' | 'kaoto' | 'sonataflow' | 'design' | 'spec' | 'status' | 'history' | 'dependencies' | 'logs';
+type TabId = 'visual' | 'kaoto' | 'sonataflow' | 'design' | 'spec' | 'cr-status' | 'history' | 'dependencies' | 'logs';
 
 function initialTabFromUrl(): TabId {
   const params = new URLSearchParams(window.location.search);
   const tab = params.get('tab');
   if (tab === 'logs') return 'logs';
+  if (tab === 'cr-status' || tab === 'status') return 'cr-status';
+  if (tab === 'spec') return 'spec';
+  if (tab === 'history') return 'history';
+  if (tab === 'dependencies') return 'dependencies';
+  if (tab === 'design') return 'design';
+  if (tab === 'kaoto') return 'kaoto';
+  if (tab === 'sonataflow') return 'sonataflow';
   return 'visual';
+}
+
+function syncTabToUrl(tab: TabId) {
+  const url = new URL(window.location.href);
+  if (tab === 'visual') {
+    url.searchParams.delete('tab');
+  } else {
+    url.searchParams.set('tab', tab);
+  }
+  window.history.replaceState(null, '', `${url.pathname}${url.search}`);
 }
 
 const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
@@ -433,7 +450,12 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
         <div style={{ flex: 3, display: 'flex', flexDirection: 'column', border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRadius: '6px 0 0 6px', overflow: 'hidden' }}>
           <Tabs
             activeKey={activeTab}
-            onSelect={(_event, eventKey) => setActiveTab(eventKey as TabId)}
+            onSelect={(event, eventKey) => {
+              event?.preventDefault?.();
+              const tab = eventKey as TabId;
+              setActiveTab(tab);
+              syncTabToUrl(tab);
+            }}
             mountOnEnter
             unmountOnExit
           >
@@ -671,7 +693,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
               <FlowLogsTab flowName={flowName} />
             </Tab>
 
-            <Tab eventKey="status" title={<TabTitleText>Status</TabTitleText>}>
+            <Tab eventKey="cr-status" title={<TabTitleText>Status</TabTitleText>}>
               <pre style={{
                 margin: 0, padding: '16px', overflow: 'auto', minHeight: '300px',
                 fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',

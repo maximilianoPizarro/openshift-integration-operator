@@ -381,7 +381,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         pipelineRunSpec.put("pipelineRef", Map.of("name", "integration-flow-build"));
         pipelineRunSpec.put("params", java.util.List.of(
                 Map.of("name", "git-url", "value", gitRepo),
-                Map.of("name", "git-revision", "value", branch),
+                Map.of("name", "git-revision", "value", commitHash),
                 Map.of("name", "commit-sha", "value", commitHash),
                 Map.of("name", "flow-name", "value", flowName)
         ));
@@ -391,7 +391,9 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                                "spec", Map.of(
                                        "accessModes", java.util.List.of("ReadWriteOnce"),
                                        "resources", Map.of(
-                                               "requests", Map.of("storage", "1Gi")))))
+                                               "requests", Map.of("storage", "1Gi"))))),
+                Map.of("name", "basic-auth",
+                       "secret", Map.of("secretName", "integration-git-basic-auth"))
         ));
         pipelineRun.setAdditionalProperties(Map.of("spec", pipelineRunSpec));
 

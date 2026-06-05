@@ -1,0 +1,11 @@
+# Used by `oc start-build --from-dir` instead of .gitignore (target/ must be included).
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+console-plugin/node_modules/
+console-plugin/dist/
+.quarkus/
+.git/
