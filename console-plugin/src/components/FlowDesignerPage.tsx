@@ -1,7 +1,32 @@
 import * as React from 'react';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  DescriptionList,
+  DescriptionListDescription,
+  DescriptionListGroup,
+  DescriptionListTerm,
+  Label,
+  PageSection,
+  Spinner,
+  Tab,
+  Tabs,
+  TabTitleText,
+  TextInput,
+  Title,
+  Toolbar,
+  ToolbarContent,
+  ToolbarItem,
+} from '@patternfly/react-core';
 import TelemetryOverlay from './TelemetryOverlay';
 import FlowVisualizer from './FlowVisualizer';
 import type { FlowNode } from './FlowVisualizer';
+import EphemeralBanner from './ephemeral/EphemeralBanner';
+import EphemeralBadge from './ephemeral/EphemeralBadge';
+import ExtendTtlModal from './ephemeral/ExtendTtlModal';
+import PromoteToGitOpsModal from './ephemeral/PromoteToGitOpsModal';
 
 const API_BASE = '/api/kubernetes/apis/platform.io/v1alpha1';
 const PROXY_BASE = '/api/proxy/plugin/openshift-integration-operator/backend';
@@ -17,11 +42,14 @@ interface IntegrationFlow {
     resilience?: { retry?: { maxAttempts?: number; backoff?: string; initialDelay?: string; maxDelay?: string }; circuitBreaker?: { failureThreshold?: number; halfOpenAfter?: string }; maxInflightExchanges?: number };
     alerting?: { errorRateThreshold?: number; enabled?: boolean };
     owner?: string; editors?: string[]; viewers?: string[];
+    deploymentMode?: string;
+    ephemeral?: { ttlSeconds?: number };
   };
   status?: {
     phase: string; message?: string; gitCommitHash?: string; argoApplicationName?: string;
     currentState?: string; circuitBreakerState?: string; prometheusRuleName?: string;
     sonataFlowName?: string; sonataFlowNamespace?: string; sonataFlowReady?: string;
+    deploymentMode?: string; ephemeralExpiresAt?: string; ephemeralWorkerRef?: string;
   };
 }
 
@@ -49,6 +77,21 @@ const phaseDot: Record<string, string> = {
   Deploying: '#0066cc', PartiallyHealthy: '#f0ab00', Error: '#c9190b',
 };
 
+type LabelColor = 'blue' | 'cyan' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'gold';
+
+const phaseToLabelColor: Record<string, LabelColor> = {
+  Running: 'green',
+  Building: 'gold',
+  Scaffolding: 'purple',
+  Deploying: 'blue',
+  PartiallyHealthy: 'orange',
+  Error: 'red',
+  Pending: 'grey',
+  Paused: 'orange',
+  Stopped: 'grey',
+  Expired: 'red',
+};
+
 function getBaseAppsDomain(): string {
   const host = window.location.hostname;
   const parts = host.split('.');
@@ -70,12 +113,6 @@ const SONATAFLOW_CONSOLE_URL = getSonataFlowConsoleUrl();
 
 type TabId = 'visual' | 'kaoto' | 'sonataflow' | 'design' | 'spec' | 'status' | 'history' | 'dependencies';
 
-const resourceLinkStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', borderRadius: '4px', fontSize: '13px',
-  textDecoration: 'none', color: 'var(--pf-global--link--Color, #2b9af3)',
-  border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'transparent',
-};
-
 const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const flowName = match?.params?.name || extractFlowName();
   const [flow, setFlow] = React.useState<IntegrationFlow | null>(null);
@@ -93,6 +130,9 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const [stateChanging, setStateChanging] = React.useState(false);
   const [dependencies, setDependencies] = React.useState<DependentFlow[]>([]);
   const [copiedDesign, setCopiedDesign] = React.useState(false);
+  const [showExtendModal, setShowExtendModal] = React.useState(false);
+  const [showPromoteModal, setShowPromoteModal] = React.useState(false);
+  const [bannerDismissed, setBannerDismissed] = React.useState(false);
 
   const fetchFlow = React.useCallback(async () => {
     if (!flowName) { setError('No flow name'); setLoading(false); return; }
@@ -120,7 +160,6 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
     setSaved(false);
     setGitSyncStatus(null);
     try {
-      // Update the CR spec
       const patch = [{ op: 'replace', path: '/spec/kaotoDesign', value: design }];
       const resp = await fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows/${flowName}`, {
         method: 'PATCH',
@@ -132,23 +171,27 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
         throw new Error(errData.message || `HTTP ${resp.status}`);
       }
 
-      // Also sync to Git via the operator API
-      try {
-        const gitResp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/design`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-          body: JSON.stringify({ kaotoDesign: design }),
-        });
-        if (gitResp.ok) {
-          const gitData = await gitResp.json();
-          setGitSyncStatus(gitData.gitCommitHash
-            ? `Synced to Git (${gitData.gitCommitHash.substring(0, 7)})`
-            : 'Synced to Git');
-        } else {
-          setGitSyncStatus('CR saved, Git sync pending (will sync on next reconciliation)');
+      const isEphemeralFlow = flow.spec.deploymentMode === 'EPHEMERAL';
+      if (!isEphemeralFlow) {
+        try {
+          const gitResp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/design`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            body: JSON.stringify({ kaotoDesign: design }),
+          });
+          if (gitResp.ok) {
+            const gitData = await gitResp.json();
+            setGitSyncStatus(gitData.gitCommitHash
+              ? `Synced to Git (${gitData.gitCommitHash.substring(0, 7)})`
+              : 'Synced to Git');
+          } else {
+            setGitSyncStatus('CR saved, Git sync pending (will sync on next reconciliation)');
+          }
+        } catch {
+          setGitSyncStatus('CR saved, Git sync pending');
         }
-      } catch {
-        setGitSyncStatus('CR saved, Git sync pending');
+      } else {
+        setGitSyncStatus('Design saved; ephemeral runtime will reconcile');
       }
 
       setSaved(true);
@@ -214,501 +257,556 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   };
 
   const isSonataFlow = flow?.spec.integrationType === 'SONATAFLOW' || flow?.spec.engine === 'SONATAFLOW';
+  const isEphemeral = flow?.spec.deploymentMode === 'EPHEMERAL' || flow?.status?.deploymentMode === 'EPHEMERAL';
   const currentState = flow?.status?.currentState || (flow?.status?.phase === 'Running' ? 'running' : flow?.status?.phase === 'Paused' ? 'paused' : 'unknown');
   const circuitState = flow?.status?.circuitBreakerState || 'closed';
   const phase = flow?.status?.phase || 'Pending';
-  const dot = phaseDot[phase] || '#6a6e73';
 
-  const tabStyle = (active: boolean): React.CSSProperties => ({
-    padding: '10px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: active ? 600 : 400,
-    borderBottom: active ? '2px solid var(--pf-global--primary-color--100, #0066cc)' : '2px solid transparent',
-    color: active ? 'var(--pf-global--primary-color--100, #0066cc)' : 'var(--pf-global--Color--200, #6a6e73)',
-    backgroundColor: 'transparent', border: 'none',
-    borderBottomWidth: '2px', borderBottomStyle: 'solid',
-    borderBottomColor: active ? 'var(--pf-global--primary-color--100, #0066cc)' : 'transparent',
-  });
+  const designLines = flow ? design.split('\n') : [];
 
-  if (loading) return <div className="co-m-pane__body" style={{ padding: '24px' }}><p className="co-help-text">Loading flow...</p></div>;
-  if (error || !flow) return (
-    <div className="co-m-pane__body" style={{ padding: '24px' }}>
-      <div className="pf-c-alert pf-m-danger pf-m-inline" style={{ marginBottom: '16px' }}>
-        <h4 className="pf-c-alert__title">Error loading flow &quot;{flowName}&quot;: {error}</h4>
-      </div>
-      <a href="/integration-flows" className="pf-c-button pf-m-link">&larr; Back to Flows</a>
-    </div>
+  const toggleFullscreen = () => {
+    if (!fullscreen && contentRef.current) {
+      contentRef.current.requestFullscreen?.();
+      setFullscreen(true);
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+      setFullscreen(false);
+    }
+  };
+
+  const renderZoomToolbar = () => (
+    <Toolbar style={{ padding: '0 8px', minHeight: 'auto' }}>
+      <ToolbarContent style={{ padding: 0 }}>
+        <ToolbarItem style={{ marginLeft: 'auto' }}>
+          <Button variant="plain" onClick={() => setZoom(z => Math.max(0.25, z - 0.1))} title="Zoom Out" style={{ padding: '4px 8px' }}>{'\u2212'}</Button>
+          <span style={{ fontSize: '12px', minWidth: '40px', textAlign: 'center', color: 'var(--pf-global--Color--200, #6a6e73)', display: 'inline-block' }}>{Math.round(zoom * 100)}%</span>
+          <Button variant="plain" onClick={() => setZoom(z => Math.min(3, z + 0.1))} title="Zoom In" style={{ padding: '4px 8px' }}>+</Button>
+          <Button variant="plain" onClick={() => setZoom(1)} title="Reset Zoom" style={{ padding: '4px 8px', fontSize: '12px' }}>1:1</Button>
+          <Button variant="plain" title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'} onClick={toggleFullscreen} style={{ padding: '4px 8px' }}>
+            {fullscreen ? '\u2716' : '\u26F6'}
+          </Button>
+        </ToolbarItem>
+      </ToolbarContent>
+    </Toolbar>
   );
 
-  const designLines = design.split('\n');
+  if (loading) return (
+    <PageSection style={{ padding: '24px' }}>
+      <Spinner size="lg" aria-label="Loading flow" />
+    </PageSection>
+  );
+
+  if (error || !flow) return (
+    <PageSection style={{ padding: '24px' }}>
+      <Alert variant="danger" isInline title={`Error loading flow "${flowName}": ${error}`} style={{ marginBottom: '16px' }} />
+      <Button variant="link" component="a" href="/integration-flows">&larr; Back to Flows</Button>
+    </PageSection>
+  );
 
   return (
-    <div className="co-m-pane__body" style={{ padding: '24px', height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
+    <PageSection padding={{ default: 'padding' }} style={{ height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ marginBottom: '12px' }}>
-        <a href="/integration-flows" className="pf-c-button pf-m-link pf-m-small" style={{ padding: 0, marginBottom: '6px', display: 'inline-block' }}>&larr; Back to Flows</a>
+        <Button variant="link" component="a" href="/integration-flows" isInline style={{ padding: 0, marginBottom: '6px', display: 'inline-block' }}>
+          &larr; Back to Flows
+        </Button>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h1 className="co-m-pane__heading" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px', fontSize: '18px' }}>
+            <Title headingLevel="h1" size="lg" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {flow.metadata.name}
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, padding: '2px 10px', borderRadius: '10px', backgroundColor: dot, color: '#fff' }}>
-                {phase}
-              </span>
-            </h1>
-            <span className="co-help-text" style={{ fontSize: '12px' }}>
-              Engine: <strong>{flow.spec.integrationType || flow.spec.engine}</strong> &middot; Branch: <strong>{flow.spec.branch}</strong>
+              <Label color={phaseToLabelColor[phase] || 'grey'}>{phase}</Label>
+              <EphemeralBadge
+                deploymentMode={flow.spec.deploymentMode || flow.status?.deploymentMode}
+                ephemeralExpiresAt={flow.status?.ephemeralExpiresAt}
+              />
+            </Title>
+            <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+              Engine: <strong>{flow.spec.integrationType || flow.spec.engine}</strong>
+              {!isEphemeral && <> &middot; Branch: <strong>{flow.spec.branch}</strong></>}
               {flow.spec.targetClusters?.length ? <> &middot; Clusters: <strong>{flow.spec.targetClusters.join(', ')}</strong></> : null}
             </span>
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {saved && <span style={{ color: '#3e8635', fontSize: '13px' }}>Saved!</span>}
             {gitSyncStatus && <span style={{ color: '#2b9af3', fontSize: '11px' }}>{gitSyncStatus}</span>}
-            {/* Lifecycle controls */}
             {phase === 'Running' && (
-              <button className="pf-c-button pf-m-warning pf-m-small" onClick={() => changeState('paused')} disabled={stateChanging}
-                style={{ fontSize: '12px', padding: '4px 10px' }}>
+              <Button variant="warning" onClick={() => changeState('paused')} isDisabled={stateChanging}>
                 {'\u23F8'} Pause
-              </button>
+              </Button>
             )}
             {(phase === 'Paused' || currentState === 'paused') && (
-              <button className="pf-c-button pf-m-secondary pf-m-small" onClick={() => changeState('running')} disabled={stateChanging}
-                style={{ fontSize: '12px', padding: '4px 10px' }}>
+              <Button variant="secondary" onClick={() => changeState('running')} isDisabled={stateChanging}>
                 {'\u25B6'} Resume
-              </button>
+              </Button>
             )}
             {phase !== 'Stopped' && (
-              <button className="pf-c-button pf-m-danger pf-m-small" onClick={() => { if (confirm('Stop this flow?')) changeState('stopped'); }} disabled={stateChanging}
-                style={{ fontSize: '12px', padding: '4px 10px' }}>
+              <Button variant="danger" onClick={() => { if (confirm('Stop this flow?')) changeState('stopped'); }} isDisabled={stateChanging}>
                 {'\u25A0'} Stop
-              </button>
+              </Button>
             )}
-            {/* Circuit breaker toggle */}
             {circuitState === 'open' && (
-              <button className="pf-c-button pf-m-secondary pf-m-small" onClick={toggleCircuitBreaker}
-                style={{ fontSize: '12px', padding: '4px 10px', borderColor: '#c9190b', color: '#c9190b' }}>
+              <Button variant="secondary" isDanger onClick={toggleCircuitBreaker}>
                 {'\u26A1'} Circuit: OPEN - Force Close
-              </button>
+              </Button>
             )}
-            <button className="pf-c-button pf-m-primary" onClick={handleSave} disabled={saving}>
+            {isEphemeral && phase !== 'Expired' && (
+              <>
+                <Button variant="secondary" onClick={() => setShowExtendModal(true)}>
+                  Extend TTL
+                </Button>
+                <Button variant="secondary" onClick={() => setShowPromoteModal(true)}>
+                  Promote to GitOps
+                </Button>
+              </>
+            )}
+            <Button variant="primary" onClick={handleSave} isDisabled={saving}>
               {saving ? 'Saving...' : 'Save Design'}
-            </button>
+            </Button>
           </div>
         </div>
+        {isEphemeral && !bannerDismissed && (
+          <div style={{ marginTop: '12px' }}>
+            <EphemeralBanner
+              expiresAt={flow.status?.ephemeralExpiresAt}
+              onDismiss={() => setBannerDismissed(true)}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Tabs + Toolbar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', marginBottom: '0' }}>
-        <div style={{ display: 'flex' }}>
-          <button style={tabStyle(activeTab === 'visual')} onClick={() => setActiveTab('visual')}>Visual Flow</button>
-          {!isSonataFlow && <button style={tabStyle(activeTab === 'kaoto')} onClick={() => setActiveTab('kaoto')}>Kaoto Designer</button>}
-          {isSonataFlow && <button style={tabStyle(activeTab === 'sonataflow')} onClick={() => setActiveTab('sonataflow')}>SonataFlow Console</button>}
-          <button style={tabStyle(activeTab === 'design')} onClick={() => setActiveTab('design')}>YAML Editor</button>
-          <button style={tabStyle(activeTab === 'history')} onClick={() => setActiveTab('history')}>History</button>
-          <button style={tabStyle(activeTab === 'dependencies')} onClick={() => setActiveTab('dependencies')}>Dependencies</button>
-          <button style={tabStyle(activeTab === 'spec')} onClick={() => setActiveTab('spec')}>Spec</button>
-          <button style={tabStyle(activeTab === 'status')} onClick={() => setActiveTab('status')}>Status</button>
-        </div>
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', paddingRight: '4px' }}>
-          {(activeTab === 'visual' || activeTab === 'kaoto' || activeTab === 'sonataflow') && (
-            <>
-              <button className="pf-c-button pf-m-plain" title="Zoom Out" onClick={() => setZoom(z => Math.max(0.25, z - 0.1))} style={{ fontSize: '16px', padding: '4px 8px' }}>&#x2212;</button>
-              <span style={{ fontSize: '12px', minWidth: '40px', textAlign: 'center', color: 'var(--pf-global--Color--200, #6a6e73)' }}>{Math.round(zoom * 100)}%</span>
-              <button className="pf-c-button pf-m-plain" title="Zoom In" onClick={() => setZoom(z => Math.min(3, z + 0.1))} style={{ fontSize: '16px', padding: '4px 8px' }}>+</button>
-              <button className="pf-c-button pf-m-plain" title="Reset Zoom" onClick={() => setZoom(1)} style={{ fontSize: '12px', padding: '4px 8px' }}>1:1</button>
-            </>
-          )}
-          <button
-            className="pf-c-button pf-m-plain"
-            title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-            onClick={() => {
-              if (!fullscreen && contentRef.current) {
-                contentRef.current.requestFullscreen?.();
-                setFullscreen(true);
-              } else if (document.exitFullscreen) {
-                document.exitFullscreen();
-                setFullscreen(false);
-              }
-            }}
-            style={{ fontSize: '16px', padding: '4px 8px' }}
-          >{fullscreen ? '\u2716' : '\u26F6'}</button>
-        </div>
-      </div>
+      <ExtendTtlModal
+        flowName={flowName}
+        isOpen={showExtendModal}
+        onClose={() => setShowExtendModal(false)}
+        onExtended={fetchFlow}
+      />
+      <PromoteToGitOpsModal
+        flowName={flowName}
+        isOpen={showPromoteModal}
+        onClose={() => setShowPromoteModal(false)}
+        onPromoted={fetchFlow}
+      />
 
-      {/* Content */}
-      <div ref={contentRef} style={{ flex: 1, display: 'flex', gap: '0', marginTop: '0', minHeight: 0, backgroundColor: fullscreen ? 'var(--pf-global--BackgroundColor--dark-300, #151515)' : undefined }}>
-        {/* Main area: Visual + YAML side-by-side when node selected */}
+      {/* Tabs + Content + Sidebar */}
+      <div ref={contentRef} style={{ flex: 1, display: 'flex', minHeight: 0, backgroundColor: fullscreen ? 'var(--pf-global--BackgroundColor--dark-300, #151515)' : undefined }}>
+        {/* Main area with Tabs */}
         <div style={{ flex: 3, display: 'flex', flexDirection: 'column', border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRadius: '6px 0 0 6px', overflow: 'hidden' }}>
-          {activeTab === 'visual' && (
-            <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-              {/* Visual panel */}
-              <div style={{ flex: selectedYamlRange ? 1 : 1, backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', overflow: 'auto' }}>
-                <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', minHeight: '100%' }}>
-                  <FlowVisualizer design={design} engine={flow.spec.engine} onNodeClick={handleNodeClick} />
-                </div>
-              </div>
-              {/* YAML highlight panel */}
-              {selectedYamlRange && (
-                <div style={{ width: '340px', borderLeft: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
-                  <div style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontWeight: 600, textTransform: 'uppercase' }}>
-                      YAML &middot; Lines {selectedYamlRange.start + 1}&ndash;{selectedYamlRange.end + 1}
-                    </span>
-                    <button onClick={() => setSelectedYamlRange(null)}
-                      style={{ background: 'none', border: 'none', color: 'var(--pf-global--Color--200, #6a6e73)', cursor: 'pointer', fontSize: '12px' }}>{'\u2716'}</button>
-                  </div>
-                  <pre style={{ flex: 1, margin: 0, padding: '8px', overflow: 'auto', fontSize: '12px', lineHeight: 1.6, fontFamily: 'var(--pf-global--FontFamily--monospace, monospace)', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
-                    {designLines.map((line, idx) => {
-                      const inRange = idx >= selectedYamlRange.start && idx <= selectedYamlRange.end;
-                      return (
-                        <div key={idx} style={{
-                          backgroundColor: inRange ? 'rgba(0,102,204,0.2)' : 'transparent',
-                          borderLeft: inRange ? '3px solid #0066cc' : '3px solid transparent',
-                          paddingLeft: '6px',
-                        }}>
-                          <span style={{ display: 'inline-block', width: '28px', textAlign: 'right', marginRight: '8px', color: '#6a6e73', fontSize: '10px', userSelect: 'none' }}>{idx + 1}</span>
-                          {line || ' '}
-                        </div>
-                      );
-                    })}
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'kaoto' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
-                <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-                  Kaoto Designer &mdash; <strong>{flowName}</strong>
-                </span>
-                <button onClick={copyDesignToClipboard}
-                  className="pf-c-button pf-m-secondary pf-m-small" style={{ fontSize: '11px', marginLeft: '8px' }}>
-                  {copiedDesign ? '\u2713 Copied!' : '\u2398 Copy YAML to Clipboard'}
-                </button>
-                <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontStyle: 'italic' }}>
-                  Paste into Kaoto Source tab to sync
-                </span>
-                <a href={KAOTO_URL} target="_blank" rel="noopener noreferrer"
-                  className="pf-c-button pf-m-link pf-m-small" style={{ fontSize: '12px', marginLeft: 'auto' }}>
-                  Open in new tab &#x2197;
-                </a>
-              </div>
+          <Tabs
+            activeKey={activeTab}
+            onSelect={(_event, eventKey) => setActiveTab(eventKey as TabId)}
+            mountOnEnter
+            unmountOnExit
+          >
+            <Tab eventKey="visual" title={<TabTitleText>Visual Flow</TabTitleText>}>
+              {renderZoomToolbar()}
               <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-                <iframe src={KAOTO_URL}
-                  style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
-                  title="Kaoto Designer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
-                {/* YAML sync panel */}
-                <div style={{ width: '280px', borderLeft: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
-                  <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontWeight: 600, textTransform: 'uppercase' }}>
-                      Current kaotoDesign
-                    </span>
+                <div style={{ flex: selectedYamlRange ? 1 : 1, backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', overflow: 'auto' }}>
+                  <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', minHeight: '100%' }}>
+                    <FlowVisualizer design={design} engine={flow.spec.engine} onNodeClick={handleNodeClick} />
                   </div>
-                  <pre style={{ flex: 1, margin: 0, padding: '8px', overflow: 'auto', fontSize: '11px', lineHeight: 1.5, fontFamily: 'var(--pf-global--FontFamily--monospace, monospace)', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
-                    {design || '(empty)'}
-                  </pre>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'sonataflow' && (() => {
-            const sfName = flow?.status?.sonataFlowName;
-            const sfNs = flow?.status?.sonataFlowNamespace || 'kogito-bpm';
-            const sfReady = flow?.status?.sonataFlowReady;
-            const sfWorkflowUrl = sfName
-              ? `${SONATAFLOW_CONSOLE_URL}/Workflow/${sfName}`
-              : SONATAFLOW_CONSOLE_URL;
-            return (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ padding: '8px 12px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-                    SonataFlow Management Console
-                  </span>
-                  {sfName ? (
-                    <>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#009596' }}>{sfName}</span>
-                      <span style={{ fontSize: '11px', color: '#6a6e73' }}>in {sfNs}</span>
-                      <span style={{
-                        fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '3px',
-                        backgroundColor: sfReady === 'True' ? '#3e863522' : '#f0ab0022',
-                        color: sfReady === 'True' ? '#3e8635' : '#f0ab00',
-                      }}>
-                        {sfReady === 'True' ? '\u2713 Ready' : '\u29D7 Deploying'}
+                {selectedYamlRange && (
+                  <div style={{ width: '340px', borderLeft: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                    <div style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontWeight: 600, textTransform: 'uppercase' }}>
+                        YAML &middot; Lines {selectedYamlRange.start + 1}&ndash;{selectedYamlRange.end + 1}
                       </span>
-                      <a href={`/k8s/ns/${sfNs}/sonataflow.org~v1alpha08~SonataFlow/${sfName}`}
-                        style={{ fontSize: '11px', color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none' }}>
-                        View CR &#x2197;
-                      </a>
-                    </>
-                  ) : (
-                    <span style={{ fontSize: '12px', color: '#f0ab00' }}>
-                      No SonataFlow CR deployed yet &mdash; save the flow to trigger deployment
-                    </span>
-                  )}
-                  <a href={sfWorkflowUrl} target="_blank" rel="noopener noreferrer"
-                    className="pf-c-button pf-m-link pf-m-small" style={{ fontSize: '12px', marginLeft: 'auto' }}>
-                    Open in new tab &#x2197;
-                  </a>
-                </div>
-                <iframe src={sfWorkflowUrl}
-                  style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
-                  title="SonataFlow Management Console" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
+                      <Button variant="plain" onClick={() => setSelectedYamlRange(null)} style={{ padding: '2px 4px', fontSize: '12px' }}>{'\u2716'}</Button>
+                    </div>
+                    <pre style={{ flex: 1, margin: 0, padding: '8px', overflow: 'auto', fontSize: '12px', lineHeight: 1.6, fontFamily: 'var(--pf-global--FontFamily--monospace, monospace)', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
+                      {designLines.map((line, idx) => {
+                        const inRange = idx >= selectedYamlRange.start && idx <= selectedYamlRange.end;
+                        return (
+                          <div key={idx} style={{
+                            backgroundColor: inRange ? 'rgba(0,102,204,0.2)' : 'transparent',
+                            borderLeft: inRange ? '3px solid #0066cc' : '3px solid transparent',
+                            paddingLeft: '6px',
+                          }}>
+                            <span style={{ display: 'inline-block', width: '28px', textAlign: 'right', marginRight: '8px', color: '#6a6e73', fontSize: '10px', userSelect: 'none' }}>{idx + 1}</span>
+                            {line || ' '}
+                          </div>
+                        );
+                      })}
+                    </pre>
+                  </div>
+                )}
               </div>
-            );
-          })()}
+            </Tab>
 
-          {activeTab === 'design' && (
-            <textarea ref={editorRef} value={design} onChange={(e) => setDesign(e.target.value)} spellCheck={false}
-              style={{
-                flex: 1, width: '100%', padding: '16px',
+            {!isSonataFlow && (
+              <Tab eventKey="kaoto" title={<TabTitleText>Kaoto Designer</TabTitleText>}>
+                <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 260px)' }}>
+                  <div style={{ padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                      Kaoto Designer &mdash; <strong>{flowName}</strong>
+                    </span>
+                    <Button variant="secondary" onClick={copyDesignToClipboard} style={{ fontSize: '11px', marginLeft: '8px' }}>
+                      {copiedDesign ? '\u2713 Copied!' : '\u2398 Copy YAML to Clipboard'}
+                    </Button>
+                    <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontStyle: 'italic' }}>
+                      Paste into Kaoto Source tab to sync
+                    </span>
+                    <Button variant="link" component="a" href={KAOTO_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', marginLeft: 'auto' }}>
+                      Open in new tab &#x2197;
+                    </Button>
+                  </div>
+                  {renderZoomToolbar()}
+                  <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+                    <iframe src={KAOTO_URL}
+                      style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
+                      title="Kaoto Designer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
+                    <div style={{ width: '280px', borderLeft: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                      <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontWeight: 600, textTransform: 'uppercase' }}>
+                          Current kaotoDesign
+                        </span>
+                      </div>
+                      <pre style={{ flex: 1, margin: 0, padding: '8px', overflow: 'auto', fontSize: '11px', lineHeight: 1.5, fontFamily: 'var(--pf-global--FontFamily--monospace, monospace)', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
+                        {design || '(empty)'}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </Tab>
+            )}
+
+            {isSonataFlow && (
+              <Tab eventKey="sonataflow" title={<TabTitleText>SonataFlow Console</TabTitleText>}>
+                {(() => {
+                  const sfName = flow?.status?.sonataFlowName;
+                  const sfNs = flow?.status?.sonataFlowNamespace || 'kogito-bpm';
+                  const sfReady = flow?.status?.sonataFlowReady;
+                  const sfWorkflowUrl = sfName
+                    ? `${SONATAFLOW_CONSOLE_URL}/Workflow/${sfName}`
+                    : SONATAFLOW_CONSOLE_URL;
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 260px)' }}>
+                      <div style={{ padding: '8px 12px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                          SonataFlow Management Console
+                        </span>
+                        {sfName ? (
+                          <>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#009596' }}>{sfName}</span>
+                            <span style={{ fontSize: '11px', color: '#6a6e73' }}>in {sfNs}</span>
+                            <Label color={sfReady === 'True' ? 'green' : 'gold'} isCompact>
+                              {sfReady === 'True' ? '\u2713 Ready' : '\u29D7 Deploying'}
+                            </Label>
+                            <Button variant="link" isInline component="a"
+                              href={`/k8s/ns/${sfNs}/sonataflow.org~v1alpha08~SonataFlow/${sfName}`}
+                              style={{ fontSize: '11px' }}>
+                              View CR &#x2197;
+                            </Button>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#f0ab00' }}>
+                            No SonataFlow CR deployed yet &mdash; save the flow to trigger deployment
+                          </span>
+                        )}
+                        <Button variant="link" component="a" href={sfWorkflowUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', marginLeft: 'auto' }}>
+                          Open in new tab &#x2197;
+                        </Button>
+                      </div>
+                      {renderZoomToolbar()}
+                      <iframe src={sfWorkflowUrl}
+                        style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
+                        title="SonataFlow Management Console" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
+                    </div>
+                  );
+                })()}
+              </Tab>
+            )}
+
+            <Tab eventKey="design" title={<TabTitleText>YAML Editor</TabTitleText>}>
+              <textarea ref={editorRef} value={design} onChange={(e) => setDesign(e.target.value)} spellCheck={false}
+                style={{
+                  width: '100%', height: 'calc(100vh - 260px)', padding: '16px',
+                  fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
+                  fontSize: '13px', lineHeight: 1.6, border: 'none', resize: 'none', outline: 'none',
+                  backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
+                  color: 'var(--pf-global--Color--light-100, #e0e0e0)',
+                }} />
+            </Tab>
+
+            <Tab eventKey="history" title={<TabTitleText>History</TabTitleText>}>
+              <div style={{ padding: '16px', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', minHeight: '300px' }}>
+                <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
+                  Version History
+                </Title>
+                <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '16px' }}>
+                  Current commit: <code style={{ color: '#79c0ff' }}>{flow.status?.gitCommitHash?.substring(0, 8) || 'none'}</code>
+                  &nbsp;&middot;&nbsp;Branch: <strong>{flow.spec.branch}</strong>
+                </div>
+                {flow.spec.gitRepository && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'rgba(47,158,68,0.1)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#3e8635', fontWeight: 600 }}>{'\u25CF'} Current Version</span>
+                          <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginTop: '4px' }}>
+                            Commit: <code>{flow.status?.gitCommitHash || 'pending'}</code>
+                          </div>
+                        </div>
+                        <Label color="green" isCompact>ACTIVE</Label>
+                      </div>
+                    </div>
+                    <div style={{ padding: '10px 12px', borderRadius: '6px', border: '1px dashed var(--pf-global--BorderColor--100, #3c3f42)' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                        {'\u2139'} Full commit history is available from the Git repository. To rollback to a previous version, enter a commit hash:
+                      </span>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                        <TextInput
+                          placeholder="Commit hash..."
+                          aria-label="Rollback commit hash"
+                          id="rollback-hash"
+                          style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', color: '#e0e0e0', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}
+                        />
+                        <Button variant="warning" style={{ fontSize: '12px' }}
+                          onClick={async () => {
+                            const hash = (document.getElementById('rollback-hash') as HTMLInputElement)?.value;
+                            if (!hash || !confirm(`Rollback ${flowName} to ${hash}?`)) return;
+                            try {
+                              const resp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/rollback?commitHash=${hash}`, {
+                                method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() },
+                              });
+                              if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                              await fetchFlow();
+                            } catch (e: any) { alert(`Rollback failed: ${e.message}`); }
+                          }}>
+                          {'\u21B6'} Rollback
+                        </Button>
+                      </div>
+                    </div>
+                    <a href={flow.spec.gitRepository} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: '12px', color: 'var(--pf-global--link--Color, #2b9af3)', marginTop: '8px' }}>
+                      {'\u2197'} View full history in Git
+                    </a>
+                  </div>
+                )}
+              </div>
+            </Tab>
+
+            <Tab eventKey="dependencies" title={<TabTitleText>Dependencies</TabTitleText>}>
+              <div style={{ padding: '16px', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', minHeight: '300px' }}>
+                <Title headingLevel="h3" size="md" style={{ marginBottom: '8px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
+                  Dependency Graph
+                </Title>
+                <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '16px' }}>
+                  Flows that reference <code style={{ color: '#79c0ff' }}>{flowName}</code> via direct:, kafka:, or seda: endpoints.
+                </div>
+                {dependencies.length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                    <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>{'\u2713'}</span>
+                    No flows depend on this one. Safe to modify or delete.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <Alert variant="warning" isInline title={`${dependencies.length} flow${dependencies.length !== 1 ? 's' : ''} depend${dependencies.length === 1 ? 's' : ''} on this flow. Deleting or modifying may break them.`} />
+                    {dependencies.map(dep => (
+                      <a key={dep.name} href={`/integration-flows/${dep.name}`}
+                        style={{ padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ color: 'var(--pf-global--link--Color, #2b9af3)', fontWeight: 500, fontSize: '13px' }}>{dep.name}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginLeft: '8px' }}>{dep.type}</span>
+                        </div>
+                        <Label color={phaseToLabelColor[dep.phase] || 'grey'} isCompact>{dep.phase}</Label>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Tab>
+
+            <Tab eventKey="spec" title={<TabTitleText>Spec</TabTitleText>}>
+              <pre style={{
+                margin: 0, padding: '16px', overflow: 'auto', minHeight: '300px',
                 fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
-                fontSize: '13px', lineHeight: 1.6, border: 'none', resize: 'none', outline: 'none',
+                fontSize: '13px', lineHeight: 1.6,
                 backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
                 color: 'var(--pf-global--Color--light-100, #e0e0e0)',
-              }} />
-          )}
-          {activeTab === 'spec' && (
-            <pre style={{
-              flex: 1, margin: 0, padding: '16px', overflow: 'auto',
-              fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
-              fontSize: '13px', lineHeight: 1.6,
-              backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
-              color: 'var(--pf-global--Color--light-100, #e0e0e0)',
-            }}>{JSON.stringify(flow.spec, null, 2)}</pre>
-          )}
-          {activeTab === 'status' && (
-            <pre style={{
-              flex: 1, margin: 0, padding: '16px', overflow: 'auto',
-              fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
-              fontSize: '13px', lineHeight: 1.6,
-              backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
-              color: 'var(--pf-global--Color--light-100, #e0e0e0)',
-            }}>{JSON.stringify(flow.status || { phase: 'Pending', message: 'Waiting for reconciliation' }, null, 2)}</pre>
-          )}
+              }}>{JSON.stringify(flow.spec, null, 2)}</pre>
+            </Tab>
 
-          {activeTab === 'history' && (
-            <div style={{ flex: 1, overflow: 'auto', padding: '16px', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
-              <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
-                Version History
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '16px' }}>
-                Current commit: <code style={{ color: '#79c0ff' }}>{flow.status?.gitCommitHash?.substring(0, 8) || 'none'}</code>
-                &nbsp;&middot;&nbsp;Branch: <strong>{flow.spec.branch}</strong>
-              </div>
-              {flow.spec.gitRepository && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'rgba(47,158,68,0.1)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#3e8635', fontWeight: 600 }}>{'\u25CF'} Current Version</span>
-                        <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginTop: '4px' }}>
-                          Commit: <code>{flow.status?.gitCommitHash || 'pending'}</code>
-                        </div>
-                      </div>
-                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '3px', backgroundColor: 'rgba(47,158,68,0.2)', color: '#3e8635', fontWeight: 600 }}>ACTIVE</span>
-                    </div>
-                  </div>
-                  <div style={{ padding: '10px 12px', borderRadius: '6px', border: '1px dashed var(--pf-global--BorderColor--100, #3c3f42)' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-                      {'\u2139'} Full commit history is available from the Git repository. To rollback to a previous version, enter a commit hash:
-                    </span>
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                      <input className="pf-c-form-control" placeholder="Commit hash..." id="rollback-hash"
-                        style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', color: '#e0e0e0', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }} />
-                      <button className="pf-c-button pf-m-warning pf-m-small" style={{ fontSize: '12px' }}
-                        onClick={async () => {
-                          const hash = (document.getElementById('rollback-hash') as HTMLInputElement)?.value;
-                          if (!hash || !confirm(`Rollback ${flowName} to ${hash}?`)) return;
-                          try {
-                            const resp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/rollback?commitHash=${hash}`, {
-                              method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() },
-                            });
-                            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                            await fetchFlow();
-                          } catch (e: any) { alert(`Rollback failed: ${e.message}`); }
-                        }}>
-                        {'\u21B6'} Rollback
-                      </button>
-                    </div>
-                  </div>
-                  <a href={flow.spec.gitRepository} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: '12px', color: 'var(--pf-global--link--Color, #2b9af3)', marginTop: '8px' }}>
-                    {'\u2197'} View full history in Git
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'dependencies' && (
-            <div style={{ flex: 1, overflow: 'auto', padding: '16px', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
-              <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
-                Dependency Graph
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '16px' }}>
-                Flows that reference <code style={{ color: '#79c0ff' }}>{flowName}</code> via direct:, kafka:, or seda: endpoints.
-              </div>
-              {dependencies.length === 0 ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-                  <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>{'\u2713'}</span>
-                  No flows depend on this one. Safe to modify or delete.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ padding: '8px 12px', borderRadius: '4px', backgroundColor: 'rgba(240,171,0,0.15)', border: '1px solid rgba(240,171,0,0.3)', fontSize: '12px', color: '#f0ab00' }}>
-                    {'\u26A0'} {dependencies.length} flow{dependencies.length !== 1 ? 's' : ''} depend{dependencies.length === 1 ? 's' : ''} on this flow. Deleting or modifying may break them.
-                  </div>
-                  {dependencies.map(dep => (
-                    <a key={dep.name} href={`/integration-flows/${dep.name}`}
-                      style={{ padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ color: 'var(--pf-global--link--Color, #2b9af3)', fontWeight: 500, fontSize: '13px' }}>{dep.name}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginLeft: '8px' }}>{dep.type}</span>
-                      </div>
-                      <span style={{ fontSize: '11px', color: phaseDot[dep.phase] || '#6a6e73', fontWeight: 500 }}>{dep.phase}</span>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            <Tab eventKey="status" title={<TabTitleText>Status</TabTitleText>}>
+              <pre style={{
+                margin: 0, padding: '16px', overflow: 'auto', minHeight: '300px',
+                fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
+                fontSize: '13px', lineHeight: 1.6,
+                backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
+                color: 'var(--pf-global--Color--light-100, #e0e0e0)',
+              }}>{JSON.stringify(flow.status || { phase: 'Pending', message: 'Waiting for reconciliation' }, null, 2)}</pre>
+            </Tab>
+          </Tabs>
         </div>
 
         {/* Sidebar */}
-        <div style={{ width: '240px', display: 'flex', flexDirection: 'column', gap: '0', borderTop: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRight: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderBottom: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRadius: '0 6px 6px 0', overflow: 'auto' }}>
-          <div style={{ padding: '12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
+        <Card isCompact isPlain style={{ width: '240px', overflow: 'auto', borderTop: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRight: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderBottom: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRadius: '0 6px 6px 0' }}>
+          <CardBody>
             <TelemetryOverlay flowId={flowName} />
-          </div>
-
-          {/* Resources */}
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-            <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Resources</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <a href={`/k8s/ns/${NAMESPACE}/pods?labelSelector=platform.io%2Fflow-name%3D${flowName}`}
-                style={resourceLinkStyle}>
-                <span style={{ color: '#3e8635' }}>{'\u25A3'}</span> Pods
-              </a>
-              <a href={`/k8s/ns/${NAMESPACE}/tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`}
-                style={resourceLinkStyle}>
-                <span style={{ color: '#f0ab00' }}>{'\u29D7'}</span> PipelineRuns
-              </a>
-              {flow.status?.argoApplicationName && (
-                <a href={`/k8s/ns/openshift-gitops/argoproj.io~v1alpha1~Application/${flow.status.argoApplicationName}`}
-                  style={resourceLinkStyle}>
-                  <span style={{ color: '#2b9af3' }}>{'\u21BB'}</span> ArgoCD App
-                </a>
-              )}
-              {flow.spec.gitRepository && (
-                <a href={flow.spec.gitRepository} target="_blank" rel="noopener noreferrer"
-                  style={resourceLinkStyle}>
-                  <span style={{ color: '#8476d1' }}>{'\u2197'}</span> Git Repository
-                </a>
-              )}
-              {isSonataFlow && (() => {
-                const sfName = flow?.status?.sonataFlowName;
-                const sfLink = sfName
-                  ? `${SONATAFLOW_CONSOLE_URL}/Workflow/${sfName}`
-                  : SONATAFLOW_CONSOLE_URL;
-                return (
-                  <>
-                    <a href={sfLink} target="_blank" rel="noopener noreferrer" style={resourceLinkStyle}>
-                      <span style={{ color: '#009596' }}>{'\u29BF'}</span> SonataFlow Console
-                    </a>
-                    {sfName && (
-                      <a href={`/k8s/ns/${flow?.status?.sonataFlowNamespace || 'kogito-bpm'}/sonataflow.org~v1alpha08~SonataFlow/${sfName}`}
-                        style={resourceLinkStyle}>
-                        <span style={{ color: '#009596' }}>{'\u2699'}</span> SonataFlow CR
-                      </a>
+          </CardBody>
+          <CardBody>
+            <DescriptionList isCompact>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Resources</DescriptionListTerm>
+                <DescriptionListDescription>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <Button variant="link" isInline component="a"
+                      href={`/k8s/ns/${NAMESPACE}/pods?labelSelector=platform.io%2Fflow-name%3D${flowName}`}>
+                      <span style={{ color: '#3e8635' }}>{'\u25A3'}</span> Pods
+                    </Button>
+                    {!isEphemeral && (
+                      <Button variant="link" isInline component="a"
+                        href={`/k8s/ns/${NAMESPACE}/tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`}>
+                        <span style={{ color: '#f0ab00' }}>{'\u29D7'}</span> PipelineRuns
+                      </Button>
                     )}
-                  </>
-                );
-              })()}
-            </div>
-          </div>
+                    {!isEphemeral && flow.status?.argoApplicationName && (
+                      <Button variant="link" isInline component="a"
+                        href={`/k8s/ns/openshift-gitops/argoproj.io~v1alpha1~Application/${flow.status.argoApplicationName}`}>
+                        <span style={{ color: '#2b9af3' }}>{'\u21BB'}</span> ArgoCD App
+                      </Button>
+                    )}
+                    {flow.spec.gitRepository && !isEphemeral && (
+                      <Button variant="link" isInline component="a"
+                        href={flow.spec.gitRepository} target="_blank" rel="noopener noreferrer">
+                        <span style={{ color: '#8476d1' }}>{'\u2197'}</span> Git Repository
+                      </Button>
+                    )}
+                    {isSonataFlow && (() => {
+                      const sfName = flow?.status?.sonataFlowName;
+                      const sfLink = sfName
+                        ? `${SONATAFLOW_CONSOLE_URL}/Workflow/${sfName}`
+                        : SONATAFLOW_CONSOLE_URL;
+                      return (
+                        <>
+                          <Button variant="link" isInline component="a" href={sfLink} target="_blank" rel="noopener noreferrer">
+                            <span style={{ color: '#009596' }}>{'\u29BF'}</span> SonataFlow Console
+                          </Button>
+                          {sfName && (
+                            <Button variant="link" isInline component="a"
+                              href={`/k8s/ns/${flow?.status?.sonataFlowNamespace || 'kogito-bpm'}/sonataflow.org~v1alpha08~SonataFlow/${sfName}`}>
+                              <span style={{ color: '#009596' }}>{'\u2699'}</span> SonataFlow CR
+                            </Button>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </DescriptionListDescription>
+              </DescriptionListGroup>
 
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-            <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>Target Clusters</div>
-            <div style={{ fontSize: '12px' }}>{(flow.spec.targetClusters || []).join(', ') || 'None'}</div>
-          </div>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Target Clusters</DescriptionListTerm>
+                <DescriptionListDescription>
+                  {(flow.spec.targetClusters || []).join(', ') || 'None'}
+                </DescriptionListDescription>
+              </DescriptionListGroup>
 
-          {/* Lifecycle State */}
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-            <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>State</div>
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', fontSize: '12px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block',
-                backgroundColor: currentState === 'running' ? '#3e8635' : currentState === 'paused' ? '#f0ab00' : '#c9190b' }} />
-              {currentState}
-            </div>
-          </div>
+              <DescriptionListGroup>
+                <DescriptionListTerm>State</DescriptionListTerm>
+                <DescriptionListDescription>
+                  <Label color={currentState === 'running' ? 'green' : currentState === 'paused' ? 'gold' : 'red'} isCompact>
+                    {currentState}
+                  </Label>
+                </DescriptionListDescription>
+              </DescriptionListGroup>
 
-          {/* Circuit Breaker */}
-          {flow.spec.resilience?.circuitBreaker && (
-            <div style={{ padding: '10px 12px', borderBottom: circuitState === 'open' ? '2px solid #c9190b' : '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-              <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>Circuit Breaker</div>
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', fontSize: '12px',
-                color: circuitState === 'open' ? '#c9190b' : circuitState === 'half-open' ? '#f0ab00' : '#3e8635' }}>
-                {circuitState === 'open' ? '\u26A0' : circuitState === 'half-open' ? '\u29D7' : '\u2713'} {circuitState}
-              </div>
-            </div>
-          )}
-
-          {/* Schedule */}
-          {flow.spec.schedule && (
-            <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-              <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>Schedule</div>
-              <code style={{ fontSize: '11px' }}>{flow.spec.schedule}</code>
-            </div>
-          )}
-
-          {/* Resilience Config */}
-          {flow.spec.resilience?.retry && (
-            <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-              <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>Retry Policy</div>
-              <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-                {flow.spec.resilience.retry.maxAttempts || 3}x {flow.spec.resilience.retry.backoff || 'exponential'}
-              </div>
-            </div>
-          )}
-
-          {flow.status?.gitCommitHash && (
-            <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-              <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>Last Commit</div>
-              <code style={{ fontSize: '12px' }}>{flow.status.gitCommitHash.substring(0, 8)}</code>
-            </div>
-          )}
-
-          {/* Alerting */}
-          {flow.spec.alerting?.enabled && (
-            <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-              <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>Alerting</div>
-              <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-                Error rate &gt; {((flow.spec.alerting.errorRateThreshold || 0.05) * 100).toFixed(0)}%
-              </div>
-              {flow.status?.prometheusRuleName && (
-                <code style={{ fontSize: '10px' }}>{flow.status.prometheusRuleName}</code>
+              {flow.spec.resilience?.circuitBreaker && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Circuit Breaker</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <Label color={circuitState === 'open' ? 'red' : circuitState === 'half-open' ? 'gold' : 'green'} isCompact>
+                      {circuitState === 'open' ? '\u26A0' : circuitState === 'half-open' ? '\u29D7' : '\u2713'} {circuitState}
+                    </Label>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
               )}
-            </div>
-          )}
 
-          {/* Owner */}
-          {flow.spec.owner && (
-            <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-              <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>Owner</div>
-              <div style={{ fontSize: '12px' }}>{flow.spec.owner}</div>
-              {flow.spec.editors?.length ? <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Editors: {flow.spec.editors.join(', ')}</div> : null}
-              {flow.spec.viewers?.length ? <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Viewers: {flow.spec.viewers.join(', ')}</div> : null}
-            </div>
-          )}
+              {flow.spec.schedule && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Schedule</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <code style={{ fontSize: '11px' }}>{flow.spec.schedule}</code>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
 
-          {flow.status?.message && (
-            <div style={{ padding: '10px 12px', borderBottom: phase === 'Error' ? '2px solid #c9190b' : undefined }}>
-              <div className="co-help-text" style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '4px' }}>Message</div>
-              <div style={{ fontSize: '12px', color: phase === 'Error' ? '#c9190b' : 'inherit' }}>{flow.status.message}</div>
-            </div>
-          )}
-        </div>
+              {flow.spec.resilience?.retry && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Retry Policy</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                      {flow.spec.resilience.retry.maxAttempts || 3}x {flow.spec.resilience.retry.backoff || 'exponential'}
+                    </span>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
+
+              {flow.status?.gitCommitHash && !isEphemeral && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Last Commit</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <code style={{ fontSize: '12px' }}>{flow.status.gitCommitHash.substring(0, 8)}</code>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
+
+              {isEphemeral && flow.status?.ephemeralWorkerRef && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Ephemeral Worker</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <code style={{ fontSize: '11px' }}>{flow.status.ephemeralWorkerRef}</code>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
+
+              {isEphemeral && flow.status?.ephemeralExpiresAt && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Expires At</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <span style={{ fontSize: '12px' }}>{new Date(flow.status.ephemeralExpiresAt).toLocaleString()}</span>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
+
+              {flow.spec.alerting?.enabled && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Alerting</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                      Error rate &gt; {((flow.spec.alerting.errorRateThreshold || 0.05) * 100).toFixed(0)}%
+                    </span>
+                    {flow.status?.prometheusRuleName && (
+                      <div><code style={{ fontSize: '10px' }}>{flow.status.prometheusRuleName}</code></div>
+                    )}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
+
+              {flow.spec.owner && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Owner</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <div style={{ fontSize: '12px' }}>{flow.spec.owner}</div>
+                    {flow.spec.editors?.length ? <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Editors: {flow.spec.editors.join(', ')}</div> : null}
+                    {flow.spec.viewers?.length ? <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Viewers: {flow.spec.viewers.join(', ')}</div> : null}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
+
+              {flow.status?.message && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Message</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <span style={{ fontSize: '12px', color: phase === 'Error' ? '#c9190b' : 'inherit' }}>{flow.status.message}</span>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
+            </DescriptionList>
+          </CardBody>
+        </Card>
       </div>
-    </div>
+    </PageSection>
   );
 };
 

@@ -1,4 +1,16 @@
 import * as React from 'react';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  CardTitle,
+  Label,
+  PageSection,
+  Spinner,
+  Title,
+} from '@patternfly/react-core';
+import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
 
 const API_BASE = '/api/kubernetes/apis/platform.io/v1alpha1';
 const K8S_CORE = '/api/kubernetes/api/v1';
@@ -24,11 +36,13 @@ interface PodInfo {
   labels: Record<string, string>;
 }
 
-const statusIcon: Record<string, { icon: string; color: string }> = {
-  healthy:  { icon: '\u2713', color: '#3e8635' },
-  degraded: { icon: '\u26A0', color: '#f0ab00' },
-  error:    { icon: '\u2716', color: '#c9190b' },
-  checking: { icon: '\u29D7', color: '#6a6e73' },
+type LabelColor = 'blue' | 'cyan' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'gold';
+
+const statusLabelColor: Record<string, LabelColor> = {
+  healthy: 'green',
+  degraded: 'orange',
+  error: 'red',
+  checking: 'grey',
 };
 
 function timeAgo(ts: string): string {
@@ -41,16 +55,11 @@ function timeAgo(ts: string): string {
   return `${Math.floor(hr / 24)}d`;
 }
 
-const cardStyle: React.CSSProperties = {
-  padding: '16px', borderRadius: '8px',
-  border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)',
-  backgroundColor: 'var(--pf-global--BackgroundColor--200, #151515)',
-};
-
 const PlatformStatusPage: React.FC = () => {
   const [services, setServices] = React.useState<ServiceCheck[]>([]);
   const [pods, setPods] = React.useState<PodInfo[]>([]);
   const [flowCount, setFlowCount] = React.useState(0);
+  const [ephemeralCount, setEphemeralCount] = React.useState(0);
   const [pipelineCount, setPipelineCount] = React.useState(0);
   const [argoApps, setArgoApps] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
@@ -59,7 +68,6 @@ const PlatformStatusPage: React.FC = () => {
   const checkServices = React.useCallback(async () => {
     const checks: ServiceCheck[] = [];
 
-    // Operator
     try {
       const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/openshift-integration-operator`);
       if (resp.ok) {
@@ -80,7 +88,6 @@ const PlatformStatusPage: React.FC = () => {
       checks.push({ name: 'Integration Operator', description: 'Quarkus operator', status: 'error', detail: e.message });
     }
 
-    // Console Plugin
     try {
       const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/integration-console-plugin`);
       if (resp.ok) {
@@ -98,7 +105,6 @@ const PlatformStatusPage: React.FC = () => {
       }
     } catch { checks.push({ name: 'Console Plugin', description: 'Dynamic Plugin', status: 'error', detail: 'Unreachable' }); }
 
-    // Kaoto
     try {
       const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/kaoto`);
       if (resp.ok) {
@@ -116,7 +122,6 @@ const PlatformStatusPage: React.FC = () => {
       }
     } catch { checks.push({ name: 'Kaoto Designer', description: 'Visual editor', status: 'error', detail: 'Unreachable' }); }
 
-    // Gitea
     try {
       const resp = await fetch(`${K8S_APPS}/namespaces/gitea/deployments`);
       if (resp.ok) {
@@ -139,7 +144,6 @@ const PlatformStatusPage: React.FC = () => {
       }
     } catch { checks.push({ name: 'Gitea (Git Server)', description: 'Git server', status: 'degraded', detail: 'Cannot check' }); }
 
-    // ArgoCD
     try {
       const resp = await fetch(`${K8S_APPS}/namespaces/openshift-gitops/deployments`);
       if (resp.ok) {
@@ -162,7 +166,6 @@ const PlatformStatusPage: React.FC = () => {
       }
     } catch { checks.push({ name: 'ArgoCD (GitOps)', description: 'GitOps controller', status: 'error', detail: 'Unreachable' }); }
 
-    // Tekton Pipelines
     try {
       const resp = await fetch(`${K8S_TEKTON}/namespaces/${NAMESPACE}/pipelines/integration-flow-build`);
       checks.push({
@@ -174,7 +177,6 @@ const PlatformStatusPage: React.FC = () => {
       });
     } catch { checks.push({ name: 'Tekton Pipeline', description: 'CI pipeline', status: 'error', detail: 'Unreachable' }); }
 
-    // OTel Collector
     try {
       const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/integration-otel-collector`);
       if (resp.ok) {
@@ -194,10 +196,15 @@ const PlatformStatusPage: React.FC = () => {
 
     setServices(checks);
 
-    // Fetch counts
     try {
       const resp = await fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows`);
-      if (resp.ok) { const data = await resp.json(); setFlowCount((data.items || []).length); }
+      if (resp.ok) {
+        const data = await resp.json();
+        const items = data.items || [];
+        setFlowCount(items.length);
+        setEphemeralCount(items.filter((f: { spec?: { deploymentMode?: string } }) =>
+          f.spec?.deploymentMode === 'EPHEMERAL').length);
+      }
     } catch { /* ignore */ }
 
     try {
@@ -210,7 +217,6 @@ const PlatformStatusPage: React.FC = () => {
       if (resp.ok) { const data = await resp.json(); setArgoApps((data.items || []).length); }
     } catch { /* ignore */ }
 
-    // Fetch platform pods
     try {
       const resp = await fetch(`${K8S_CORE}/namespaces/${NAMESPACE}/pods`);
       if (resp.ok) {
@@ -241,112 +247,128 @@ const PlatformStatusPage: React.FC = () => {
   const totalCount = services.length;
 
   return (
-    <div className="co-m-pane__body" style={{ padding: '20px 24px' }}>
+    <PageSection>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
-          <h1 className="co-m-pane__heading" style={{ margin: 0, fontSize: '20px' }}>Platform Status</h1>
-          <span className="co-help-text" style={{ fontSize: '12px' }}>
+          <Title headingLevel="h1" size="xl">Platform Status</Title>
+          <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
             {healthyCount}/{totalCount} services healthy &middot; Last checked: {lastRefresh || 'loading...'}
           </span>
         </div>
-        <button className="pf-c-button pf-m-secondary pf-m-small" onClick={() => { setLoading(true); checkServices(); }}>
+        <Button variant="secondary" onClick={() => { setLoading(true); checkServices(); }}>
           {'\u21BB'} Refresh
-        </button>
+        </Button>
       </div>
 
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ ...cardStyle, borderLeft: '3px solid #2b9af3' }}>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#2b9af3' }}>{flowCount}</div>
-          <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Integration Flows</div>
-        </div>
-        <div style={{ ...cardStyle, borderLeft: '3px solid #f0ab00' }}>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#f0ab00' }}>{pipelineCount}</div>
-          <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>PipelineRuns</div>
-        </div>
-        <div style={{ ...cardStyle, borderLeft: '3px solid #8476d1' }}>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#8476d1' }}>{argoApps}</div>
-          <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>ArgoCD ApplicationSets</div>
-        </div>
-        <div style={{ ...cardStyle, borderLeft: `3px solid ${healthyCount === totalCount ? '#3e8635' : '#f0ab00'}` }}>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: healthyCount === totalCount ? '#3e8635' : '#f0ab00' }}>
-            {healthyCount}/{totalCount}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Services Healthy</div>
-        </div>
+        <Card isCompact style={{ borderLeft: '3px solid #2b9af3' }}>
+          <CardBody>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: '#2b9af3' }}>{flowCount}</div>
+            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Integration Flows</div>
+          </CardBody>
+        </Card>
+        <Card isCompact style={{ borderLeft: '3px solid #f0ab00' }}>
+          <CardBody>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: '#f0ab00' }}>{pipelineCount}</div>
+            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>PipelineRuns</div>
+          </CardBody>
+        </Card>
+        <Card isCompact style={{ borderLeft: '3px solid #8476d1' }}>
+          <CardBody>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: '#8476d1' }}>{argoApps}</div>
+            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>ArgoCD ApplicationSets</div>
+          </CardBody>
+        </Card>
+        <Card isCompact style={{ borderLeft: '3px solid #009596' }}>
+          <CardBody>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: '#009596' }}>{ephemeralCount}</div>
+            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Ephemeral (Quick Try)</div>
+            <Button variant="link" isInline component="a" href="/integration-flows" style={{ fontSize: '12px', padding: 0, marginTop: '4px' }}>
+              Create Quick Try flow
+            </Button>
+          </CardBody>
+        </Card>
+        <Card isCompact style={{ borderLeft: `3px solid ${healthyCount === totalCount ? '#3e8635' : '#f0ab00'}` }}>
+          <CardBody>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: healthyCount === totalCount ? '#3e8635' : '#f0ab00' }}>
+              {healthyCount}/{totalCount}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Services Healthy</div>
+          </CardBody>
+        </Card>
       </div>
 
       {/* Service checks */}
-      <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>External Services</h2>
+      <Title headingLevel="h2" size="lg" style={{ marginBottom: '12px' }}>External Services</Title>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
         {loading && services.length === 0 ? (
-          <p className="co-help-text">Checking services...</p>
+          <Spinner size="lg" aria-label="Checking services" />
         ) : (
-          services.map(svc => {
-            const si = statusIcon[svc.status];
-            return (
-              <div key={svc.name} style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px' }}>
-                <span style={{ fontSize: '18px', color: si.color, width: '24px', textAlign: 'center' }}>{si.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: '13px' }}>{svc.name}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>{svc.description}</div>
+          services.map(svc => (
+            <Card key={svc.name} isCompact>
+              <CardBody>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '13px' }}>{svc.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>{svc.description}</div>
+                  </div>
+                  <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div>
+                      <Label color={statusLabelColor[svc.status] || 'grey'} isCompact>{svc.status.toUpperCase()}</Label>
+                      <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginTop: '2px' }}>{svc.detail}</div>
+                    </div>
+                    {svc.link && (
+                      <Button variant="link" isInline component="a" href={svc.link} style={{ fontSize: '12px' }}>{'\u2197'}</Button>
+                    )}
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{
-                    fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '3px',
-                    color: si.color, backgroundColor: `${si.color}22`,
-                  }}>{svc.status.toUpperCase()}</span>
-                  <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginTop: '2px' }}>{svc.detail}</div>
-                </div>
-                {svc.link && (
-                  <a href={svc.link} style={{ fontSize: '12px', color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none' }}>{'\u2197'}</a>
-                )}
-              </div>
-            );
-          })
+              </CardBody>
+            </Card>
+          ))
         )}
       </div>
 
       {/* Platform Pods */}
-      <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Platform Pods ({pods.length})</h2>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: 'var(--pf-global--Color--200, #8a8d90)', textTransform: 'uppercase' }}>Pod</th>
-            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: 'var(--pf-global--Color--200, #8a8d90)', textTransform: 'uppercase' }}>Component</th>
-            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: 'var(--pf-global--Color--200, #8a8d90)', textTransform: 'uppercase' }}>Status</th>
-            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: 'var(--pf-global--Color--200, #8a8d90)', textTransform: 'uppercase' }}>Restarts</th>
-            <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: 'var(--pf-global--Color--200, #8a8d90)', textTransform: 'uppercase' }}>Age</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Title headingLevel="h2" size="lg" style={{ marginBottom: '12px' }}>Platform Pods ({pods.length})</Title>
+      <Table aria-label="Platform Pods" variant="compact">
+        <Thead>
+          <Tr>
+            <Th>Pod</Th>
+            <Th>Component</Th>
+            <Th>Status</Th>
+            <Th>Restarts</Th>
+            <Th>Age</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
           {pods.map(pod => {
             const component = pod.labels['app.kubernetes.io/name'] || pod.labels['app'] || pod.labels['platform.io/component'] || 'unknown';
-            const phaseColor = pod.phase === 'Running' && pod.ready ? '#3e8635' : pod.phase === 'Running' ? '#f0ab00' : '#c9190b';
+            const podLabelColor: LabelColor = pod.phase === 'Running' && pod.ready ? 'green' : pod.phase === 'Running' ? 'orange' : 'red';
             return (
-              <tr key={pod.name} style={{ borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-                <td style={{ padding: '8px 12px', fontSize: '12px' }}>
+              <Tr key={pod.name}>
+                <Td dataLabel="Pod">
                   <a href={`/k8s/ns/${NAMESPACE}/pods/${pod.name}`}
                     style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none' }}>
                     {pod.name}
                   </a>
-                </td>
-                <td style={{ padding: '8px 12px', fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>{component}</td>
-                <td style={{ padding: '8px 12px', fontSize: '12px' }}>
-                  <span style={{ color: phaseColor, fontWeight: 500 }}>
+                </Td>
+                <Td dataLabel="Component" style={{ color: 'var(--pf-global--Color--200, #6a6e73)' }}>{component}</Td>
+                <Td dataLabel="Status">
+                  <Label color={podLabelColor} isCompact>
                     {pod.ready ? '\u2713' : '\u25CB'} {pod.phase}
-                  </span>
-                </td>
-                <td style={{ padding: '8px 12px', fontSize: '12px', color: pod.restarts > 0 ? '#f0ab00' : 'var(--pf-global--Color--200, #6a6e73)' }}>
+                  </Label>
+                </Td>
+                <Td dataLabel="Restarts" style={{ color: pod.restarts > 0 ? '#f0ab00' : 'var(--pf-global--Color--200, #6a6e73)' }}>
                   {pod.restarts}
-                </td>
-                <td style={{ padding: '8px 12px', fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>{pod.age}</td>
-              </tr>
+                </Td>
+                <Td dataLabel="Age" style={{ color: 'var(--pf-global--Color--200, #6a6e73)' }}>{pod.age}</Td>
+              </Tr>
             );
           })}
-        </tbody>
-      </table>
-    </div>
+        </Tbody>
+      </Table>
+    </PageSection>
   );
 };
 

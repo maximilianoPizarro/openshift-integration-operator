@@ -553,6 +553,32 @@ spec:
         type: expression
         operation: ".message = \"Error handled\""</code></pre>
 
+        <h3>9. Ephemeral Quick Try — Camel Route (no Git)</h3>
+        <p>Use <code>deploymentMode: EPHEMERAL</code> to run a flow immediately without a Git repository, Tekton, or ArgoCD. Resources are cleaned up when the TTL expires or the CR is deleted.</p>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-camel-demo
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ephemeral-timer
+        from:
+          uri: "timer:tick?period=10000"
+          steps:
+            - log:
+                message: "Hello from ephemeral Quick Try mode"</code></pre>
+        <p>Or use the OpenShift Console <strong>Integration Flows</strong> page with the <strong>Quick Try</strong> toggle enabled when creating a flow.</p>
+
         <p>Apply any example with:</p>
         <pre><code>oc apply -f integrationflow.yaml
 

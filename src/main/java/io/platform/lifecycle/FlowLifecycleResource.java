@@ -29,6 +29,9 @@ public class FlowLifecycleResource {
     @Inject
     io.platform.service.git.GitProviderFactory gitProviderFactory;
 
+    @Inject
+    io.platform.ephemeral.EphemeralCleanupService ephemeralCleanupService;
+
     @PATCH
     @Path("/{name}/state")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -245,6 +248,93 @@ public class FlowLifecycleResource {
             }
 
             return Response.ok(result).build();
+        } catch (Exception e) {
+            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+        }
+    }
+
+    @POST
+    @Path("/{name}/ephemeral/extend")
+    public Response extendEphemeral(@PathParam("name") String name, @QueryParam("seconds") Integer seconds) {
+        if (seconds == null || seconds <= 0) {
+            return Response.status(400).entity(Map.of("error", "seconds query param is required and must be positive")).build();
+        }
+        try {
+            var flow = client.resources(IntegrationFlow.class)
+                    .inNamespace(NAMESPACE).withName(name).get();
+            if (flow == null) return Response.status(404).entity(Map.of("error", "Flow not found")).build();
+            if (flow.getSpec().getDeploymentMode() != io.platform.api.v1alpha1.DeploymentMode.EPHEMERAL) {
+                return Response.status(400).entity(Map.of("error", "Flow is not in EPHEMERAL mode")).build();
+            }
+
+            java.time.Instant base = java.time.Instant.now();
+            if (flow.getStatus() != null && flow.getStatus().getEphemeralExpiresAt() != null) {
+                try {
+                    base = java.time.Instant.parse(flow.getStatus().getEphemeralExpiresAt());
+                    if (base.isBefore(java.time.Instant.now())) {
+                        base = java.time.Instant.now();
+                    }
+                } catch (Exception ignored) {
+                    base = java.time.Instant.now();
+                }
+            }
+            java.time.Instant newExpiry = base.plusSeconds(seconds);
+            flow.getStatus().setEphemeralExpiresAt(newExpiry.toString());
+            flow.getStatus().setPhase(IntegrationFlowStatus.Phase.Running);
+            flow.getStatus().setMessage("TTL extended to " + newExpiry);
+
+            var annotations = flow.getMetadata().getAnnotations();
+            if (annotations == null) {
+                annotations = new java.util.HashMap<>();
+                flow.getMetadata().setAnnotations(annotations);
+            }
+            annotations.put("platform.io/ephemeral-expires-at", newExpiry.toString());
+
+            client.resources(IntegrationFlow.class).inNamespace(NAMESPACE).resource(flow).update();
+            client.resources(IntegrationFlow.class).inNamespace(NAMESPACE).resource(flow).updateStatus();
+
+            return Response.ok(Map.of(
+                    "name", name,
+                    "ephemeralExpiresAt", newExpiry.toString(),
+                    "extendedBySeconds", seconds)).build();
+        } catch (Exception e) {
+            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+        }
+    }
+
+    @POST
+    @Path("/{name}/promote-to-gitops")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response promoteToGitOps(@PathParam("name") String name, Map<String, String> body) {
+        String gitRepository = body.get("gitRepository");
+        String branch = body.getOrDefault("branch", "main");
+        if (gitRepository == null || gitRepository.isBlank()) {
+            return Response.status(400).entity(Map.of("error", "gitRepository is required")).build();
+        }
+        try {
+            var flow = client.resources(IntegrationFlow.class)
+                    .inNamespace(NAMESPACE).withName(name).get();
+            if (flow == null) return Response.status(404).entity(Map.of("error", "Flow not found")).build();
+            if (flow.getSpec().getDeploymentMode() != io.platform.api.v1alpha1.DeploymentMode.EPHEMERAL) {
+                return Response.status(400).entity(Map.of("error", "Flow is already in GITOPS mode")).build();
+            }
+
+            flow.getSpec().setDeploymentMode(io.platform.api.v1alpha1.DeploymentMode.GITOPS);
+            flow.getSpec().setGitRepository(gitRepository);
+            flow.getSpec().setBranch(branch);
+            ephemeralCleanupService.cleanup(name, NAMESPACE);
+            flow.getStatus().setLastScaffoldedHash(null);
+            flow.getStatus().setPhase(IntegrationFlowStatus.Phase.Scaffolding);
+            flow.getStatus().setMessage("Promoted to GitOps; reconciliation pending");
+
+            client.resources(IntegrationFlow.class).inNamespace(NAMESPACE).resource(flow).update();
+
+            return Response.ok(Map.of(
+                    "name", name,
+                    "deploymentMode", "GITOPS",
+                    "gitRepository", gitRepository,
+                    "branch", branch,
+                    "message", "Flow promoted to GitOps mode")).build();
         } catch (Exception e) {
             return Response.serverError().entity(Map.of("error", e.getMessage())).build();
         }

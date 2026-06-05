@@ -83,4 +83,13 @@ consolePlugin:
 mcp:
   allowedServerUrls: []
 
+ephemeral:
+  enabled: true
+  defaultTtlSeconds: 3600
+  maxTtlSeconds: 86400
+  camelWorkerImage: quay.io/maximilianopizarro/camel-yaml-worker:v0.2.0
+  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.2.0
+  camelK:
+    detect: true
+
 namespace: openshift-integration

@@ -7,17 +7,23 @@ import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.platform.api.v1alpha1.AlertingSpec;
+import io.platform.api.v1alpha1.DeploymentMode;
 import io.platform.api.v1alpha1.IntegrationFlow;
 import io.platform.api.v1alpha1.IntegrationFlowStatus;
 import io.platform.api.v1alpha1.IntegrationType;
 import io.platform.api.v1alpha1.ResilienceSpec;
 import io.platform.api.v1alpha1.TargetingSpec;
+import io.platform.ephemeral.EphemeralCleanupService;
+import io.platform.ephemeral.EphemeralResourceLabels;
+import io.platform.ephemeral.EphemeralRuntimeService;
 import io.platform.service.ArgoService;
 import io.platform.service.GitOpsService;
 import io.platform.service.ScaffoldingService;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +48,21 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
     @Inject
     ArgoService argoService;
 
+    @Inject
+    EphemeralRuntimeService ephemeralRuntimeService;
+
+    @Inject
+    EphemeralCleanupService ephemeralCleanupService;
+
+    @ConfigProperty(name = "ephemeral.default-ttl-seconds", defaultValue = "3600")
+    int defaultTtlSeconds;
+
+    @ConfigProperty(name = "ephemeral.max-ttl-seconds", defaultValue = "86400")
+    int maxTtlSeconds;
+
+    @ConfigProperty(name = "ephemeral.enabled", defaultValue = "true")
+    boolean ephemeralEnabled;
+
     @Override
     public UpdateControl<IntegrationFlow> reconcile(IntegrationFlow resource,
                                                      Context<IntegrationFlow> context) {
@@ -55,12 +76,14 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
         // Idempotency guard: skip re-scaffolding if the design hasn't changed
         String currentDesignHash = computeDesignHash(spec.getKaotoDesign());
+        DeploymentMode mode = spec.getDeploymentMode();
         if (!currentDesignHash.isEmpty()
                 && currentDesignHash.equals(status.getLastScaffoldedHash())
                 && status.getPhase() != null
                 && (status.getPhase() == IntegrationFlowStatus.Phase.Running
                     || status.getPhase() == IntegrationFlowStatus.Phase.Building
-                    || status.getPhase() == IntegrationFlowStatus.Phase.Deploying)) {
+                    || status.getPhase() == IntegrationFlowStatus.Phase.Deploying
+                    || (mode == DeploymentMode.EPHEMERAL && status.getPhase() != IntegrationFlowStatus.Phase.Expired))) {
             LOG.debugf("Design hash unchanged for '%s/%s', skipping reconciliation",
                     resource.getMetadata().getNamespace(), resource.getMetadata().getName());
             return UpdateControl.noUpdate();
@@ -69,6 +92,33 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         String flowName = resource.getMetadata().getName();
         String namespace = resource.getMetadata().getNamespace();
         IntegrationType type = spec.getResolvedType();
+
+        // Handle deletion cleanup for ephemeral flows
+        if (resource.getMetadata().getDeletionTimestamp() != null
+                && spec.getDeploymentMode() == DeploymentMode.EPHEMERAL) {
+            ephemeralCleanupService.cleanup(flowName, namespace);
+            removeFinalizer(resource, EphemeralResourceLabels.FINALIZER);
+            return UpdateControl.patchResource(resource);
+        }
+
+        if (spec.getDeploymentMode() == DeploymentMode.EPHEMERAL) {
+            if (!ephemeralEnabled) {
+                status.setPhase(IntegrationFlowStatus.Phase.Error);
+                status.setMessage("Ephemeral mode is disabled on this operator");
+                finalizeStatus(resource, status);
+                return UpdateControl.patchStatus(resource);
+            }
+            return reconcileEphemeral(resource, status, spec, type, flowName, namespace, currentDesignHash);
+        }
+
+        // GITOPS validation
+        if (spec.getGitRepository() == null || spec.getGitRepository().isBlank()) {
+            status.setPhase(IntegrationFlowStatus.Phase.Error);
+            status.setMessage("gitRepository is required for GITOPS deployment mode");
+            finalizeStatus(resource, status);
+            return UpdateControl.patchStatus(resource);
+        }
+
         LOG.infof("Reconciling IntegrationFlow '%s/%s' integrationType=%s engine=%s",
                 namespace, flowName, type, spec.getEngine());
 
@@ -501,5 +551,141 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
         kubernetesClient.resource(cronJob).inNamespace(namespace).createOrReplace();
         LOG.infof("Reconciled CronJob '%s' for scheduled execution of flow '%s'", cronJobName, flowName);
+    }
+
+    private UpdateControl<IntegrationFlow> reconcileEphemeral(IntegrationFlow resource,
+            IntegrationFlowStatus status,
+            io.platform.api.v1alpha1.IntegrationFlowSpec spec,
+            IntegrationType type,
+            String flowName,
+            String namespace,
+            String currentDesignHash) {
+
+        LOG.infof("Reconciling ephemeral IntegrationFlow '%s/%s' type=%s", namespace, flowName, type);
+        status.setDeploymentMode(DeploymentMode.EPHEMERAL);
+        ensureFinalizer(resource, EphemeralResourceLabels.FINALIZER);
+
+        if (spec.getKaotoDesign() == null || spec.getKaotoDesign().isBlank()) {
+            status.setPhase(IntegrationFlowStatus.Phase.Error);
+            status.setMessage("kaotoDesign is required for ephemeral deployment");
+            finalizeStatus(resource, status);
+            return UpdateControl.patchStatus(resource);
+        }
+
+        int ttl = resolveTtlSeconds(spec);
+        Instant expiresAt = resolveExpiresAt(resource, status, ttl);
+        if (Instant.now().isAfter(expiresAt)) {
+            handleExpiredEphemeral(flowName, namespace, status);
+            finalizeStatus(resource, status);
+            return UpdateControl.patchResourceAndStatus(resource);
+        }
+
+        annotateExpiry(resource, expiresAt);
+        status.setEphemeralExpiresAt(expiresAt.toString());
+
+        try {
+            status.setPhase(IntegrationFlowStatus.Phase.Building);
+            var scaffoldResult = scaffoldingService.scaffold(type, spec.getKaotoDesign(), spec.getResilience());
+            updateCondition(status, "Scaffolded", "True", "ScaffoldComplete", "Ephemeral worker scaffolded");
+
+            var deployResult = ephemeralRuntimeService.deploy(
+                    type, flowName, namespace, scaffoldResult, spec, status);
+
+            status.setEphemeralWorkerRef(deployResult.workerRef());
+            status.setLastScaffoldedHash(currentDesignHash);
+            updateCondition(status, "EphemeralDeployed", "True", "Deployed", deployResult.message());
+
+            if (type == IntegrationType.SONATAFLOW) {
+                status.setPhase("True".equals(status.getSonataFlowReady())
+                        ? IntegrationFlowStatus.Phase.Running
+                        : IntegrationFlowStatus.Phase.Building);
+            } else {
+                status.setPhase(IntegrationFlowStatus.Phase.Running);
+            }
+            status.setCurrentState("running");
+            status.setMessage("Ephemeral flow running (expires " + expiresAt + ")");
+
+        } catch (Exception e) {
+            LOG.errorf(e, "Ephemeral reconciliation failed for %s", flowName);
+            status.setPhase(IntegrationFlowStatus.Phase.Error);
+            status.setMessage("Ephemeral deployment failed: " + e.getMessage());
+            updateCondition(status, "EphemeralDeployed", "False", "DeployFailed", e.getMessage());
+        }
+
+        finalizeStatus(resource, status);
+        return UpdateControl.patchResourceAndStatus(resource);
+    }
+
+    private int resolveTtlSeconds(io.platform.api.v1alpha1.IntegrationFlowSpec spec) {
+        if (spec.getEphemeral() != null && spec.getEphemeral().getTtlSeconds() != null) {
+            return Math.min(spec.getEphemeral().getTtlSeconds(), maxTtlSeconds);
+        }
+        return defaultTtlSeconds;
+    }
+
+    private Instant resolveExpiresAt(IntegrationFlow resource, IntegrationFlowStatus status, int ttlSeconds) {
+        if (status.getEphemeralExpiresAt() != null && !status.getEphemeralExpiresAt().isBlank()) {
+            try {
+                return Instant.parse(status.getEphemeralExpiresAt());
+            } catch (Exception ignored) {
+                // fall through
+            }
+        }
+        var annotations = resource.getMetadata().getAnnotations();
+        if (annotations != null && annotations.containsKey(EphemeralResourceLabels.ANNOTATION_EXPIRES_AT)) {
+            try {
+                return Instant.parse(annotations.get(EphemeralResourceLabels.ANNOTATION_EXPIRES_AT));
+            } catch (Exception ignored) {
+                // fall through
+            }
+        }
+        return Instant.now().plusSeconds(ttlSeconds);
+    }
+
+    private void annotateExpiry(IntegrationFlow resource, Instant expiresAt) {
+        var metadata = resource.getMetadata();
+        var annotations = metadata.getAnnotations();
+        if (annotations == null) {
+            annotations = new java.util.HashMap<>();
+            metadata.setAnnotations(annotations);
+        }
+        annotations.put(EphemeralResourceLabels.ANNOTATION_EXPIRES_AT, expiresAt.toString());
+    }
+
+    private void handleExpiredEphemeral(String flowName, String namespace, IntegrationFlowStatus status) {
+        status.setPhase(IntegrationFlowStatus.Phase.Expired);
+        status.setMessage("Ephemeral flow expired; scaled down");
+        updateCondition(status, "EphemeralExpired", "True", "TTLExpired", "Flow TTL reached");
+
+        try {
+            var deployments = kubernetesClient.apps().deployments().inNamespace(namespace)
+                    .withLabel(EphemeralResourceLabels.LABEL_FLOW_NAME, flowName)
+                    .list().getItems();
+            for (var deployment : deployments) {
+                deployment.getSpec().setReplicas(0);
+                kubernetesClient.apps().deployments().inNamespace(namespace)
+                        .resource(deployment).update();
+            }
+        } catch (Exception e) {
+            LOG.warnf("Could not scale down ephemeral deployment for %s: %s", flowName, e.getMessage());
+        }
+    }
+
+    private void ensureFinalizer(IntegrationFlow resource, String finalizer) {
+        var finalizers = resource.getMetadata().getFinalizers();
+        if (finalizers == null) {
+            finalizers = new ArrayList<>();
+            resource.getMetadata().setFinalizers(finalizers);
+        }
+        if (!finalizers.contains(finalizer)) {
+            finalizers.add(finalizer);
+        }
+    }
+
+    private void removeFinalizer(IntegrationFlow resource, String finalizer) {
+        var finalizers = resource.getMetadata().getFinalizers();
+        if (finalizers != null) {
+            finalizers.remove(finalizer);
+        }
     }
 }

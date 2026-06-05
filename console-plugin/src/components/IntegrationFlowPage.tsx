@@ -1,4 +1,29 @@
 import * as React from 'react';
+import {
+  Alert,
+  Badge,
+  Button,
+  EmptyState,
+  EmptyStateBody,
+  EmptyStateHeader,
+  EmptyStateIcon,
+  FormSelect,
+  FormSelectOption,
+  Label,
+  PageSection,
+  Pagination,
+  SearchInput,
+  Spinner,
+  TextInput,
+  Title,
+  Toolbar,
+  ToolbarContent,
+  ToolbarItem,
+} from '@patternfly/react-core';
+import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
+import { SearchIcon, CubesIcon } from '@patternfly/react-icons';
+import EphemeralModeToggle from './ephemeral/EphemeralModeToggle';
+import EphemeralBadge from './ephemeral/EphemeralBadge';
 
 const API_BASE = '/api/kubernetes/apis/platform.io/v1alpha1';
 const K8S_BASE = '/api/kubernetes/apis';
@@ -27,8 +52,10 @@ interface IntegrationFlow {
   spec: {
     engine: string;
     integrationType?: string;
-    gitRepository: string;
+    gitRepository?: string;
     branch: string;
+    deploymentMode?: string;
+    ephemeral?: { ttlSeconds?: number };
     targetClusters?: string[];
     targeting?: { strategy: string; clusters: string[] };
   };
@@ -38,6 +65,8 @@ interface IntegrationFlow {
     gitCommitHash?: string;
     argoApplicationName?: string;
     applicationSetName?: string;
+    deploymentMode?: string;
+    ephemeralExpiresAt?: string;
     conditions?: Condition[];
     clusterDeployments?: ClusterDeployment[];
   };
@@ -75,6 +104,7 @@ const PHASE_ALL = [
   { value: 'Scaffolding', label: 'Scaffolding' },
   { value: 'Pending', label: 'Pending' },
   { value: 'Error', label: 'Error' },
+  { value: 'Expired', label: 'Expired' },
 ];
 
 const defaultDesign: Record<string, string> = {
@@ -95,6 +125,29 @@ const phaseMeta: Record<string, { color: string; icon: string }> = {
   Pending: { color: '#6a6e73', icon: '\u25CB' },
 };
 
+type LabelColor = 'blue' | 'cyan' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'gold';
+
+const typeToLabelColor: Record<string, LabelColor> = {
+  CAMEL_ROUTE: 'gold',
+  CAMEL_KAMELET: 'purple',
+  CAMEL_PIPE: 'blue',
+  CAMEL_TEST: 'green',
+  SONATAFLOW: 'cyan',
+};
+
+const phaseToLabelColor: Record<string, LabelColor> = {
+  Running: 'green',
+  Building: 'gold',
+  Scaffolding: 'purple',
+  Deploying: 'blue',
+  PartiallyHealthy: 'orange',
+  Error: 'red',
+  Pending: 'grey',
+  Expired: 'red',
+  Paused: 'orange',
+  Stopped: 'grey',
+};
+
 const conditionColor = (status: string) => {
   if (status === 'True') return '#3e8635';
   if (status === 'False') return '#c9190b';
@@ -111,11 +164,6 @@ function clusterSummary(deployments: ClusterDeployment[] | undefined): string {
   return `${healthy}/${deployments.length}`;
 }
 
-const thStyle: React.CSSProperties = { padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: 'var(--pf-global--Color--200, #8a8d90)', letterSpacing: '0.05em', textTransform: 'uppercase' };
-const tdStyle: React.CSSProperties = { padding: '10px 12px', fontSize: '13px', verticalAlign: 'middle' };
-const badgeBase: React.CSSProperties = { padding: '2px 8px', borderRadius: '3px', fontSize: '11px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' };
-const linkBtn: React.CSSProperties = { fontSize: '11px', padding: '2px 6px', borderRadius: '3px', textDecoration: 'none', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', color: 'var(--pf-global--link--Color, #2b9af3)', backgroundColor: 'transparent', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px' };
-
 const IntegrationFlowPage: React.FC = () => {
   const [flows, setFlows] = React.useState<IntegrationFlow[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -124,6 +172,8 @@ const IntegrationFlowPage: React.FC = () => {
   const [newName, setNewName] = React.useState('');
   const [newEngine, setNewEngine] = React.useState<string>('CAMEL_ROUTE');
   const [creating, setCreating] = React.useState(false);
+  const [ephemeralMode, setEphemeralMode] = React.useState(true);
+  const [ttlSeconds, setTtlSeconds] = React.useState(3600);
 
   const [search, setSearch] = React.useState('');
   const [filterType, setFilterType] = React.useState('');
@@ -183,18 +233,25 @@ const IntegrationFlowPage: React.FC = () => {
     if (!flowName) return;
     setCreating(true);
     try {
+      const spec: Record<string, unknown> = {
+          integrationType: newEngine,
+          engine: newEngine.startsWith('CAMEL') ? 'CAMEL' : 'SONATAFLOW',
+          kaotoDesign: defaultDesign[newEngine] || '',
+          targeting: { strategy: 'explicit', clusters: ['local'] },
+        };
+      if (ephemeralMode) {
+        spec.deploymentMode = 'EPHEMERAL';
+        spec.ephemeral = { ttlSeconds };
+      } else {
+        spec.deploymentMode = 'GITOPS';
+        spec.gitRepository = `https://gitea-gitea.apps.cluster-xtvzv.dynamic.redhatworkshops.io/user1/${flowName}`;
+        spec.branch = 'main';
+      }
       const newFlow = {
         apiVersion: 'platform.io/v1alpha1',
         kind: 'IntegrationFlow',
         metadata: { name: flowName, namespace: NAMESPACE },
-        spec: {
-          integrationType: newEngine,
-          engine: newEngine.startsWith('CAMEL') ? 'CAMEL' : 'SONATAFLOW',
-          gitRepository: `https://gitea-gitea.apps.cluster-xtvzv.dynamic.redhatworkshops.io/user1/${flowName}`,
-          branch: 'main',
-          kaotoDesign: defaultDesign[newEngine] || '',
-          targeting: { strategy: 'explicit', clusters: ['local'] },
-        },
+        spec,
       };
       const resp = await k8sFetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows`, {
         method: 'POST',
@@ -244,123 +301,181 @@ const IntegrationFlowPage: React.FC = () => {
   }, [flows]);
 
   return (
-    <div className="co-m-pane__body" style={{ padding: '20px 24px' }}>
+    <PageSection>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div>
-          <h1 className="co-m-pane__heading" style={{ margin: 0, fontSize: '20px' }}>Integration Flows</h1>
-          <span className="co-help-text" style={{ fontSize: '12px' }}>{flows.length} flow{flows.length !== 1 ? 's' : ''} in {NAMESPACE}</span>
+          <Title headingLevel="h1" size="xl">Integration Flows</Title>
+          <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+            {flows.length} flow{flows.length !== 1 ? 's' : ''} in {NAMESPACE}
+          </span>
         </div>
-        <button className={showCreate ? 'pf-c-button pf-m-secondary' : 'pf-c-button pf-m-primary'} onClick={() => setShowCreate(!showCreate)}>
+        <Button variant={showCreate ? 'secondary' : 'primary'} onClick={() => setShowCreate(!showCreate)}>
           {showCreate ? 'Cancel' : '+ Create Flow'}
-        </button>
+        </Button>
       </div>
 
       {/* Summary labels */}
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
         {INTEGRATION_TYPES.map(t => {
           const count = typeCounts[t.value] || 0;
           if (count === 0) return null;
           const active = filterType === t.value;
           return (
-            <button key={t.value} onClick={() => setFilterType(active ? '' : t.value)}
-              style={{ ...badgeBase, backgroundColor: active ? t.bgColor : 'transparent', color: t.color,
-                border: `1px solid ${active ? t.color : 'var(--pf-global--BorderColor--100, #3c3f42)'}`, cursor: 'pointer',
-                opacity: active ? 1 : 0.7 }}>
-              {t.icon} {t.label} <strong>{count}</strong>
-            </button>
+            <Label
+              key={t.value}
+              color={typeToLabelColor[t.value] || 'grey'}
+              variant={active ? 'filled' : 'outline'}
+              onClick={() => setFilterType(active ? '' : t.value)}
+              icon={<span>{t.icon}</span>}
+              style={{ cursor: 'pointer' }}
+            >
+              {t.label} <Badge isRead>{count}</Badge>
+            </Label>
           );
         })}
-        <span style={{ width: 1, backgroundColor: 'var(--pf-global--BorderColor--100, #3c3f42)', margin: '0 4px' }} />
+        <span style={{ width: 1, backgroundColor: 'var(--pf-global--BorderColor--100, #3c3f42)', margin: '0 4px', alignSelf: 'stretch' }} />
         {Object.entries(phaseCounts).map(([ph, count]) => {
-          const meta = phaseMeta[ph] || phaseMeta.Pending;
           const active = filterPhase === ph;
           return (
-            <button key={ph} onClick={() => setFilterPhase(active ? '' : ph)}
-              style={{ ...badgeBase, backgroundColor: 'transparent', color: meta.color,
-                border: `1px solid ${active ? meta.color : 'var(--pf-global--BorderColor--100, #3c3f42)'}`, cursor: 'pointer',
-                opacity: active ? 1 : 0.7 }}>
-              {meta.icon} {ph} <strong>{count}</strong>
-            </button>
+            <Label
+              key={ph}
+              color={phaseToLabelColor[ph] || 'grey'}
+              variant={active ? 'filled' : 'outline'}
+              onClick={() => setFilterPhase(active ? '' : ph)}
+              style={{ cursor: 'pointer' }}
+            >
+              {(phaseMeta[ph] || phaseMeta.Pending).icon} {ph} <Badge isRead>{count}</Badge>
+            </Label>
           );
         })}
       </div>
 
       {error && (
-        <div className="pf-c-alert pf-m-danger pf-m-inline" style={{ marginBottom: '12px' }}>
-          <div className="pf-c-alert__icon"><i className="fas fa-exclamation-circle" /></div>
-          <h4 className="pf-c-alert__title">Error loading flows: {error}</h4>
-        </div>
+        <Alert variant="danger" isInline title={`Error loading flows: ${error}`} style={{ marginBottom: '12px' }} />
       )}
 
       {showCreate && (
         <div style={{ padding: '14px', borderRadius: '6px', marginBottom: '14px', border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', background: 'var(--pf-global--BackgroundColor--200, #f0f0f0)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <input className="pf-c-form-control" style={{ width: '220px' }} placeholder="flow-name" value={newName}
-              onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCreate()} />
-            <select className="pf-c-form-control" style={{ width: '150px' }} value={newEngine} onChange={(e) => setNewEngine(e.target.value)}>
-              {INTEGRATION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-            <button className="pf-c-button pf-m-primary" onClick={handleCreate} disabled={creating}>
+            <TextInput
+              value={newName}
+              onChange={(_event, value) => setNewName(value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              placeholder="flow-name"
+              aria-label="Flow name"
+              style={{ width: '220px' }}
+            />
+            <FormSelect
+              value={newEngine}
+              onChange={(_event, value) => setNewEngine(value)}
+              aria-label="Integration type"
+              style={{ width: '150px' }}
+            >
+              {INTEGRATION_TYPES.map(t => (
+                <FormSelectOption key={t.value} value={t.value} label={t.label} />
+              ))}
+            </FormSelect>
+            <Button variant="primary" onClick={handleCreate} isDisabled={creating}>
               {creating ? 'Creating...' : 'Create'}
-            </button>
+            </Button>
+          </div>
+          <div style={{ marginTop: '12px' }}>
+            <EphemeralModeToggle
+              ephemeral={ephemeralMode}
+              onChange={setEphemeralMode}
+              ttlSeconds={ttlSeconds}
+              onTtlChange={setTtlSeconds}
+            />
           </div>
         </div>
       )}
 
       {/* Search + filter bar */}
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: '360px' }}>
-          <input className="pf-c-form-control" placeholder={'\uD83D\uDD0D Search flows by name, repo, or message...'}
-            value={search} onChange={(e) => setSearch(e.target.value)}
-            style={{ paddingLeft: '12px', width: '100%', fontSize: '13px' }} />
-          {search && (
-            <button onClick={() => setSearch('')}
-              style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pf-global--Color--200, #6a6e73)', fontSize: '14px' }}>
-              {'\u2716'}
-            </button>
+      <Toolbar>
+        <ToolbarContent>
+          <ToolbarItem>
+            <SearchInput
+              placeholder="Search flows by name, repo, or message..."
+              value={search}
+              onChange={(_event, value) => setSearch(value)}
+              onClear={() => setSearch('')}
+              style={{ minWidth: '220px', maxWidth: '360px' }}
+            />
+          </ToolbarItem>
+          <ToolbarItem>
+            <FormSelect
+              value={filterType}
+              onChange={(_event, value) => setFilterType(value)}
+              aria-label="Filter by type"
+              style={{ width: '140px' }}
+            >
+              <FormSelectOption value="" label="All Types" />
+              {INTEGRATION_TYPES.map(t => (
+                <FormSelectOption key={t.value} value={t.value} label={t.label} />
+              ))}
+            </FormSelect>
+          </ToolbarItem>
+          <ToolbarItem>
+            <FormSelect
+              value={filterPhase}
+              onChange={(_event, value) => setFilterPhase(value)}
+              aria-label="Filter by phase"
+              style={{ width: '130px' }}
+            >
+              {PHASE_ALL.map(p => (
+                <FormSelectOption key={p.value} value={p.value} label={p.label} />
+              ))}
+            </FormSelect>
+          </ToolbarItem>
+          {(search || filterType || filterPhase) && (
+            <ToolbarItem>
+              <Button variant="link" onClick={() => { setSearch(''); setFilterType(''); setFilterPhase(''); }}>
+                Clear filters
+              </Button>
+            </ToolbarItem>
           )}
-        </div>
-        <select className="pf-c-form-control" style={{ width: '140px', fontSize: '13px' }} value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-          <option value="">All Types</option>
-          {INTEGRATION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
-        <select className="pf-c-form-control" style={{ width: '130px', fontSize: '13px' }} value={filterPhase} onChange={(e) => setFilterPhase(e.target.value)}>
-          {PHASE_ALL.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-        </select>
-        {(search || filterType || filterPhase) && (
-          <button className="pf-c-button pf-m-link pf-m-small" onClick={() => { setSearch(''); setFilterType(''); setFilterPhase(''); }}
-            style={{ fontSize: '12px' }}>Clear filters</button>
-        )}
-        <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-          {filtered.length} result{filtered.length !== 1 ? 's' : ''}
-        </span>
-      </div>
+          <ToolbarItem style={{ marginLeft: 'auto' }}>
+            <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+              {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+            </span>
+          </ToolbarItem>
+        </ToolbarContent>
+      </Toolbar>
 
       {loading ? (
-        <p className="co-help-text">Loading flows...</p>
-      ) : paged.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <h2 style={{ fontSize: '16px' }}>{flows.length === 0 ? 'No IntegrationFlows found' : 'No flows match filters'}</h2>
-          <p className="co-help-text">{flows.length === 0 ? 'Click Create Flow to get started' : 'Try adjusting your search or filters'}</p>
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <Spinner size="lg" aria-label="Loading flows" />
         </div>
+      ) : paged.length === 0 ? (
+        <EmptyState variant="full">
+          <EmptyStateHeader
+            titleText={flows.length === 0 ? 'No IntegrationFlows found' : 'No flows match filters'}
+            headingLevel="h2"
+            icon={<EmptyStateIcon icon={flows.length === 0 ? CubesIcon : SearchIcon} />}
+          />
+          <EmptyStateBody>
+            {flows.length === 0 ? 'Click Create Flow to get started' : 'Try adjusting your search or filters'}
+          </EmptyStateBody>
+        </EmptyState>
       ) : (
         <>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-                <th style={{ ...thStyle, width: '18%' }}>Name</th>
-                <th style={{ ...thStyle, width: '9%' }}>Type</th>
-                <th style={{ ...thStyle, width: '10%' }}>Phase</th>
-                <th style={{ ...thStyle, width: '7%' }}>Clusters</th>
-                <th style={{ ...thStyle, width: '8%' }}>Conditions</th>
-                <th style={{ ...thStyle, width: '16%' }}>Repository</th>
-                <th style={{ ...thStyle, width: '16%' }}>Resources</th>
-                <th style={{ ...thStyle, width: '6%' }}>Age</th>
-                <th style={{ ...thStyle, width: '10%', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table aria-label="Integration Flows" variant="compact">
+            <Thead>
+              <Tr>
+                <Th>Name</Th>
+                <Th>Type</Th>
+                <Th>Mode</Th>
+                <Th>Phase</Th>
+                <Th>Clusters</Th>
+                <Th>Conditions</Th>
+                <Th>Repository</Th>
+                <Th>Resources</Th>
+                <Th>Age</Th>
+                <Th style={{ textAlign: 'right' }}>Actions</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
               {paged.map((flow) => {
                 const phase = flow.status?.phase || 'Pending';
                 const meta = phaseMeta[phase] || phaseMeta.Pending;
@@ -368,29 +483,33 @@ const IntegrationFlowPage: React.FC = () => {
                 const typeInfo = INTEGRATION_TYPES.find(t => t.value === (flow.spec.integrationType || (flow.spec.engine === 'CAMEL' ? 'CAMEL_ROUTE' : 'SONATAFLOW')));
                 const flowName = flow.metadata.name;
                 return (
-                  <tr key={flow.metadata.uid || flowName} style={{ borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
-                    <td style={tdStyle}>
+                  <Tr key={flow.metadata.uid || flowName}>
+                    <Td dataLabel="Name">
                       <a href={`/integration-flows/${flowName}`}
                         style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none', fontWeight: 500 }}>
                         {flowName}
                       </a>
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={{ ...badgeBase, backgroundColor: typeInfo?.bgColor, color: typeInfo?.color }}>
-                        {typeInfo?.icon} {typeInfo?.label || flow.spec.engine}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: meta.color, fontWeight: 500, fontSize: '12px' }}>
+                    </Td>
+                    <Td dataLabel="Type">
+                      <Label color={typeToLabelColor[typeInfo?.value || ''] || 'grey'} isCompact icon={<span>{typeInfo?.icon}</span>}>
+                        {typeInfo?.label || flow.spec.engine}
+                      </Label>
+                    </Td>
+                    <Td dataLabel="Mode">
+                      <EphemeralBadge
+                        deploymentMode={flow.spec.deploymentMode || flow.status?.deploymentMode}
+                        ephemeralExpiresAt={flow.status?.ephemeralExpiresAt}
+                      />
+                    </Td>
+                    <Td dataLabel="Phase">
+                      <Label color={phaseToLabelColor[phase] || 'grey'} isCompact>
                         {meta.icon} {phase}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={{ color: 'var(--pf-global--Color--200, #8a8d90)', fontSize: '12px' }}>
-                        {clusterSummary(flow.status?.clusterDeployments)}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>
+                      </Label>
+                    </Td>
+                    <Td dataLabel="Clusters">
+                      <span style={{ fontSize: '12px' }}>{clusterSummary(flow.status?.clusterDeployments)}</span>
+                    </Td>
+                    <Td dataLabel="Conditions">
                       {conditions.length === 0 ? (
                         <span style={{ color: 'var(--pf-global--Color--200, #8a8d90)' }}>{'\u2014'}</span>
                       ) : (
@@ -402,96 +521,68 @@ const IntegrationFlowPage: React.FC = () => {
                           ))}
                         </div>
                       )}
-                    </td>
-                    <td style={tdStyle}>
+                    </Td>
+                    <Td dataLabel="Repository">
                       {flow.spec.gitRepository ? (
-                        <a href={flow.spec.gitRepository} target="_blank" rel="noopener noreferrer"
-                          style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none', fontSize: '12px' }}>
-                          {flow.spec.gitRepository.split('/').slice(-2).join('/')} {'\u2197'}
-                        </a>
-                      ) : <span style={{ color: 'var(--pf-global--Color--200, #8a8d90)' }}>{'\u2014'}</span>}
-                      {flow.status?.gitCommitHash && (
-                        <span style={{ marginLeft: '6px', fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontFamily: 'monospace' }}>
-                          @{flow.status.gitCommitHash.substring(0, 7)}
-                        </span>
-                      )}
-                    </td>
-                    <td style={tdStyle}>
-                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                        <a href={consoleUrl(`pods?labelSelector=platform.io%2Fflow-name%3D${flowName}`)}
-                          style={linkBtn} title="View Pods">
-                          {'\u25A3'} Pods
-                        </a>
-                        <a href={consoleUrl(`tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`)}
-                          style={linkBtn} title="View PipelineRuns">
-                          {'\u29D7'} Pipelines
-                        </a>
-                        {flow.status?.argoApplicationName && (
-                          <a href={`/k8s/ns/openshift-gitops/argoproj.io~v1alpha1~Application/${flow.status.argoApplicationName}`}
-                            style={linkBtn} title="View ArgoCD Application">
-                            {'\u21BB'} Argo
+                        <>
+                          <a href={flow.spec.gitRepository} target="_blank" rel="noopener noreferrer"
+                            style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none', fontSize: '12px' }}>
+                            {flow.spec.gitRepository.split('/').slice(-2).join('/')} {'\u2197'}
                           </a>
+                          {flow.status?.gitCommitHash && (
+                            <span style={{ marginLeft: '6px', fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontFamily: 'monospace' }}>
+                              @{flow.status.gitCommitHash.substring(0, 7)}
+                            </span>
+                          )}
+                        </>
+                      ) : <span style={{ color: 'var(--pf-global--Color--200, #8a8d90)' }}>{'\u2014'}</span>}
+                    </Td>
+                    <Td dataLabel="Resources">
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        <Button variant="link" isInline component="a"
+                          href={consoleUrl(`pods?labelSelector=platform.io%2Fflow-name%3D${flowName}`)} title="View Pods">
+                          {'\u25A3'} Pods
+                        </Button>
+                        <Button variant="link" isInline component="a"
+                          href={consoleUrl(`tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`)} title="View PipelineRuns">
+                          {'\u29D7'} Pipelines
+                        </Button>
+                        {flow.status?.argoApplicationName && (
+                          <Button variant="link" isInline component="a"
+                            href={`/k8s/ns/openshift-gitops/argoproj.io~v1alpha1~Application/${flow.status.argoApplicationName}`} title="View ArgoCD Application">
+                            {'\u21BB'} Argo
+                          </Button>
                         )}
                       </div>
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={{ color: 'var(--pf-global--Color--200, #8a8d90)', fontSize: '12px' }}>{timeAgo(flow.metadata.creationTimestamp)}</span>
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'right' }}>
+                    </Td>
+                    <Td dataLabel="Age">
+                      <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #8a8d90)' }}>{timeAgo(flow.metadata.creationTimestamp)}</span>
+                    </Td>
+                    <Td dataLabel="Actions" style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '4px' }}>
-                        <a href={`/integration-flows/${flowName}`} style={{ ...linkBtn, color: 'var(--pf-global--link--Color, #2b9af3)' }}>Edit</a>
-                        <button onClick={() => handleDelete(flowName)} title="Delete"
-                          style={{ ...linkBtn, color: '#c9190b', borderColor: '#c9190b22' }}>{'\u2716'}</button>
+                        <Button variant="link" isInline component="a" href={`/integration-flows/${flowName}`}>Edit</Button>
+                        <Button variant="link" isDanger isInline onClick={() => handleDelete(flowName)} title="Delete">{'\u2716'}</Button>
                       </div>
-                    </td>
-                  </tr>
+                    </Td>
+                  </Tr>
                 );
               })}
-            </tbody>
-          </table>
+            </Tbody>
+          </Table>
 
-          {/* Pagination */}
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', padding: '8px 0' }}>
-              <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-                Showing {(safePage - 1) * PAGE_SIZE + 1}\u2013{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
-              </span>
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                <button className="pf-c-button pf-m-plain pf-m-small" disabled={safePage <= 1}
-                  onClick={() => setPage(1)} style={{ fontSize: '12px', padding: '4px 8px' }}>{'\u00AB'}</button>
-                <button className="pf-c-button pf-m-plain pf-m-small" disabled={safePage <= 1}
-                  onClick={() => setPage(p => Math.max(1, p - 1))} style={{ fontSize: '12px', padding: '4px 8px' }}>{'\u2039'}</button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
-                  .reduce<(number | string)[]>((acc, p, idx, arr) => {
-                    if (idx > 0 && typeof arr[idx - 1] === 'number' && (p as number) - (arr[idx - 1] as number) > 1) {
-                      acc.push('...');
-                    }
-                    acc.push(p);
-                    return acc;
-                  }, [])
-                  .map((p, i) =>
-                    typeof p === 'string' ? (
-                      <span key={`e${i}`} style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', padding: '0 4px' }}>{p}</span>
-                    ) : (
-                      <button key={p} onClick={() => setPage(p)}
-                        style={{
-                          fontSize: '12px', padding: '4px 10px', borderRadius: '3px', cursor: 'pointer', border: 'none',
-                          backgroundColor: p === safePage ? 'var(--pf-global--primary-color--100, #0066cc)' : 'transparent',
-                          color: p === safePage ? '#fff' : 'var(--pf-global--link--Color, #2b9af3)', fontWeight: p === safePage ? 600 : 400,
-                        }}>{p}</button>
-                    )
-                  )}
-                <button className="pf-c-button pf-m-plain pf-m-small" disabled={safePage >= totalPages}
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))} style={{ fontSize: '12px', padding: '4px 8px' }}>{'\u203A'}</button>
-                <button className="pf-c-button pf-m-plain pf-m-small" disabled={safePage >= totalPages}
-                  onClick={() => setPage(totalPages)} style={{ fontSize: '12px', padding: '4px 8px' }}>{'\u00BB'}</button>
-              </div>
-            </div>
+            <Pagination
+              itemCount={filtered.length}
+              perPage={PAGE_SIZE}
+              page={safePage}
+              onSetPage={(_event, newPage) => setPage(newPage)}
+              variant="bottom"
+              isCompact
+            />
           )}
         </>
       )}
-    </div>
+    </PageSection>
   );
 };
 

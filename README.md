@@ -31,6 +31,7 @@
 ## Features
 
 - **Five Integration Types** — Run Camel Routes, Kamelets, Pipes, Tests, or SonataFlow workflows from a single `IntegrationFlow` CR
+- **Quick Try (Ephemeral) Mode** — Deploy and test flows directly in the cluster without Git or ArgoCD; configurable TTL, extend, and promote to GitOps
 - **Multi-Provider Git** — Connect to Gitea, GitHub, or GitLab for scaffolded worker source with auto-detection
 - **Visual Designer** — Embedded Kaoto canvas in the OpenShift Console for drag-and-drop flow design
 - **GitOps Native** — Tekton builds container images; ArgoCD syncs worker deployments from Git
@@ -66,6 +67,7 @@ flowchart TB
     subgraph Operator["Integration Operator"]
         Reconciler["IntegrationFlow Reconciler"]
         Scaffold["Scaffolding Service"]
+        Ephemeral["Ephemeral Runtime Service"]
         GitOps["GitOps Service"]
         MCP["MCP Bridge API"]
         SSE["Telemetry SSE API"]
@@ -89,7 +91,9 @@ flowchart TB
     Telemetry --> SSE
 
     User -->|IntegrationFlow CR| Reconciler
-    Reconciler --> Scaffold
+    Reconciler -->|EPHEMERAL| Ephemeral
+    Ephemeral --> Workers
+    Reconciler -->|GITOPS| Scaffold
     Scaffold --> GitOps
     GitOps --> Git
     GitOps --> Tekton
@@ -112,7 +116,8 @@ See the full [Architecture Documentation](docs/architecture.html) for CRD detail
 - OpenShift 4.14+
 - Helm 3
 - `oc` CLI
-- A Git server (Gitea, GitHub, or GitLab), ArgoCD, and Tekton Pipelines installed on the cluster
+- For **GitOps mode**: Git server (Gitea, GitHub, or GitLab), ArgoCD, and Tekton Pipelines
+- For **Quick Try (ephemeral) mode**: only the operator and `kaotoDesign` in the CR — no Git required
 
 ### Install with Helm
 
@@ -247,17 +252,31 @@ spec:
 EOF
 ```
 
-The platform ships **8 pre-built examples** covering Camel Routes (REST, CBR, parallel enrichment, error handling with DLQ), Kamelets, Pipes, and SonataFlow workflows.
+### Example: Ephemeral Quick Try (no Git)
 
-See the [Quick Start Guide](docs/quickstart.html) for all 8 examples, and the [Operations Guide](docs/operations.html) for validation and troubleshooting.
+```bash
+oc apply -f k8s/examples/09-ephemeral-demo.yaml
+
+# Watch reconciliation
+oc get integrationflow ephemeral-camel-demo -w
+
+# Extend TTL or promote via console UI, or REST API:
+# POST /api/flows/ephemeral-camel-demo/ephemeral/extend?seconds=3600
+# POST /api/flows/ephemeral-camel-demo/promote-to-gitops
+```
+
+The platform ships **9 pre-built examples** covering Camel Routes, Kamelets, Pipes, SonataFlow workflows, and ephemeral Quick Try.
+
+See the [Quick Start Guide](docs/quickstart.html) for all 9 examples, and the [Operations Guide](docs/operations.html) for validation and troubleshooting.
 
 ## Project Structure
 
 ```
 openshift-integration-operator/
 ├── src/main/java/io/platform/
-│   ├── api/v1alpha1/          # IntegrationFlow CRD types + IntegrationType enum
+│   ├── api/v1alpha1/          # IntegrationFlow CRD types + DeploymentMode enum
 │   ├── operator/              # Reconciler controller
+│   ├── ephemeral/             # Ephemeral runtime deployers (Quick Try mode)
 │   ├── service/               # Scaffolding & GitOps services
 │   │   └── git/               # GitProvider interface + Gitea/GitHub/GitLab impls
 │   ├── telemetry/             # SSE telemetry API
@@ -304,6 +323,8 @@ The operator exposes REST endpoints at `http://localhost:8080`:
 | `GET /api/telemetry/snapshot/{flowId}` | Point-in-time node status |
 | `GET /api/mcp/tools?serverUrl=...` | List MCP tools |
 | `POST /api/mcp/tools/{name}/call` | Invoke an MCP tool |
+| `POST /api/flows/{name}/ephemeral/extend?seconds=` | Extend ephemeral TTL |
+| `POST /api/flows/{name}/promote-to-gitops` | Promote ephemeral flow to GitOps |
 
 ### Build Console Plugin
 
@@ -325,7 +346,7 @@ docker build -f src/main/docker/Dockerfile.jvm \
 
 | Workflow | Trigger | Actions |
 |----------|---------|---------|
-| **Build and push to Quay.io** | Push to `main`, manual dispatch | Maven build & test, push operator image to Quay.io, package Helm chart to `docs/` |
+| **Build and push to Quay.io** | Push to `main`, tags `v*`, manual dispatch | Maven test, push operator + console plugin images to Quay.io, package Helm chart to `docs/` |
 | **Deploy to OpenShift** | After successful build, manual dispatch | `oc login`, Helm upgrade, verify rollout, create sample IntegrationFlow |
 
 Images are published to:

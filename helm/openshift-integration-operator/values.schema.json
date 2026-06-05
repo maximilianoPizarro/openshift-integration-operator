@@ -302,6 +302,50 @@
       "type": "string",
       "description": "Target namespace for all platform resources",
       "default": "openshift-integration"
+    },
+    "ephemeral": {
+      "type": "object",
+      "description": "Ephemeral Quick Try mode — deploy integrations without Git or ArgoCD",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable ephemeral deployment mode in the operator",
+          "default": true
+        },
+        "defaultTtlSeconds": {
+          "type": "integer",
+          "description": "Default TTL for ephemeral flows when not specified in the CR",
+          "minimum": 60,
+          "default": 3600
+        },
+        "maxTtlSeconds": {
+          "type": "integer",
+          "description": "Maximum TTL allowed when extending ephemeral flows",
+          "minimum": 60,
+          "default": 86400
+        },
+        "camelWorkerImage": {
+          "type": "string",
+          "description": "Container image for ephemeral Camel Route workers",
+          "default": "quay.io/maximilianopizarro/camel-yaml-worker:v0.2.0"
+        },
+        "camelTestImage": {
+          "type": "string",
+          "description": "Container image for ephemeral Camel Test jobs",
+          "default": "quay.io/maximilianopizarro/camel-test-runner:v0.2.0"
+        },
+        "camelK": {
+          "type": "object",
+          "description": "Camel K operator detection settings",
+          "properties": {
+            "detect": {
+              "type": "boolean",
+              "description": "Detect Camel K CRDs and use Kamelet/Pipe deployers when available",
+              "default": true
+            }
+          }
+        }
+      }
     }
   },
   "required": ["operator", "namespace"]

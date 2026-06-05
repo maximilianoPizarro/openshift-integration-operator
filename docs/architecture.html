@@ -331,9 +331,19 @@
           </thead>
           <tbody>
             <tr>
+              <td><code>deploymentMode</code></td>
+              <td>enum</td>
+              <td><code>GITOPS</code> (default) or <code>EPHEMERAL</code> for Quick Try without Git</td>
+            </tr>
+            <tr>
+              <td><code>ephemeral.ttlSeconds</code></td>
+              <td>integer</td>
+              <td>TTL for ephemeral runtime (default from Helm <code>ephemeral.defaultTtlSeconds</code>)</td>
+            </tr>
+            <tr>
               <td><code>gitRepository</code></td>
               <td>string</td>
-              <td>Git remote URL where scaffolded worker source is pushed</td>
+              <td>Git remote URL (required for <code>GITOPS</code>, ignored for <code>EPHEMERAL</code>)</td>
             </tr>
             <tr>
               <td><code>branch</code></td>
@@ -371,12 +381,27 @@
             <tr>
               <td><code>phase</code></td>
               <td>enum</td>
-              <td><code>Scaffolding</code>, <code>Building</code>, <code>Deploying</code>, <code>Running</code>, or <code>Error</code></td>
+              <td><code>Scaffolding</code>, <code>Building</code>, <code>Deploying</code>, <code>Running</code>, <code>Expired</code>, or <code>Error</code></td>
+            </tr>
+            <tr>
+              <td><code>deploymentMode</code></td>
+              <td>enum</td>
+              <td>Active mode: <code>GITOPS</code> or <code>EPHEMERAL</code></td>
+            </tr>
+            <tr>
+              <td><code>ephemeralExpiresAt</code></td>
+              <td>string (ISO-8601)</td>
+              <td>Expiry timestamp when in ephemeral mode</td>
+            </tr>
+            <tr>
+              <td><code>ephemeralWorkerRef</code></td>
+              <td>string</td>
+              <td>Reference to deployed ephemeral resource (Deployment, Job, or CR name)</td>
             </tr>
             <tr>
               <td><code>gitCommitHash</code></td>
               <td>string</td>
-              <td>SHA of the last successful Git push</td>
+              <td>SHA of the last successful Git push (GitOps mode only)</td>
             </tr>
             <tr>
               <td><code>argoApplicationName</code></td>
@@ -395,7 +420,13 @@
       <section class="doc-section" id="reconciliation">
         <h2>Reconciliation Loop</h2>
         <p>
-          When an <code>IntegrationFlow</code> is created or updated, the reconciler executes the following
+          When an <code>IntegrationFlow</code> is created or updated, the reconciler branches on
+          <code>spec.deploymentMode</code>:
+        </p>
+
+        <h3>GitOps Mode (default)</h3>
+        <p>
+          When <code>deploymentMode</code> is <code>GITOPS</code> (or unset), the reconciler executes the following
           steps in order:
         </p>
 
@@ -427,6 +458,20 @@
             <strong>Deploy</strong> — Worker pods start executing the integration flow. HPA monitors load and
             scales replicas within configured bounds.
           </li>
+        </ol>
+
+        <h3>Ephemeral Mode (Quick Try)</h3>
+        <p>
+          When <code>deploymentMode</code> is <code>EPHEMERAL</code>, Git push, Tekton, and ArgoCD are skipped.
+          The reconciler scaffolds in memory and deploys runtime resources directly via
+          <code>EphemeralRuntimeService</code>:
+        </p>
+        <ol class="steps">
+          <li><strong>Scaffold</strong> — Generate worker artifacts from <code>kaotoDesign</code> (no Git commit).</li>
+          <li><strong>Deploy</strong> — Type-specific deployer creates ConfigMap + Deployment (Camel Route), Kamelet/Pipe CRs (Camel K), Job (Camel Test), or SonataFlow CR in <code>kogito-bpm</code>.</li>
+          <li><strong>TTL</strong> — Set <code>status.ephemeralExpiresAt</code>; on expiry, phase becomes <code>Expired</code> and deployments scale to zero.</li>
+          <li><strong>Cleanup</strong> — Finalizer <code>platform.io/ephemeral-cleanup</code> removes labeled resources on delete.</li>
+          <li><strong>Promote</strong> — <code>POST /api/flows/{name}/promote-to-gitops</code> switches to GitOps and triggers the standard pipeline.</li>
         </ol>
       </section>
 

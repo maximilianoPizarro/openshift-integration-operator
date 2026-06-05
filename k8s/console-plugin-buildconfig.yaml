@@ -1,0 +1,23 @@
+# OpenShift binary build for the console plugin (webpack + nginx image).
+# Usage: oc start-build integration-console-plugin --from-dir=console-plugin --follow -n openshift-integration
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: integration-console-plugin
+  namespace: openshift-integration
+  labels:
+    app: integration-console-plugin
+spec:
+  failedBuildsHistoryLimit: 3
+  successfulBuildsHistoryLimit: 3
+  output:
+    to:
+      kind: ImageStreamTag
+      name: integration-console-plugin:latest
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers: []

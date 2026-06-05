@@ -26,6 +26,8 @@ public class IntegrationFlowSpec {
     private java.util.List<String> editors;
     private java.util.List<String> viewers;
     private java.util.List<SecretRef> secrets;
+    private DeploymentMode deploymentMode = DeploymentMode.GITOPS;
+    private EphemeralSpec ephemeral;
 
     public EngineType getEngine() {
         return engine;
@@ -187,6 +189,22 @@ public class IntegrationFlowSpec {
 
     public void setSecrets(java.util.List<SecretRef> secrets) {
         this.secrets = secrets;
+    }
+
+    public DeploymentMode getDeploymentMode() {
+        return deploymentMode != null ? deploymentMode : DeploymentMode.GITOPS;
+    }
+
+    public void setDeploymentMode(DeploymentMode deploymentMode) {
+        this.deploymentMode = deploymentMode;
+    }
+
+    public EphemeralSpec getEphemeral() {
+        return ephemeral;
+    }
+
+    public void setEphemeral(EphemeralSpec ephemeral) {
+        this.ephemeral = ephemeral;
     }
 
     /**

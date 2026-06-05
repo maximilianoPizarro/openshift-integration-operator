@@ -12,6 +12,7 @@ public class IntegrationFlowStatus {
         Running,
         PartiallyHealthy,
         Error,
+        Expired,
         Paused,
         Stopped,
         Resuming
@@ -34,6 +35,9 @@ public class IntegrationFlowStatus {
     private String sonataFlowNamespace;
     private String sonataFlowReady;
     private String lastScaffoldedHash;
+    private DeploymentMode deploymentMode;
+    private String ephemeralExpiresAt;
+    private String ephemeralWorkerRef;
 
     public Phase getPhase() {
         return phase;
@@ -169,6 +173,30 @@ public class IntegrationFlowStatus {
 
     public void setLastScaffoldedHash(String lastScaffoldedHash) {
         this.lastScaffoldedHash = lastScaffoldedHash;
+    }
+
+    public DeploymentMode getDeploymentMode() {
+        return deploymentMode;
+    }
+
+    public void setDeploymentMode(DeploymentMode deploymentMode) {
+        this.deploymentMode = deploymentMode;
+    }
+
+    public String getEphemeralExpiresAt() {
+        return ephemeralExpiresAt;
+    }
+
+    public void setEphemeralExpiresAt(String ephemeralExpiresAt) {
+        this.ephemeralExpiresAt = ephemeralExpiresAt;
+    }
+
+    public String getEphemeralWorkerRef() {
+        return ephemeralWorkerRef;
+    }
+
+    public void setEphemeralWorkerRef(String ephemeralWorkerRef) {
+        this.ephemeralWorkerRef = ephemeralWorkerRef;
     }
 
     public static class Condition {

@@ -1,0 +1,24 @@
+# Quick Try (ephemeral) mode — no Git repository or ArgoCD required.
+# The operator deploys runtime resources directly and cleans them up on TTL expiry or delete.
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-camel-demo
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ephemeral-timer
+        from:
+          uri: "timer:tick?period=10000"
+          steps:
+            - log:
+                message: "Hello from ephemeral Quick Try mode"

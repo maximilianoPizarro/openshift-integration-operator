@@ -58,6 +58,16 @@ spec:
               value: {{ .Values.gitlab.url | default "https://gitlab.com" }}
             - name: GITLAB_TOKEN
               value: {{ .Values.gitlab.token | default "" | quote }}
+            - name: EPHEMERAL_ENABLED
+              value: {{ .Values.ephemeral.enabled | quote }}
+            - name: EPHEMERAL_DEFAULT_TTL_SECONDS
+              value: {{ .Values.ephemeral.defaultTtlSeconds | quote }}
+            - name: EPHEMERAL_MAX_TTL_SECONDS
+              value: {{ .Values.ephemeral.maxTtlSeconds | quote }}
+            - name: EPHEMERAL_CAMEL_WORKER_IMAGE
+              value: {{ .Values.ephemeral.camelWorkerImage | quote }}
+            - name: EPHEMERAL_CAMEL_TEST_IMAGE
+              value: {{ .Values.ephemeral.camelTestImage | quote }}
           livenessProbe:
             httpGet:
               path: /q/health/live
