@@ -6,9 +6,11 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
+import io.platform.api.v1alpha1.AlertingSpec;
 import io.platform.api.v1alpha1.IntegrationFlow;
 import io.platform.api.v1alpha1.IntegrationFlowStatus;
 import io.platform.api.v1alpha1.IntegrationType;
+import io.platform.api.v1alpha1.ResilienceSpec;
 import io.platform.api.v1alpha1.TargetingSpec;
 import io.platform.service.ArgoService;
 import io.platform.service.GitOpsService;
@@ -57,10 +59,49 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         LOG.infof("Reconciling IntegrationFlow '%s/%s' integrationType=%s engine=%s",
                 namespace, flowName, type, spec.getEngine());
 
+        // Handle lifecycle state changes (pause/stop/resume)
+        String desiredState = spec.getDesiredState();
+        if (desiredState != null) {
+            switch (desiredState) {
+                case "paused" -> {
+                    if (status.getPhase() != IntegrationFlowStatus.Phase.Paused) {
+                        LOG.infof("Pausing flow '%s'", flowName);
+                        status.setPhase(IntegrationFlowStatus.Phase.Paused);
+                        status.setCurrentState("paused");
+                        status.setMessage("Flow paused by user");
+                        finalizeStatus(resource, status);
+                        return UpdateControl.patchStatus(resource);
+                    }
+                    return UpdateControl.noUpdate();
+                }
+                case "stopped" -> {
+                    if (status.getPhase() != IntegrationFlowStatus.Phase.Stopped) {
+                        LOG.infof("Stopping flow '%s'", flowName);
+                        status.setPhase(IntegrationFlowStatus.Phase.Stopped);
+                        status.setCurrentState("stopped");
+                        status.setMessage("Flow stopped by user");
+                        finalizeStatus(resource, status);
+                        return UpdateControl.patchStatus(resource);
+                    }
+                    return UpdateControl.noUpdate();
+                }
+                case "running" -> {
+                    if (status.getPhase() == IntegrationFlowStatus.Phase.Paused
+                            || status.getPhase() == IntegrationFlowStatus.Phase.Stopped) {
+                        LOG.infof("Resuming flow '%s'", flowName);
+                        status.setPhase(IntegrationFlowStatus.Phase.Resuming);
+                        status.setCurrentState("running");
+                        status.setMessage("Flow resuming...");
+                    }
+                }
+                default -> { /* proceed with normal reconciliation */ }
+            }
+        }
+
         try {
             // Step 1: Scaffold the worker project
             status.setPhase(IntegrationFlowStatus.Phase.Scaffolding);
-            var scaffoldResult = scaffoldingService.scaffold(type, spec.getKaotoDesign());
+            var scaffoldResult = scaffoldingService.scaffold(type, spec.getKaotoDesign(), spec.getResilience());
             updateCondition(status, "Scaffolded", "True", "ScaffoldComplete", "Worker project scaffolded");
 
             // Step 2: Push to Git via GitOps service
@@ -107,7 +148,19 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             updateCondition(status, "ApplicationSetReady", "True", "Reconciled",
                     "ApplicationSet " + appSetName + " reconciled");
 
-            // Step 5: Final status update
+            // Step 5: Create PrometheusRule for alerting (if enabled)
+            if (spec.getAlerting() != null && spec.getAlerting().isEnabled()) {
+                reconcilePrometheusRule(namespace, flowName, spec.getAlerting());
+                status.setPrometheusRuleName("iflow-" + flowName + "-alerts");
+            }
+
+            // Step 6: Create CronJob for scheduled execution (if configured)
+            if (spec.getSchedule() != null && !spec.getSchedule().isBlank()) {
+                reconcileSchedule(namespace, flowName, spec.getSchedule());
+            }
+
+            // Step 7: Final status update
+            status.setCurrentState("running");
             if (deployments.isEmpty()) {
                 status.setMessage("ApplicationSet reconciled, waiting for cluster Applications");
             } else {
@@ -238,5 +291,89 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
         kubernetesClient.resource(pipelineRun).inNamespace(namespace).create();
         LOG.infof("Created PipelineRun for flow '%s' in namespace '%s'", flowName, namespace);
+    }
+
+    private void reconcilePrometheusRule(String namespace, String flowName,
+                                          io.platform.api.v1alpha1.AlertingSpec alerting) {
+        String ruleName = "iflow-" + flowName + "-alerts";
+        double threshold = alerting.getErrorRateThreshold() != null ? alerting.getErrorRateThreshold() : 0.05;
+
+        var rule = new io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder()
+                .withApiVersion("monitoring.coreos.com/v1")
+                .withKind("PrometheusRule")
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(ruleName)
+                        .withNamespace(namespace)
+                        .withLabels(Map.of(
+                                "platform.io/flow-name", flowName,
+                                "platform.io/component", "alerting",
+                                "app.kubernetes.io/part-of", "integration-platform"))
+                        .build())
+                .build();
+
+        var ruleSpec = Map.of("groups", java.util.List.of(Map.of(
+                "name", flowName + ".rules",
+                "rules", java.util.List.of(
+                        Map.of("alert", "IntegrationFlowHighErrorRate",
+                                "expr", String.format(
+                                        "rate(camel_exchanges_failed_total{flow_name=\"%s\"}[5m]) / rate(camel_exchanges_total{flow_name=\"%s\"}[5m]) > %f",
+                                        flowName, flowName, threshold),
+                                "for", "2m",
+                                "labels", Map.of("severity", "warning", "flow_name", flowName),
+                                "annotations", Map.of(
+                                        "summary", "IntegrationFlow " + flowName + " error rate above " + (threshold * 100) + "%",
+                                        "description", "Flow {{ $labels.flow_name }} has error rate {{ $value | humanizePercentage }} over the last 5 minutes.")),
+                        Map.of("alert", "IntegrationFlowDown",
+                                "expr", String.format("absent(up{job=\"%s\"})", flowName),
+                                "for", "5m",
+                                "labels", Map.of("severity", "critical", "flow_name", flowName),
+                                "annotations", Map.of(
+                                        "summary", "IntegrationFlow " + flowName + " is down",
+                                        "description", "No metrics received from flow {{ $labels.flow_name }} for 5 minutes.")))
+        )));
+        rule.setAdditionalProperties(Map.of("spec", ruleSpec));
+
+        kubernetesClient.resource(rule).inNamespace(namespace).createOrReplace();
+        LOG.infof("Reconciled PrometheusRule '%s' for flow '%s'", ruleName, flowName);
+    }
+
+    private void reconcileSchedule(String namespace, String flowName, String schedule) {
+        String cronJobName = "iflow-schedule-" + flowName;
+
+        var cronJob = new io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder()
+                .withApiVersion("batch/v1")
+                .withKind("CronJob")
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(cronJobName)
+                        .withNamespace(namespace)
+                        .withLabels(Map.of(
+                                "platform.io/flow-name", flowName,
+                                "platform.io/component", "scheduler"))
+                        .build())
+                .build();
+
+        var spec = Map.of(
+                "schedule", schedule,
+                "jobTemplate", Map.of(
+                        "spec", Map.of(
+                                "template", Map.of(
+                                        "spec", Map.of(
+                                                "serviceAccountName", "integration-operator-sa",
+                                                "restartPolicy", "OnFailure",
+                                                "containers", java.util.List.of(Map.of(
+                                                        "name", "trigger",
+                                                        "image", "bitnami/kubectl:latest",
+                                                        "command", java.util.List.of("kubectl"),
+                                                        "args", java.util.List.of(
+                                                                "patch", "integrationflow", flowName,
+                                                                "-n", namespace,
+                                                                "--type=merge",
+                                                                "-p", "{\"spec\":{\"desiredState\":\"running\"}}")
+                                                ))))
+                ));
+        cronJob.setAdditionalProperties(Map.of("spec", spec));
+
+        kubernetesClient.resource(cronJob).inNamespace(namespace).createOrReplace();
+        LOG.infof("Reconciled CronJob '%s' for scheduled execution of flow '%s'", cronJobName, flowName);
     }
 }

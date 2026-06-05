@@ -1,6 +1,7 @@
 package io.platform.service;
 
 import io.platform.api.v1alpha1.IntegrationType;
+import io.platform.api.v1alpha1.ResilienceSpec;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
@@ -18,6 +19,11 @@ public class DefaultScaffoldingService implements ScaffoldingService {
 
     @Override
     public ScaffoldResult scaffold(IntegrationType type, String kaotoDesign) {
+        return scaffold(type, kaotoDesign, null);
+    }
+
+    @Override
+    public ScaffoldResult scaffold(IntegrationType type, String kaotoDesign, ResilienceSpec resilience) {
         if (type == null) type = IntegrationType.CAMEL_ROUTE;
         LOG.infof("Scaffolding project for integrationType=%s", type);
 
@@ -29,7 +35,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                 ? generateCamelOtelDecorator()
                 : generateSonataFlowOtelDecorator();
         String kustomizeBase = generateKustomizeBase(flowName);
-        String applicationProperties = generateApplicationProperties(flowName);
+        String applicationProperties = generateApplicationProperties(flowName, resilience);
 
         String summary = String.format(
                 "Generated %s project '%s' with pom.xml, workflow definition (%d bytes), kaoto-config.json, "
@@ -275,14 +281,38 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                 """.formatted(flowName);
     }
 
-    private String generateApplicationProperties(String flowName) {
-        return """
-                quarkus.application.name=%s
-                quarkus.opentelemetry.enabled=true
-                quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://otel-collector:4317
-                quarkus.log.level=INFO
-                quarkus.http.port=8080
-                """.formatted(flowName);
+    private String generateApplicationProperties(String flowName, ResilienceSpec resilience) {
+        var sb = new StringBuilder();
+        sb.append("quarkus.application.name=%s\n".formatted(flowName));
+        sb.append("quarkus.opentelemetry.enabled=true\n");
+        sb.append("quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://otel-collector:4317\n");
+        sb.append("quarkus.log.level=INFO\n");
+        sb.append("quarkus.http.port=8080\n");
+
+        if (resilience != null) {
+            if (resilience.getRetry() != null) {
+                var retry = resilience.getRetry();
+                sb.append("\n# Resilience - Retry Policy\n");
+                sb.append("camel.resilience4j.retry.max-attempts=%d\n".formatted(
+                        retry.getMaxAttempts() != null ? retry.getMaxAttempts() : 3));
+                sb.append("camel.resilience4j.retry.wait-duration=%s\n".formatted(
+                        retry.getInitialDelay() != null ? retry.getInitialDelay() : "1s"));
+            }
+            if (resilience.getCircuitBreaker() != null) {
+                var cb = resilience.getCircuitBreaker();
+                sb.append("\n# Resilience - Circuit Breaker\n");
+                sb.append("camel.resilience4j.circuit-breaker.failure-rate-threshold=%d\n".formatted(
+                        cb.getFailureThreshold() != null ? cb.getFailureThreshold() * 20 : 50));
+                sb.append("camel.resilience4j.circuit-breaker.wait-duration-in-open-state=%s\n".formatted(
+                        cb.getHalfOpenAfter() != null ? cb.getHalfOpenAfter() : "30s"));
+            }
+            if (resilience.getMaxInflightExchanges() != null) {
+                sb.append("\n# Resilience - Throttling\n");
+                sb.append("platform.throttle.max-inflight=%d\n".formatted(resilience.getMaxInflightExchanges()));
+            }
+        }
+
+        return sb.toString();
     }
 
     private String generatePom(IntegrationType type, String flowName) {

@@ -17,6 +17,14 @@ public class IntegrationFlowSpec {
     private String gitCredentialsSecret;
     private String gitProvider = "auto";
     private Integer replicas;
+    private String schedule;
+    private ResilienceSpec resilience;
+    private AlertingSpec alerting;
+    private RolloutSpec rollout;
+    private String desiredState;
+    private String owner;
+    private java.util.List<String> editors;
+    private java.util.List<String> viewers;
 
     public EngineType getEngine() {
         return engine;
@@ -106,6 +114,70 @@ public class IntegrationFlowSpec {
 
     public void setReplicas(Integer replicas) {
         this.replicas = replicas;
+    }
+
+    public String getSchedule() {
+        return schedule;
+    }
+
+    public void setSchedule(String schedule) {
+        this.schedule = schedule;
+    }
+
+    public ResilienceSpec getResilience() {
+        return resilience;
+    }
+
+    public void setResilience(ResilienceSpec resilience) {
+        this.resilience = resilience;
+    }
+
+    public AlertingSpec getAlerting() {
+        return alerting;
+    }
+
+    public void setAlerting(AlertingSpec alerting) {
+        this.alerting = alerting;
+    }
+
+    public RolloutSpec getRollout() {
+        return rollout;
+    }
+
+    public void setRollout(RolloutSpec rollout) {
+        this.rollout = rollout;
+    }
+
+    public String getDesiredState() {
+        return desiredState;
+    }
+
+    public void setDesiredState(String desiredState) {
+        this.desiredState = desiredState;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public java.util.List<String> getEditors() {
+        return editors;
+    }
+
+    public void setEditors(java.util.List<String> editors) {
+        this.editors = editors;
+    }
+
+    public java.util.List<String> getViewers() {
+        return viewers;
+    }
+
+    public void setViewers(java.util.List<String> viewers) {
+        this.viewers = viewers;
     }
 
     /**

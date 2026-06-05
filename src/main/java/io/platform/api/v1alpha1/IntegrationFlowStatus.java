@@ -11,7 +11,10 @@ public class IntegrationFlowStatus {
         Deploying,
         Running,
         PartiallyHealthy,
-        Error
+        Error,
+        Paused,
+        Stopped,
+        Resuming
     }
 
     private Phase phase;
@@ -23,6 +26,10 @@ public class IntegrationFlowStatus {
     private List<ClusterDeployment> clusterDeployments = new ArrayList<>();
     private String lastReconciledAt;
     private Long observedGeneration;
+    private String currentState;
+    private String circuitBreakerState;
+    private String lastRollbackHash;
+    private String prometheusRuleName;
 
     public Phase getPhase() {
         return phase;
@@ -94,6 +101,38 @@ public class IntegrationFlowStatus {
 
     public void setObservedGeneration(Long observedGeneration) {
         this.observedGeneration = observedGeneration;
+    }
+
+    public String getCurrentState() {
+        return currentState;
+    }
+
+    public void setCurrentState(String currentState) {
+        this.currentState = currentState;
+    }
+
+    public String getCircuitBreakerState() {
+        return circuitBreakerState;
+    }
+
+    public void setCircuitBreakerState(String circuitBreakerState) {
+        this.circuitBreakerState = circuitBreakerState;
+    }
+
+    public String getLastRollbackHash() {
+        return lastRollbackHash;
+    }
+
+    public void setLastRollbackHash(String lastRollbackHash) {
+        this.lastRollbackHash = lastRollbackHash;
+    }
+
+    public String getPrometheusRuleName() {
+        return prometheusRuleName;
+    }
+
+    public void setPrometheusRuleName(String prometheusRuleName) {
+        this.prometheusRuleName = prometheusRuleName;
     }
 
     public static class Condition {
