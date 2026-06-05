@@ -100,7 +100,10 @@ data:
       ],
       "dependencies": {
         "@console/pluginAPI": "*"
-      }
+      },
+      "registrationMethod": "callback",
+      "baseURL": "/api/plugins/integration-console-plugin/",
+      "loadScripts": ["plugin-entry.js"]
     }
   plugin-entry.js: |
     (function() {
