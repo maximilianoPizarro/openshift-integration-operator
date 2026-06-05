@@ -577,10 +577,9 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         if (Instant.now().isAfter(expiresAt)) {
             handleExpiredEphemeral(flowName, namespace, status);
             finalizeStatus(resource, status);
-            return UpdateControl.patchResourceAndStatus(resource);
+            return UpdateControl.patchStatus(resource);
         }
 
-        annotateExpiry(resource, expiresAt);
         status.setEphemeralExpiresAt(expiresAt.toString());
 
         try {
@@ -613,7 +612,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         }
 
         finalizeStatus(resource, status);
-        return UpdateControl.patchResourceAndStatus(resource);
+        return UpdateControl.patchStatus(resource);
     }
 
     private int resolveTtlSeconds(io.platform.api.v1alpha1.IntegrationFlowSpec spec) {
