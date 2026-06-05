@@ -31,7 +31,7 @@ public class ScaffoldingServiceTest {
         assertNotNull(result.otelDecoratorJava());
         assertTrue(result.otelDecoratorJava().contains("kaoto.node.id"));
         assertNotNull(result.kustomizeBase());
-        assertTrue(result.kustomizeBase().contains("kustomization"));
+        assertTrue(result.kustomizeBase().contains("Kustomization"));
     }
 
     @Test
@@ -41,7 +41,7 @@ public class ScaffoldingServiceTest {
         var result = scaffoldingService.scaffold(EngineType.SONATAFLOW, design);
 
         assertNotNull(result);
-        assertTrue(result.pomXml().contains("sonataflow"));
+        assertTrue(result.pomXml().contains("kogito-quarkus-serverless-workflow"));
         assertTrue(result.projectStructureSummary().contains("SONATAFLOW"));
     }
 
