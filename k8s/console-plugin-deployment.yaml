@@ -36,8 +36,6 @@ data:
     {
       "name": "integration-console-plugin",
       "version": "0.2.0",
-      "displayName": "Integration Platform",
-      "description": "Real-Time Integration & Orchestration Platform - Apache Camel + SonataFlow with Kaoto designer",
       "extensions": [
         {
           "type": "console.navigation/section",
@@ -99,11 +97,18 @@ data:
         }
       ],
       "dependencies": {
-        "@console/pluginAPI": "*"
+        "@console/pluginAPI": ">=4.15"
+      },
+      "customProperties": {
+        "console": {
+          "displayName": "Integration Platform",
+          "description": "Real-Time Integration & Orchestration Platform — Apache Camel + SonataFlow with Kaoto designer"
+        }
       },
       "registrationMethod": "callback",
       "baseURL": "/api/plugins/integration-console-plugin/",
-      "loadScripts": ["plugin-entry.js"]
+      "loadScripts": ["plugin-entry.js"],
+      "buildHash": "a1b2c3d4e5f6"
     }
   plugin-entry.js: |
     loadPluginEntry("integration-console-plugin@0.2.0", function() {
@@ -514,8 +519,16 @@ apiVersion: console.openshift.io/v1
 kind: ConsolePlugin
 metadata:
   name: integration-console-plugin
+  annotations:
+    console.openshift.io/description: "Real-Time Integration & Orchestration Platform — Apache Camel + SonataFlow with Kaoto designer"
+  labels:
+    app.kubernetes.io/name: integration-console-plugin
+    app.kubernetes.io/version: "0.2.0"
+    app.kubernetes.io/part-of: openshift-integration-operator
 spec:
-  displayName: Integration Platform
+  displayName: "Integration Platform v0.2.0"
+  i18n:
+    loadType: Preload
   proxy:
     - alias: backend
       authorization: UserToken
