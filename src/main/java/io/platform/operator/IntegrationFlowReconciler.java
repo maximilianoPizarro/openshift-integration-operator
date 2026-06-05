@@ -111,6 +111,11 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             }
         }
 
+        // For SONATAFLOW, create/update the SonataFlow CR early (independent of Git/Tekton)
+        if (type == IntegrationType.SONATAFLOW) {
+            reconcileSonataFlowCR(namespace, flowName, spec.getKaotoDesign(), status);
+        }
+
         try {
             // Step 1: Scaffold the worker project
             status.setPhase(IntegrationFlowStatus.Phase.Scaffolding);
@@ -162,23 +167,18 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             updateCondition(status, "ApplicationSetReady", "True", "Reconciled",
                     "ApplicationSet " + appSetName + " reconciled");
 
-            // Step 5: For SONATAFLOW, create/update the SonataFlow CR in the platform namespace
-            if (type == IntegrationType.SONATAFLOW) {
-                reconcileSonataFlowCR(namespace, flowName, spec.getKaotoDesign(), status);
-            }
-
-            // Step 7: Create PrometheusRule for alerting (if enabled)
+            // Step 5: Create PrometheusRule for alerting (if enabled)
             if (spec.getAlerting() != null && spec.getAlerting().isEnabled()) {
                 reconcilePrometheusRule(namespace, flowName, spec.getAlerting());
                 status.setPrometheusRuleName("iflow-" + flowName + "-alerts");
             }
 
-            // Step 8: Create CronJob for scheduled execution (if configured)
+            // Step 6: Create CronJob for scheduled execution (if configured)
             if (spec.getSchedule() != null && !spec.getSchedule().isBlank()) {
                 reconcileSchedule(namespace, flowName, spec.getSchedule());
             }
 
-            // Step 9: Final status update
+            // Step 7: Final status update
             status.setCurrentState("running");
             if (deployments.isEmpty()) {
                 status.setMessage("ApplicationSet reconciled, waiting for cluster Applications");
@@ -357,25 +357,26 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
     }
 
     /**
-     * Creates or updates a SonataFlow CR in the kogito-bpm namespace so the
-     * OpenShift Serverless Logic operator picks it up and shows it in the
-     * SonataFlow Management Console.
+     * Creates or updates a SonataFlow CR in the kogito-bpm namespace where the
+     * OpenShift Serverless Logic operator is installed and watching.
      */
     private void reconcileSonataFlowCR(String namespace, String flowName,
                                         String kaotoDesign, IntegrationFlowStatus status) {
         String sonataFlowNs = "kogito-bpm";
         String sfName = "iflow-" + flowName;
 
+        if (kaotoDesign == null || kaotoDesign.isBlank()) {
+            LOG.warnf("No kaotoDesign provided for SonataFlow CR '%s', skipping creation", sfName);
+            updateCondition(status, "SonataFlowDeployed", "False", "NoDesign",
+                    "Cannot create SonataFlow CR without kaotoDesign content");
+            return;
+        }
+
         try {
-            // Parse the kaotoDesign YAML to extract the flow spec.
-            // The kaotoDesign is a Serverless Workflow YAML; the SonataFlow CR
-            // wraps it under spec.flow with the parsed structure.
-            // We store it as a raw JSON map so the Fabric8 generic resource handles serialisation.
             var yamlMapper = new com.fasterxml.jackson.dataformat.yaml.YAMLFactory();
             var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper(yamlMapper);
             @SuppressWarnings("unchecked")
-            java.util.Map<String, Object> flowSpec = objectMapper.readValue(
-                    kaotoDesign != null ? kaotoDesign : "{}", java.util.Map.class);
+            java.util.Map<String, Object> flowSpec = objectMapper.readValue(kaotoDesign, java.util.Map.class);
 
             var sonataFlow = new io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder()
                     .withApiVersion("sonataflow.org/v1alpha08")
@@ -389,36 +390,33 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                                     "platform.io/flow-name", flowName,
                                     "app.openshift.io/runtime", "kogito"))
                             .withAnnotations(Map.of(
-                                    "sonataflow.org/profile", "preview",
-                                    "sonataflow.org/version", "1.0.0",
-                                    "sonataflow.org/description",
-                                    "Managed by IntegrationFlow operator - " + flowName))
+                                    "sonataflow.org/description", "Managed by Integration Platform",
+                                    "sonataflow.org/version", "1.0"))
                             .build())
                     .build();
 
             var sfSpec = new java.util.HashMap<String, Object>();
             sfSpec.put("flow", flowSpec);
 
-            // Pod template with data-index/jobs-service env vars
-            var envVars = java.util.List.of(
-                    Map.of("name", "KOGITO_DATAINDEX_URL",
-                           "value", "http://sonataflow-data-index-http.kogito-bpm.svc.cluster.local:8080"),
-                    Map.of("name", "KOGITO_JOBSERVICE_URL",
-                           "value", "http://sonataflow-jobs-http.kogito-bpm.svc.cluster.local:8080")
+            var resources = Map.of(
+                    "requests", Map.of("memory", "256Mi", "cpu", "100m"),
+                    "limits", Map.of("memory", "512Mi", "cpu", "500m")
             );
             sfSpec.put("podTemplate", Map.of(
-                    "container", Map.of("env", envVars, "resources", Map.of())
+                    "container", Map.of("resources", resources)
             ));
 
             sonataFlow.setAdditionalProperties(Map.of("spec", sfSpec));
+
             kubernetesClient.resource(sonataFlow).inNamespace(sonataFlowNs).createOrReplace();
+            LOG.infof("Created/updated SonataFlow CR '%s' in namespace '%s'", sfName, sonataFlowNs);
 
             status.setSonataFlowName(sfName);
             status.setSonataFlowNamespace(sonataFlowNs);
             updateCondition(status, "SonataFlowDeployed", "True", "CRCreated",
                     "SonataFlow CR " + sfName + " created/updated in " + sonataFlowNs);
 
-            // Check if the SonataFlow is ready
+            // Check if the SonataFlow is ready by reading back the CR status
             try {
                 var existing = kubernetesClient.genericKubernetesResources(
                         "sonataflow.org/v1alpha08", "SonataFlow")
@@ -441,8 +439,10 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                 LOG.warnf("Could not read SonataFlow status for %s: %s", sfName, e.getMessage());
             }
 
-            LOG.infof("Reconciled SonataFlow CR '%s' in namespace '%s'", sfName, sonataFlowNs);
-
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            LOG.errorf(e, "Failed to parse kaotoDesign YAML for SonataFlow CR '%s'", sfName);
+            updateCondition(status, "SonataFlowDeployed", "False", "ParseFailed",
+                    "Failed to parse kaotoDesign YAML: " + e.getMessage());
         } catch (Exception e) {
             LOG.errorf(e, "Failed to reconcile SonataFlow CR for flow '%s'", flowName);
             updateCondition(status, "SonataFlowDeployed", "False", "CRFailed",

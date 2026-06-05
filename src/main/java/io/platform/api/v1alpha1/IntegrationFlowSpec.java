@@ -25,6 +25,7 @@ public class IntegrationFlowSpec {
     private String owner;
     private java.util.List<String> editors;
     private java.util.List<String> viewers;
+    private java.util.List<SecretRef> secrets;
 
     public EngineType getEngine() {
         return engine;
@@ -178,6 +179,14 @@ public class IntegrationFlowSpec {
 
     public void setViewers(java.util.List<String> viewers) {
         this.viewers = viewers;
+    }
+
+    public java.util.List<SecretRef> getSecrets() {
+        return secrets;
+    }
+
+    public void setSecrets(java.util.List<SecretRef> secrets) {
+        this.secrets = secrets;
     }
 
     /**
