@@ -20,7 +20,17 @@ entries:
         - kind: added
           description: Camel BOM dependency management in scaffolded worker pom.xml
         - kind: added
-          description: 8 production-ready example IntegrationFlows
+          description: 9 production-ready example IntegrationFlows including ephemeral Quick Try
+        - kind: added
+          description: Ephemeral Quick Try mode — deploy without Git, TTL extend, promote to GitOps
+        - kind: added
+          description: Console plugin served from Deployment on port 9443 with backend proxy integration-console-plugin
+        - kind: added
+          description: Flow Logs tab — live worker pod logs via operator REST API
+        - kind: fixed
+          description: Operator HTTPS on port 8443 with serving cert for console plugin backend proxy (fixes 502 on logs/telemetry/lifecycle)
+        - kind: added
+          description: GitUrlResolver rewrites placeholder git hosts to configured provider URLs
         - kind: added
           description: MCP Bridge for AI tool discovery and invocation
         - kind: added
@@ -93,11 +103,11 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.2.0
-    created: "2026-06-05T18:25:52.908831588Z"
+    created: "2026-06-05T22:27:18.16613293Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
-    digest: edb3eddbba026d9ec392d1c849d1fa2fbec68516b89ea3d0f32e2a6cdfd32386
+    digest: 2246becbea43afb757a48ce531e3064aa1c0f342ff98329a5e12c37b89fcd40c
     home: https://maximilianopizarro.github.io/openshift-integration-operator/
     icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.svg
     keywords:
@@ -192,7 +202,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: v0.1.0
-    created: "2026-06-05T18:25:52.907962425Z"
+    created: "2026-06-05T22:27:18.165249057Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -227,4 +237,4 @@ entries:
     urls:
     - https://maximilianopizarro.github.io/openshift-integration-operator/openshift-integration-operator-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-05T18:25:52.907151851Z"
+generated: "2026-06-05T22:27:18.164506418Z"
