@@ -1,0 +1,7 @@
+- route:
+    id: placeholder
+    from:
+      uri: "timer:placeholder?period=999999999"
+      steps:
+        - log:
+            message: "Test runner started — routes loaded from /deployments/config"
