@@ -30,6 +30,9 @@ public class IntegrationFlowStatus {
     private String circuitBreakerState;
     private String lastRollbackHash;
     private String prometheusRuleName;
+    private String sonataFlowName;
+    private String sonataFlowNamespace;
+    private String sonataFlowReady;
 
     public Phase getPhase() {
         return phase;
@@ -133,6 +136,30 @@ public class IntegrationFlowStatus {
 
     public void setPrometheusRuleName(String prometheusRuleName) {
         this.prometheusRuleName = prometheusRuleName;
+    }
+
+    public String getSonataFlowName() {
+        return sonataFlowName;
+    }
+
+    public void setSonataFlowName(String sonataFlowName) {
+        this.sonataFlowName = sonataFlowName;
+    }
+
+    public String getSonataFlowNamespace() {
+        return sonataFlowNamespace;
+    }
+
+    public void setSonataFlowNamespace(String sonataFlowNamespace) {
+        this.sonataFlowNamespace = sonataFlowNamespace;
+    }
+
+    public String getSonataFlowReady() {
+        return sonataFlowReady;
+    }
+
+    public void setSonataFlowReady(String sonataFlowReady) {
+        this.sonataFlowReady = sonataFlowReady;
     }
 
     public static class Condition {

@@ -148,18 +148,23 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             updateCondition(status, "ApplicationSetReady", "True", "Reconciled",
                     "ApplicationSet " + appSetName + " reconciled");
 
-            // Step 5: Create PrometheusRule for alerting (if enabled)
+            // Step 5: For SONATAFLOW, create/update the SonataFlow CR in the platform namespace
+            if (type == IntegrationType.SONATAFLOW) {
+                reconcileSonataFlowCR(namespace, flowName, spec.getKaotoDesign(), status);
+            }
+
+            // Step 7: Create PrometheusRule for alerting (if enabled)
             if (spec.getAlerting() != null && spec.getAlerting().isEnabled()) {
                 reconcilePrometheusRule(namespace, flowName, spec.getAlerting());
                 status.setPrometheusRuleName("iflow-" + flowName + "-alerts");
             }
 
-            // Step 6: Create CronJob for scheduled execution (if configured)
+            // Step 8: Create CronJob for scheduled execution (if configured)
             if (spec.getSchedule() != null && !spec.getSchedule().isBlank()) {
                 reconcileSchedule(namespace, flowName, spec.getSchedule());
             }
 
-            // Step 7: Final status update
+            // Step 9: Final status update
             status.setCurrentState("running");
             if (deployments.isEmpty()) {
                 status.setMessage("ApplicationSet reconciled, waiting for cluster Applications");
@@ -337,6 +342,100 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         LOG.infof("Reconciled PrometheusRule '%s' for flow '%s'", ruleName, flowName);
     }
 
+    /**
+     * Creates or updates a SonataFlow CR in the kogito-bpm namespace so the
+     * OpenShift Serverless Logic operator picks it up and shows it in the
+     * SonataFlow Management Console.
+     */
+    private void reconcileSonataFlowCR(String namespace, String flowName,
+                                        String kaotoDesign, IntegrationFlowStatus status) {
+        String sonataFlowNs = "kogito-bpm";
+        String sfName = "iflow-" + flowName;
+
+        try {
+            // Parse the kaotoDesign YAML to extract the flow spec.
+            // The kaotoDesign is a Serverless Workflow YAML; the SonataFlow CR
+            // wraps it under spec.flow with the parsed structure.
+            // We store it as a raw JSON map so the Fabric8 generic resource handles serialisation.
+            var yamlMapper = new com.fasterxml.jackson.dataformat.yaml.YAMLFactory();
+            var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper(yamlMapper);
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> flowSpec = objectMapper.readValue(
+                    kaotoDesign != null ? kaotoDesign : "{}", java.util.Map.class);
+
+            var sonataFlow = new io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder()
+                    .withApiVersion("sonataflow.org/v1alpha08")
+                    .withKind("SonataFlow")
+                    .withMetadata(new ObjectMetaBuilder()
+                            .withName(sfName)
+                            .withNamespace(sonataFlowNs)
+                            .withLabels(Map.of(
+                                    "app", sfName,
+                                    "app.kubernetes.io/part-of", "integration-platform",
+                                    "platform.io/flow-name", flowName,
+                                    "app.openshift.io/runtime", "kogito"))
+                            .withAnnotations(Map.of(
+                                    "sonataflow.org/profile", "preview",
+                                    "sonataflow.org/version", "1.0.0",
+                                    "sonataflow.org/description",
+                                    "Managed by IntegrationFlow operator - " + flowName))
+                            .build())
+                    .build();
+
+            var sfSpec = new java.util.HashMap<String, Object>();
+            sfSpec.put("flow", flowSpec);
+
+            // Pod template with data-index/jobs-service env vars
+            var envVars = java.util.List.of(
+                    Map.of("name", "KOGITO_DATAINDEX_URL",
+                           "value", "http://sonataflow-data-index-http.kogito-bpm.svc.cluster.local:8080"),
+                    Map.of("name", "KOGITO_JOBSERVICE_URL",
+                           "value", "http://sonataflow-jobs-http.kogito-bpm.svc.cluster.local:8080")
+            );
+            sfSpec.put("podTemplate", Map.of(
+                    "container", Map.of("env", envVars, "resources", Map.of())
+            ));
+
+            sonataFlow.setAdditionalProperties(Map.of("spec", sfSpec));
+            kubernetesClient.resource(sonataFlow).inNamespace(sonataFlowNs).createOrReplace();
+
+            status.setSonataFlowName(sfName);
+            status.setSonataFlowNamespace(sonataFlowNs);
+            updateCondition(status, "SonataFlowDeployed", "True", "CRCreated",
+                    "SonataFlow CR " + sfName + " created/updated in " + sonataFlowNs);
+
+            // Check if the SonataFlow is ready
+            try {
+                var existing = kubernetesClient.genericKubernetesResources(
+                        "sonataflow.org/v1alpha08", "SonataFlow")
+                        .inNamespace(sonataFlowNs).withName(sfName).get();
+                if (existing != null) {
+                    @SuppressWarnings("unchecked")
+                    var sfStatus = (java.util.Map<String, Object>) existing.getAdditionalProperties().get("status");
+                    if (sfStatus != null) {
+                        @SuppressWarnings("unchecked")
+                        var conditions = (java.util.List<java.util.Map<String, Object>>) sfStatus.get("conditions");
+                        if (conditions != null) {
+                            var readyCond = conditions.stream()
+                                    .filter(c -> "Ready".equals(c.get("type")))
+                                    .findFirst();
+                            readyCond.ifPresent(c -> status.setSonataFlowReady(String.valueOf(c.get("status"))));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                LOG.warnf("Could not read SonataFlow status for %s: %s", sfName, e.getMessage());
+            }
+
+            LOG.infof("Reconciled SonataFlow CR '%s' in namespace '%s'", sfName, sonataFlowNs);
+
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to reconcile SonataFlow CR for flow '%s'", flowName);
+            updateCondition(status, "SonataFlowDeployed", "False", "CRFailed",
+                    "Failed to create SonataFlow CR: " + e.getMessage());
+        }
+    }
+
     private void reconcileSchedule(String namespace, String flowName, String schedule) {
         String cronJobName = "iflow-schedule-" + flowName;
 
@@ -352,25 +451,25 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                         .build())
                 .build();
 
+        var container = new java.util.HashMap<String, Object>();
+        container.put("name", "trigger");
+        container.put("image", "bitnami/kubectl:latest");
+        container.put("command", java.util.List.of("kubectl"));
+        container.put("args", java.util.List.of(
+                "patch", "integrationflow", flowName,
+                "-n", namespace, "--type=merge",
+                "-p", "{\"spec\":{\"desiredState\":\"running\"}}"));
+
+        var podSpec = new java.util.HashMap<String, Object>();
+        podSpec.put("serviceAccountName", "integration-operator-sa");
+        podSpec.put("restartPolicy", "OnFailure");
+        podSpec.put("containers", java.util.List.of(container));
+
         var spec = Map.of(
-                "schedule", schedule,
+                "schedule", (Object) schedule,
                 "jobTemplate", Map.of(
                         "spec", Map.of(
-                                "template", Map.of(
-                                        "spec", Map.of(
-                                                "serviceAccountName", "integration-operator-sa",
-                                                "restartPolicy", "OnFailure",
-                                                "containers", java.util.List.of(Map.of(
-                                                        "name", "trigger",
-                                                        "image", "bitnami/kubectl:latest",
-                                                        "command", java.util.List.of("kubectl"),
-                                                        "args", java.util.List.of(
-                                                                "patch", "integrationflow", flowName,
-                                                                "-n", namespace,
-                                                                "--type=merge",
-                                                                "-p", "{\"spec\":{\"desiredState\":\"running\"}}")
-                                                ))))
-                ));
+                                "template", Map.of("spec", podSpec))));
         cronJob.setAdditionalProperties(Map.of("spec", spec));
 
         kubernetesClient.resource(cronJob).inNamespace(namespace).createOrReplace();

@@ -44,3 +44,6 @@ rules:
   - apiGroups: ["batch"]
     resources: ["cronjobs"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["sonataflow.org"]
+    resources: ["sonataflows", "sonataflows/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

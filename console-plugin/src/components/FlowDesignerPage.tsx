@@ -21,6 +21,7 @@ interface IntegrationFlow {
   status?: {
     phase: string; message?: string; gitCommitHash?: string; argoApplicationName?: string;
     currentState?: string; circuitBreakerState?: string; prometheusRuleName?: string;
+    sonataFlowName?: string; sonataFlowNamespace?: string; sonataFlowReady?: string;
   };
 }
 
@@ -111,11 +112,15 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
 
   React.useEffect(() => { fetchFlow(); }, [fetchFlow]);
 
+  const [gitSyncStatus, setGitSyncStatus] = React.useState<string | null>(null);
+
   const handleSave = async () => {
     if (!flow) return;
     setSaving(true);
     setSaved(false);
+    setGitSyncStatus(null);
     try {
+      // Update the CR spec
       const patch = [{ op: 'replace', path: '/spec/kaotoDesign', value: design }];
       const resp = await fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows/${flowName}`, {
         method: 'PATCH',
@@ -126,8 +131,28 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
         const errData = await resp.json().catch(() => ({}));
         throw new Error(errData.message || `HTTP ${resp.status}`);
       }
+
+      // Also sync to Git via the operator API
+      try {
+        const gitResp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/design`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+          body: JSON.stringify({ kaotoDesign: design }),
+        });
+        if (gitResp.ok) {
+          const gitData = await gitResp.json();
+          setGitSyncStatus(gitData.gitCommitHash
+            ? `Synced to Git (${gitData.gitCommitHash.substring(0, 7)})`
+            : 'Synced to Git');
+        } else {
+          setGitSyncStatus('CR saved, Git sync pending (will sync on next reconciliation)');
+        }
+      } catch {
+        setGitSyncStatus('CR saved, Git sync pending');
+      }
+
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => { setSaved(false); setGitSyncStatus(null); }, 5000);
       await fetchFlow();
     } catch (e: any) {
       alert(`Save failed: ${e.message}`);
@@ -235,6 +260,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {saved && <span style={{ color: '#3e8635', fontSize: '13px' }}>Saved!</span>}
+            {gitSyncStatus && <span style={{ color: '#2b9af3', fontSize: '11px' }}>{gitSyncStatus}</span>}
             {/* Lifecycle controls */}
             {phase === 'Running' && (
               <button className="pf-c-button pf-m-warning pf-m-small" onClick={() => changeState('paused')} disabled={stateChanging}
@@ -385,22 +411,51 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             </div>
           )}
 
-          {activeTab === 'sonataflow' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
-                <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-                  SonataFlow Management Console &mdash; <strong>{flowName}</strong>
-                </span>
-                <a href={SONATAFLOW_CONSOLE_URL} target="_blank" rel="noopener noreferrer"
-                  className="pf-c-button pf-m-link pf-m-small" style={{ fontSize: '12px', marginLeft: 'auto' }}>
-                  Open in new tab &#x2197;
-                </a>
+          {activeTab === 'sonataflow' && (() => {
+            const sfName = flow?.status?.sonataFlowName;
+            const sfNs = flow?.status?.sonataFlowNamespace || 'kogito-bpm';
+            const sfReady = flow?.status?.sonataFlowReady;
+            const sfWorkflowUrl = sfName
+              ? `${SONATAFLOW_CONSOLE_URL}/Workflow/${sfName}`
+              : SONATAFLOW_CONSOLE_URL;
+            return (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ padding: '8px 12px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                    SonataFlow Management Console
+                  </span>
+                  {sfName ? (
+                    <>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#009596' }}>{sfName}</span>
+                      <span style={{ fontSize: '11px', color: '#6a6e73' }}>in {sfNs}</span>
+                      <span style={{
+                        fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '3px',
+                        backgroundColor: sfReady === 'True' ? '#3e863522' : '#f0ab0022',
+                        color: sfReady === 'True' ? '#3e8635' : '#f0ab00',
+                      }}>
+                        {sfReady === 'True' ? '\u2713 Ready' : '\u29D7 Deploying'}
+                      </span>
+                      <a href={`/k8s/ns/${sfNs}/sonataflow.org~v1alpha08~SonataFlow/${sfName}`}
+                        style={{ fontSize: '11px', color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none' }}>
+                        View CR &#x2197;
+                      </a>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: '#f0ab00' }}>
+                      No SonataFlow CR deployed yet &mdash; save the flow to trigger deployment
+                    </span>
+                  )}
+                  <a href={sfWorkflowUrl} target="_blank" rel="noopener noreferrer"
+                    className="pf-c-button pf-m-link pf-m-small" style={{ fontSize: '12px', marginLeft: 'auto' }}>
+                    Open in new tab &#x2197;
+                  </a>
+                </div>
+                <iframe src={sfWorkflowUrl}
+                  style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
+                  title="SonataFlow Management Console" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
               </div>
-              <iframe src={SONATAFLOW_CONSOLE_URL}
-                style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
-                title="SonataFlow Management Console" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'design' && (
             <textarea ref={editorRef} value={design} onChange={(e) => setDesign(e.target.value)} spellCheck={false}
@@ -549,12 +604,25 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                   <span style={{ color: '#8476d1' }}>{'\u2197'}</span> Git Repository
                 </a>
               )}
-              {isSonataFlow && (
-                <a href={SONATAFLOW_CONSOLE_URL} target="_blank" rel="noopener noreferrer"
-                  style={resourceLinkStyle}>
-                  <span style={{ color: '#009596' }}>{'\u29BF'}</span> SonataFlow Console
-                </a>
-              )}
+              {isSonataFlow && (() => {
+                const sfName = flow?.status?.sonataFlowName;
+                const sfLink = sfName
+                  ? `${SONATAFLOW_CONSOLE_URL}/Workflow/${sfName}`
+                  : SONATAFLOW_CONSOLE_URL;
+                return (
+                  <>
+                    <a href={sfLink} target="_blank" rel="noopener noreferrer" style={resourceLinkStyle}>
+                      <span style={{ color: '#009596' }}>{'\u29BF'}</span> SonataFlow Console
+                    </a>
+                    {sfName && (
+                      <a href={`/k8s/ns/${flow?.status?.sonataFlowNamespace || 'kogito-bpm'}/sonataflow.org~v1alpha08~SonataFlow/${sfName}`}
+                        style={resourceLinkStyle}>
+                        <span style={{ color: '#009596' }}>{'\u2699'}</span> SonataFlow CR
+                      </a>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 

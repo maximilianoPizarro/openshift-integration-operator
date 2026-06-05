@@ -3,6 +3,8 @@ package io.platform.lifecycle;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.platform.api.v1alpha1.IntegrationFlow;
 import io.platform.api.v1alpha1.IntegrationFlowStatus;
+import io.platform.service.GitOpsService;
+import io.platform.service.ScaffoldingService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -20,6 +22,12 @@ public class FlowLifecycleResource {
 
     @Inject
     KubernetesClient client;
+
+    @Inject
+    GitOpsService gitOpsService;
+
+    @Inject
+    io.platform.service.git.GitProviderFactory gitProviderFactory;
 
     @PATCH
     @Path("/{name}/state")
@@ -129,6 +137,130 @@ public class FlowLifecycleResource {
         } catch (Exception e) {
             return Response.serverError().entity(Map.of("error", e.getMessage())).build();
         }
+    }
+
+    /**
+     * Update the flow's kaotoDesign and push the change to Git.
+     * The reconciler will then pick up the spec change and re-scaffold.
+     */
+    @PUT
+    @Path("/{name}/design")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response updateDesign(@PathParam("name") String name, Map<String, String> body) {
+        String design = body.get("kaotoDesign");
+        if (design == null || design.isBlank()) {
+            return Response.status(400).entity(Map.of("error", "kaotoDesign is required")).build();
+        }
+        try {
+            var flow = client.resources(IntegrationFlow.class)
+                    .inNamespace(NAMESPACE).withName(name).get();
+            if (flow == null) return Response.status(404).entity(Map.of("error", "Flow not found")).build();
+
+            String oldDesign = flow.getSpec().getKaotoDesign();
+            flow.getSpec().setKaotoDesign(design);
+            client.resources(IntegrationFlow.class).inNamespace(NAMESPACE).resource(flow).update();
+
+            // Also push the updated design directly to Git for immediate sync
+            String gitRepo = flow.getSpec().getGitRepository();
+            String branch = flow.getSpec().getBranch();
+            if (gitRepo != null && !gitRepo.isBlank()) {
+                try {
+                    boolean isSonataFlow = flow.getSpec().getEngine() != null
+                            && flow.getSpec().getEngine().name().equals("SONATAFLOW");
+                    String workflowPath = isSonataFlow
+                            ? "src/main/resources/workflows/flow.sw.yaml"
+                            : "src/main/resources/routes/flow.camel.yaml";
+
+                    String[] ownerRepo = extractOwnerAndRepo(gitRepo);
+                    var provider = gitProviderFactory.getProvider(gitRepo, "auto");
+                    provider.createOrUpdateFile(ownerRepo[0], ownerRepo[1], branch, workflowPath,
+                            design, "Update flow design via console: " + name);
+                    String commitHash = provider.getLatestCommitHash(ownerRepo[0], ownerRepo[1], branch);
+
+                    LOG.infof("Flow %s design updated and pushed to Git (commit: %s)", name, commitHash);
+                    return Response.ok(Map.of(
+                            "name", name,
+                            "updated", true,
+                            "gitCommitHash", commitHash,
+                            "message", "Design updated and pushed to Git"
+                    )).build();
+                } catch (Exception gitErr) {
+                    LOG.warnf("Design updated in CR but Git push failed for %s: %s", name, gitErr.getMessage());
+                    return Response.ok(Map.of(
+                            "name", name,
+                            "updated", true,
+                            "gitSynced", false,
+                            "message", "Design updated in CR; Git push failed: " + gitErr.getMessage()
+                    )).build();
+                }
+            }
+
+            LOG.infof("Flow %s design updated (no git repo configured)", name);
+            return Response.ok(Map.of("name", name, "updated", true)).build();
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to update design for %s", name);
+            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+        }
+    }
+
+    /**
+     * Get SonataFlow CR status for flows deployed to the Serverless Logic operator.
+     */
+    @GET
+    @Path("/{name}/sonataflow")
+    public Response getSonataFlowStatus(@PathParam("name") String name) {
+        try {
+            var flow = client.resources(IntegrationFlow.class)
+                    .inNamespace(NAMESPACE).withName(name).get();
+            if (flow == null) return Response.status(404).entity(Map.of("error", "Flow not found")).build();
+
+            var status = flow.getStatus();
+            if (status == null || status.getSonataFlowName() == null) {
+                return Response.ok(Map.of("name", name, "sonataFlowDeployed", false)).build();
+            }
+
+            String sfNs = status.getSonataFlowNamespace() != null ? status.getSonataFlowNamespace() : "kogito-bpm";
+            String sfName = status.getSonataFlowName();
+
+            var result = new java.util.HashMap<String, Object>();
+            result.put("name", name);
+            result.put("sonataFlowDeployed", true);
+            result.put("sonataFlowName", sfName);
+            result.put("sonataFlowNamespace", sfNs);
+            result.put("sonataFlowReady", status.getSonataFlowReady());
+
+            // Fetch the live SonataFlow CR status
+            try {
+                var sfCR = client.genericKubernetesResources("sonataflow.org/v1alpha08", "SonataFlow")
+                        .inNamespace(sfNs).withName(sfName).get();
+                if (sfCR != null) {
+                    @SuppressWarnings("unchecked")
+                    var sfStatus = (java.util.Map<String, Object>) sfCR.getAdditionalProperties().get("status");
+                    if (sfStatus != null) {
+                        result.put("sonataFlowStatus", sfStatus);
+                    }
+                }
+            } catch (Exception e) {
+                result.put("sonataFlowStatusError", e.getMessage());
+            }
+
+            return Response.ok(result).build();
+        } catch (Exception e) {
+            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+        }
+    }
+
+    private String[] extractOwnerAndRepo(String gitRepository) {
+        if (gitRepository == null || gitRepository.isBlank()) {
+            return new String[]{"", "unknown-repo"};
+        }
+        String path = gitRepository.replaceAll("\\.git$", "");
+        path = path.replaceAll("^https?://[^/]+/", "");
+        String[] parts = path.split("/");
+        if (parts.length >= 2) {
+            return new String[]{parts[parts.length - 2], parts[parts.length - 1]};
+        }
+        return new String[]{"", parts[0]};
     }
 
     @GET
