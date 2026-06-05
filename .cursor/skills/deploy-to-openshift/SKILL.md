@@ -87,6 +87,8 @@ The plugin uses proxy alias `backend` in the ConsolePlugin CR. Frontend requests
 
 Plugin name must match `integration-console-plugin` (see `console-plugin/src/constants.ts`).
 
+The proxy target is the operator Service on **HTTPS port 8443** (OpenShift serving cert). Plain HTTP on 8080 causes `502` / `tls: first record does not look like a TLS handshake` in console logs.
+
 ## GitOps test flow (optional)
 
 ```bash
