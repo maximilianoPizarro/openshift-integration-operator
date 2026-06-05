@@ -264,7 +264,8 @@ The operator watches `IntegrationFlow` custom resources in the `platform.io/v1al
 | `integrationType` | enum | `CAMEL_ROUTE`, `CAMEL_KAMELET`, `CAMEL_PIPE`, `CAMEL_TEST`, `SONATAFLOW` |
 | `gitRepository` | string | Git remote URL for scaffolded worker source |
 | `branch` | string | Git branch (default: `main`) |
-| `targetClusters` | []string | Clusters where ArgoCD deploys the worker |
+| `targeting.strategy` | string | Deployment strategy: `explicit` (named clusters) or `all` |
+| `targeting.clusters` | []string | Clusters where ArgoCD deploys the worker (when strategy is `explicit`) |
 | `kaotoDesign` | string | Raw Kaoto design — YAML for Camel routes, JSON/YAML for SonataFlow |
 | `desiredState` | string | Lifecycle control: `running`, `paused`, or `stopped` |
 | `schedule` | string | Cron expression for scheduled execution (e.g. `0 2 * * *`) |
@@ -305,8 +306,10 @@ spec:
   engine: CAMEL
   gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
   branch: main
-  targetClusters:
-    - local
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
   kaotoDesign: |
     - route:
         from:
@@ -332,8 +335,10 @@ spec:
   engine: SONATAFLOW
   gitRepository: https://gitea.example.com/demo/order-workflow.git
   branch: main
-  targetClusters:
-    - local
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
   kaotoDesign: |
     id: order-processing
     specVersion: "0.8"

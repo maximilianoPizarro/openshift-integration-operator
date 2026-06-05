@@ -103,4 +103,8 @@ ephemeral:
   camelK:
     detect: true
 
+tekton:
+  approvalEnabled: true
+  approver: "system:admin"
+
 namespace: openshift-integration

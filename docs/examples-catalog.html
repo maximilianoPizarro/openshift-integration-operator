@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="255 ready-to-use IntegrationFlow examples covering 310 Apache Camel Quarkus components">
+  <title>Integration Flow Examples Catalog — OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-elevated: #161b22;
+      --bg-card: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #388bfd;
+      --accent-hover: #58a6ff;
+      --accent-soft: rgba(56, 139, 253, 0.12);
+      --gradient: linear-gradient(135deg, #388bfd 0%, #1f6feb 50%, #8957e5 100%);
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --max-width: 1280px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-hover); }
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 1.5rem; }
+
+    header {
+      padding: 3rem 0 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background: radial-gradient(ellipse 80% 60% at 50% -20%, rgba(56, 139, 253, 0.18), transparent), var(--bg);
+    }
+    header h1 { font-size: 2.2rem; font-weight: 700; }
+    header p { color: var(--text-muted); margin-top: 0.5rem; font-size: 1.1rem; }
+    .badge-row { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.3rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+      background: var(--accent-soft); color: var(--accent);
+    }
+
+    nav.breadcrumb { padding: 1rem 0; color: var(--text-muted); font-size: 0.9rem; }
+    nav.breadcrumb a { color: var(--text-muted); }
+
+    .controls {
+      display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+      padding: 1rem 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;
+    }
+    .search-box {
+      flex: 1; min-width: 200px; padding: 0.6rem 1rem;
+      background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 0.95rem; outline: none;
+    }
+    .search-box:focus { border-color: var(--accent); }
+    .filter-btn {
+      padding: 0.45rem 0.9rem; border-radius: 999px; font-size: 0.82rem; font-weight: 500;
+      background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .filter-btn:hover, .filter-btn.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+    .count-label { color: var(--text-muted); font-size: 0.85rem; margin-left: auto; }
+
+    .category { margin-bottom: 2.5rem; }
+    .category h2 {
+      font-size: 1.3rem; font-weight: 600; margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .category h2 .cat-icon { font-size: 1.4rem; }
+    .category h2 .cat-count { font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.75rem;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      transition: border-color 0.2s, transform 0.15s;
+      cursor: pointer;
+      position: relative;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card .card-id { font-size: 0.72rem; color: var(--text-muted); font-family: monospace; }
+    .card .card-name { font-size: 0.95rem; font-weight: 600; margin: 0.25rem 0; }
+    .card .card-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; }
+    .card .card-tags { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .card .tag {
+      font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 4px;
+      background: var(--bg-elevated); color: var(--text-muted);
+    }
+    .card .tag.comp { background: rgba(137, 87, 229, 0.15); color: #a371f7; }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 1000;
+      justify-content: center; align-items: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+      max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto;
+    }
+    .modal h3 { margin-bottom: 0.75rem; }
+    .modal pre {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.5;
+    }
+    .modal .close-btn {
+      float: right; background: none; border: none; color: var(--text-muted);
+      font-size: 1.5rem; cursor: pointer;
+    }
+    .modal .copy-btn {
+      margin-top: 0.75rem; padding: 0.4rem 1rem; border-radius: 6px;
+      background: var(--accent); color: #fff; border: none; cursor: pointer; font-size: 0.85rem;
+    }
+
+    footer {
+      padding: 2rem 0; border-top: 1px solid var(--border);
+      text-align: center; color: var(--text-muted); font-size: 0.85rem;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.5rem; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>IntegrationFlow Examples Catalog</h1>
+    <p>255 ready-to-use examples covering the Apache Camel Quarkus component catalog</p>
+    <div class="badge-row">
+      <span class="badge">255 Examples</span>
+      <span class="badge">15 Categories</span>
+      <span class="badge">310 Camel Components</span>
+      <span class="badge">Camel 4.18 / Quarkus 3.36</span>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <nav class="breadcrumb">
+    <a href="index.html">Home</a> / <a href="quickstart.html">Quickstart</a> / <strong>Examples Catalog</strong>
+  </nav>
+
+  <div class="controls">
+    <input type="text" class="search-box" id="searchBox" placeholder="Search examples by name, component, or category...">
+    <button class="filter-btn active" data-cat="all">All</button>
+    <button class="filter-btn" data-cat="messaging">Messaging</button>
+    <button class="filter-btn" data-cat="http">HTTP/REST</button>
+    <button class="filter-btn" data-cat="data">Data/Storage</button>
+    <button class="filter-btn" data-cat="transform">Transform</button>
+    <button class="filter-btn" data-cat="cloud">Cloud</button>
+    <button class="filter-btn" data-cat="social">Social</button>
+    <button class="filter-btn" data-cat="devops">DevOps</button>
+    <button class="filter-btn" data-cat="ai">AI/ML</button>
+    <button class="filter-btn" data-cat="eip">EIP</button>
+    <button class="filter-btn" data-cat="file">File/Doc</button>
+    <button class="filter-btn" data-cat="iot">IoT</button>
+    <button class="filter-btn" data-cat="finance">Finance</button>
+    <button class="filter-btn" data-cat="monitoring">Monitoring</button>
+    <button class="filter-btn" data-cat="integration">Integration</button>
+    <button class="filter-btn" data-cat="enterprise">Enterprise</button>
+    <span class="count-label" id="countLabel">Showing 255 of 255</span>
+  </div>
+
+  <div id="catalog"></div>
+</main>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="close-btn" id="closeModal">&times;</button>
+    <h3 id="modalTitle"></h3>
+    <p id="modalDesc" style="color:var(--text-muted);margin-bottom:1rem;font-size:0.9rem;"></p>
+    <pre><code id="modalCode"></code></pre>
+    <button class="copy-btn" id="copyBtn">Copy YAML</button>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <p>OpenShift Integration Operator &mdash; Apache 2.0 License</p>
+    <p style="margin-top:0.25rem">
+      <a href="https://github.com/maximilianopizarro/openshift-integration-operator">GitHub</a> &middot;
+      <a href="index.html">Documentation</a> &middot;
+      <a href="quickstart.html">Quickstart</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+const CATEGORIES = [
+  {
+    id: "messaging", icon: "\u2709", title: "Messaging",
+    examples: [
+      { num: "001", name: "timer-log", comp: "timer, log", desc: "Timer-triggered route that logs messages periodically" },
+      { num: "002", name: "kafka-producer", comp: "timer, kafka", desc: "Produce messages to a Kafka topic on a schedule" },
+      { num: "003", name: "kafka-consumer-log", comp: "kafka, log", desc: "Consume Kafka messages and log them" },
+      { num: "004", name: "amqp-to-log", comp: "amqp, log", desc: "Consume AMQP 1.0 messages and log payload" },
+      { num: "005", name: "jms-bridge", comp: "jms", desc: "Bridge messages between two JMS queues" },
+      { num: "006", name: "activemq-consumer", comp: "activemq, log", desc: "Consume from ActiveMQ and log" },
+      { num: "007", name: "mqtt-to-kafka", comp: "paho-mqtt5, kafka", desc: "Bridge MQTT messages to Kafka topic" },
+      { num: "008", name: "mqtt-publish", comp: "timer, paho-mqtt5", desc: "Publish periodic messages to MQTT broker" },
+      { num: "009", name: "nats-pubsub", comp: "nats", desc: "NATS publish/subscribe messaging" },
+      { num: "010", name: "pulsar-consumer", comp: "pulsar, log", desc: "Consume Apache Pulsar messages" },
+      { num: "011", name: "stomp-listener", comp: "stomp, log", desc: "Listen for STOMP protocol messages" },
+      { num: "012", name: "seda-pipeline", comp: "seda, log", desc: "Async in-JVM pipeline using SEDA" },
+      { num: "013", name: "direct-chain", comp: "direct, log", desc: "Synchronous route chaining with Direct" },
+      { num: "014", name: "disruptor-async", comp: "disruptor, log", desc: "High-perf async with LMAX Disruptor" },
+      { num: "015", name: "spring-rabbitmq", comp: "spring-rabbitmq, log", desc: "RabbitMQ consumer via Spring AMQP" },
+      { num: "016", name: "aws-sqs-consumer", comp: "aws2-sqs, log", desc: "Poll messages from AWS SQS queue" },
+      { num: "017", name: "aws-sns-publish", comp: "timer, aws2-sns", desc: "Publish notifications to AWS SNS" },
+      { num: "018", name: "azure-servicebus", comp: "azure-servicebus, log", desc: "Azure Service Bus consumer" },
+      { num: "019", name: "google-pubsub", comp: "google-pubsub, log", desc: "Google Cloud Pub/Sub consumer" },
+      { num: "020", name: "knative-event", comp: "knative, log", desc: "Receive Knative CloudEvents" }
+    ]
+  },
+  {
+    id: "http", icon: "\uD83C\uDF10", title: "HTTP / REST",
+    examples: [
+      { num: "021", name: "rest-api-crud", comp: "rest, sql", desc: "REST CRUD API backed by SQL database" },
+      { num: "022", name: "platform-http-server", comp: "platform-http, log", desc: "Expose HTTP endpoint via platform HTTP" },
+      { num: "023", name: "http-client-get", comp: "timer, http", desc: "Periodic HTTP GET to external API" },
+      { num: "024", name: "http-client-post", comp: "timer, http", desc: "POST JSON to external endpoint" },
+      { num: "025", name: "vertx-http-proxy", comp: "platform-http, vertx-http", desc: "HTTP proxy/gateway with Vert.x" },
+      { num: "026", name: "netty-http-server", comp: "netty-http, log", desc: "Low-level Netty HTTP server" },
+      { num: "027", name: "graphql-query", comp: "timer, graphql", desc: "Execute GraphQL queries on schedule" },
+      { num: "028", name: "rest-openapi-client", comp: "rest-openapi", desc: "Call REST API using OpenAPI spec" },
+      { num: "029", name: "servlet-filter", comp: "servlet, log", desc: "Servlet-based HTTP handler" },
+      { num: "030", name: "webhook-receiver", comp: "platform-http, kafka", desc: "Receive webhooks and forward to Kafka" },
+      { num: "031", name: "cxf-soap-client", comp: "cxf", desc: "SOAP web service client via CXF" },
+      { num: "032", name: "grpc-client", comp: "grpc", desc: "gRPC service client" },
+      { num: "033", name: "coap-iot", comp: "coap", desc: "CoAP protocol for IoT devices" },
+      { num: "034", name: "websocket-server", comp: "vertx-websocket", desc: "WebSocket server with Vert.x" },
+      { num: "035", name: "rest-content-negotiation", comp: "rest, jolt", desc: "REST API with JSON/XML content negotiation" }
+    ]
+  },
+  {
+    id: "data", icon: "\uD83D\uDDC4", title: "Data / Storage",
+    examples: [
+      { num: "036", name: "sql-query", comp: "sql, log", desc: "Execute SQL queries and log results" },
+      { num: "037", name: "jdbc-insert", comp: "platform-http, jdbc", desc: "Insert data via JDBC" },
+      { num: "038", name: "jpa-crud", comp: "jpa, rest", desc: "JPA entity CRUD operations" },
+      { num: "039", name: "mongodb-crud", comp: "mongodb, rest", desc: "MongoDB document operations" },
+      { num: "040", name: "cassandra-cql", comp: "cassandraql, log", desc: "Cassandra CQL queries" },
+      { num: "041", name: "couchdb-changes", comp: "couchdb, log", desc: "CouchDB change feed consumer" },
+      { num: "042", name: "infinispan-cache", comp: "infinispan, log", desc: "Infinispan distributed cache" },
+      { num: "043", name: "redis-cache", comp: "spring-redis", desc: "Redis cache operations" },
+      { num: "044", name: "elasticsearch-search", comp: "elasticsearch-rest-client", desc: "Elasticsearch search queries" },
+      { num: "045", name: "solr-index", comp: "solr, log", desc: "Apache Solr indexing" },
+      { num: "046", name: "aws-s3-upload", comp: "platform-http, aws2-s3", desc: "Upload files to AWS S3" },
+      { num: "047", name: "aws-s3-download", comp: "aws2-s3, log", desc: "Download and process S3 objects" },
+      { num: "048", name: "aws-dynamodb", comp: "aws2-ddb", desc: "DynamoDB read/write operations" },
+      { num: "049", name: "azure-blob-storage", comp: "azure-storage-blob", desc: "Azure Blob Storage upload/download" },
+      { num: "050", name: "azure-cosmosdb", comp: "azure-cosmosdb", desc: "Azure CosmosDB document operations" },
+      { num: "051", name: "google-storage", comp: "google-storage", desc: "Google Cloud Storage operations" },
+      { num: "052", name: "minio-upload", comp: "minio, log", desc: "MinIO object storage upload" },
+      { num: "053", name: "file-processor", comp: "file, log", desc: "Process local files from directory" },
+      { num: "054", name: "ftp-download", comp: "ftp, file", desc: "Download files via FTP" },
+      { num: "055", name: "sftp-upload", comp: "sftp", desc: "Upload files via SFTP" }
+    ]
+  },
+  {
+    id: "transform", icon: "\u2699", title: "Transformation",
+    examples: [
+      { num: "056", name: "jolt-transform", comp: "platform-http, jolt", desc: "JSON-to-JSON transformation with JOLT" },
+      { num: "057", name: "jslt-transform", comp: "platform-http, jslt", desc: "JSON transformation using JSLT" },
+      { num: "058", name: "jsonata-transform", comp: "platform-http, jsonata", desc: "JSONata data transformation" },
+      { num: "059", name: "xslt-transform", comp: "platform-http, xslt", desc: "XML transformation with XSLT" },
+      { num: "060", name: "freemarker-template", comp: "platform-http, freemarker", desc: "FreeMarker template rendering" },
+      { num: "061", name: "mustache-template", comp: "platform-http, mustache", desc: "Mustache template rendering" },
+      { num: "062", name: "velocity-template", comp: "platform-http, velocity", desc: "Velocity template rendering" },
+      { num: "063", name: "bean-processor", comp: "bean, log", desc: "Java bean message processing" },
+      { num: "064", name: "data-format-json", comp: "platform-http, jackson", desc: "JSON marshal/unmarshal" },
+      { num: "065", name: "data-format-xml", comp: "platform-http, jaxb", desc: "XML marshal/unmarshal via JAXB" },
+      { num: "066", name: "data-format-csv", comp: "platform-http, csv", desc: "CSV parsing and generation" },
+      { num: "067", name: "content-based-router", comp: "direct, log", desc: "Route messages based on content" },
+      { num: "068", name: "message-filter", comp: "direct, log", desc: "Filter messages by condition" },
+      { num: "069", name: "splitter-aggregator", comp: "direct, log", desc: "Split and aggregate pattern" },
+      { num: "070", name: "multicast-parallel", comp: "direct, log", desc: "Parallel multicast to endpoints" }
+    ]
+  },
+  {
+    id: "cloud", icon: "\u2601", title: "Cloud Services",
+    examples: [
+      { num: "071", name: "aws-lambda-invoke", comp: "timer, aws2-lambda", desc: "Invoke AWS Lambda functions" },
+      { num: "072", name: "aws-bedrock-chat", comp: "platform-http, aws-bedrock", desc: "AI chat with AWS Bedrock" },
+      { num: "073", name: "aws-ses-email", comp: "platform-http, aws2-ses", desc: "Send email via AWS SES" },
+      { num: "074", name: "aws-kinesis-stream", comp: "aws2-kinesis, log", desc: "AWS Kinesis stream consumer" },
+      { num: "075", name: "aws-athena-query", comp: "timer, aws2-athena", desc: "Execute AWS Athena SQL queries" },
+      { num: "076", name: "azure-eventhubs", comp: "azure-eventhubs, log", desc: "Azure Event Hubs consumer" },
+      { num: "077", name: "azure-keyvault", comp: "timer, azure-key-vault", desc: "Read secrets from Azure Key Vault" },
+      { num: "078", name: "google-bigquery", comp: "timer, google-bigquery", desc: "Query Google BigQuery" },
+      { num: "079", name: "google-sheets", comp: "timer, google-sheets", desc: "Read/write Google Sheets" },
+      { num: "080", name: "google-mail", comp: "google-mail-stream, log", desc: "Poll Google Mail inbox" },
+      { num: "081", name: "google-calendar", comp: "google-calendar-stream, log", desc: "Poll Google Calendar events" },
+      { num: "082", name: "google-drive", comp: "timer, google-drive", desc: "Manage Google Drive files" },
+      { num: "083", name: "google-functions", comp: "timer, google-functions", desc: "Invoke Google Cloud Functions" },
+      { num: "084", name: "ibm-cos", comp: "timer, ibm-cos", desc: "IBM Cloud Object Storage" },
+      { num: "085", name: "salesforce-query", comp: "timer, salesforce", desc: "Query Salesforce objects via SOQL" }
+    ]
+  },
+  {
+    id: "social", icon: "\uD83D\uDCAC", title: "Social / Communication",
+    examples: [
+      { num: "086", name: "slack-notify", comp: "timer, slack", desc: "Send notifications to Slack channel" },
+      { num: "087", name: "telegram-bot", comp: "telegram, log", desc: "Telegram bot message handler" },
+      { num: "088", name: "twitter-search", comp: "twitter-search, log", desc: "Search and monitor tweets" },
+      { num: "089", name: "twilio-sms", comp: "platform-http, twilio", desc: "Send SMS via Twilio" },
+      { num: "090", name: "irc-bot", comp: "irc, log", desc: "IRC chat bot" },
+      { num: "091", name: "xmpp-chat", comp: "xmpp, log", desc: "XMPP chat messaging" },
+      { num: "092", name: "email-imap-poll", comp: "imap, log", desc: "Poll emails via IMAP" },
+      { num: "093", name: "email-smtp-send", comp: "platform-http, smtp", desc: "Send emails via SMTP" },
+      { num: "094", name: "cm-sms", comp: "platform-http, cm-sms", desc: "Send SMS via CM Gateway" },
+      { num: "095", name: "pubnub-realtime", comp: "pubnub, log", desc: "PubNub real-time messaging" },
+      { num: "096", name: "cometd-push", comp: "cometd, log", desc: "CometD push notifications" },
+      { num: "097", name: "slack-to-kafka", comp: "slack, kafka", desc: "Forward Slack messages to Kafka" },
+      { num: "098", name: "telegram-to-s3", comp: "telegram, aws2-s3", desc: "Archive Telegram photos to S3" },
+      { num: "099", name: "email-to-jira", comp: "imap, jira", desc: "Create JIRA tickets from emails" },
+      { num: "100", name: "webhook-to-slack", comp: "platform-http, slack", desc: "Forward webhooks to Slack" }
+    ]
+  },
+  {
+    id: "devops", icon: "\uD83D\uDD27", title: "DevOps / CI-CD",
+    examples: [
+      { num: "101", name: "github-webhook", comp: "platform-http, log", desc: "Handle GitHub webhook events" },
+      { num: "102", name: "git-commit-poll", comp: "git, log", desc: "Poll Git repository for new commits" },
+      { num: "103", name: "jira-ticket", comp: "platform-http, jira", desc: "Create JIRA tickets via REST" },
+      { num: "104", name: "servicenow-incident", comp: "platform-http, servicenow", desc: "Create ServiceNow incidents" },
+      { num: "105", name: "kubernetes-pod-watch", comp: "kubernetes-pods, log", desc: "Watch Kubernetes pod events" },
+      { num: "106", name: "kubernetes-deploy", comp: "platform-http, kubernetes-deployments", desc: "Trigger Kubernetes deployments" },
+      { num: "107", name: "kubernetes-configmap", comp: "kubernetes-config-maps, log", desc: "Watch ConfigMap changes" },
+      { num: "108", name: "kubernetes-secret-sync", comp: "kubernetes-secrets, hashicorp-vault", desc: "Sync secrets from Vault to K8s" },
+      { num: "109", name: "openshift-build-trigger", comp: "platform-http, openshift-builds", desc: "Trigger OpenShift builds" },
+      { num: "110", name: "consul-kv-sync", comp: "consul, log", desc: "Sync configuration from Consul KV" },
+      { num: "111", name: "docker-events", comp: "timer, exec", desc: "Monitor Docker container events" },
+      { num: "112", name: "exec-command", comp: "platform-http, exec", desc: "Execute OS commands via HTTP" },
+      { num: "113", name: "ssh-remote", comp: "platform-http, ssh", desc: "Execute remote commands via SSH" },
+      { num: "114", name: "cron-scheduler", comp: "cron, log", desc: "Cron-based scheduled tasks" },
+      { num: "115", name: "quartz-job", comp: "quartz, log", desc: "Quartz scheduler for complex schedules" }
+    ]
+  },
+  {
+    id: "ai", icon: "\uD83E\uDD16", title: "AI / ML",
+    examples: [
+      { num: "116", name: "langchain4j-chat", comp: "platform-http, langchain4j-chat", desc: "Chat with LLM via LangChain4j" },
+      { num: "117", name: "langchain4j-embeddings", comp: "platform-http, langchain4j-embeddings", desc: "Generate text embeddings" },
+      { num: "118", name: "langchain4j-tools", comp: "langchain4j-tools, log", desc: "LLM function calling with tools" },
+      { num: "119", name: "langchain4j-websearch", comp: "platform-http, langchain4j-web-search", desc: "AI-powered web search" },
+      { num: "120", name: "openai-completion", comp: "platform-http, openai", desc: "OpenAI chat completion endpoint" },
+      { num: "121", name: "aws-bedrock-invoke", comp: "platform-http, aws-bedrock", desc: "Invoke AWS Bedrock models" },
+      { num: "122", name: "milvus-vector-store", comp: "platform-http, milvus", desc: "Store/query vectors in Milvus" },
+      { num: "123", name: "pinecone-upsert", comp: "platform-http, pinecone", desc: "Upsert vectors to Pinecone" },
+      { num: "124", name: "qdrant-search", comp: "platform-http, qdrant", desc: "Semantic search with Qdrant" },
+      { num: "125", name: "weaviate-query", comp: "platform-http, weaviate", desc: "Query Weaviate vector DB" },
+      { num: "126", name: "djl-inference", comp: "platform-http, djl", desc: "Deep learning inference with DJL" },
+      { num: "127", name: "tika-extract", comp: "file, tika", desc: "Extract text from documents with Tika" },
+      { num: "128", name: "docling-parse", comp: "platform-http, docling", desc: "Parse documents with Docling" },
+      { num: "129", name: "ai-sentiment-analysis", comp: "kafka, langchain4j-chat", desc: "Real-time sentiment analysis pipeline" },
+      { num: "130", name: "ai-rag-pipeline", comp: "platform-http, langchain4j-embeddings, qdrant", desc: "RAG: retrieve, augment, generate" }
+    ]
+  },
+  {
+    id: "eip", icon: "\uD83D\uDD00", title: "Enterprise Integration Patterns",
+    examples: [
+      { num: "131", name: "content-based-router", comp: "direct", desc: "Route based on message content (Choice EIP)" },
+      { num: "132", name: "message-filter", comp: "direct", desc: "Filter unwanted messages (Filter EIP)" },
+      { num: "133", name: "dynamic-router", comp: "direct", desc: "Dynamic routing based on runtime logic" },
+      { num: "134", name: "recipient-list", comp: "direct", desc: "Route to dynamic list of recipients" },
+      { num: "135", name: "wire-tap", comp: "direct", desc: "Copy message to secondary channel" },
+      { num: "136", name: "dead-letter-channel", comp: "direct", desc: "Error handling with dead letter queue" },
+      { num: "137", name: "retry-redelivery", comp: "direct, http", desc: "Automatic retry with backoff" },
+      { num: "138", name: "circuit-breaker", comp: "direct, http", desc: "Circuit breaker pattern (Resilience4j)" },
+      { num: "139", name: "throttle-rate", comp: "platform-http", desc: "Rate limiting / throttling" },
+      { num: "140", name: "saga-compensate", comp: "platform-http, saga", desc: "Saga pattern with compensation" },
+      { num: "141", name: "idempotent-consumer", comp: "kafka", desc: "Idempotent consumer (dedupe)" },
+      { num: "142", name: "claim-check", comp: "direct", desc: "Claim check pattern for large payloads" },
+      { num: "143", name: "multicast-aggregate", comp: "direct", desc: "Multicast with aggregation strategy" },
+      { num: "144", name: "split-aggregate", comp: "direct", desc: "Split list, process, re-aggregate" },
+      { num: "145", name: "enrich-poll", comp: "direct, sql", desc: "Content enricher from database" },
+      { num: "146", name: "load-balancer", comp: "direct, http", desc: "Load balance across endpoints" },
+      { num: "147", name: "service-call", comp: "direct, http", desc: "Service discovery + call" },
+      { num: "148", name: "process-manager", comp: "direct, jpa", desc: "Stateful process manager" },
+      { num: "149", name: "correlation-id", comp: "kafka", desc: "Correlate request/response messages" },
+      { num: "150", name: "scatter-gather", comp: "direct, http", desc: "Scatter-gather with aggregation" }
+    ]
+  },
+  {
+    id: "file", icon: "\uD83D\uDCC1", title: "File / Document Processing",
+    examples: [
+      { num: "151", name: "file-to-ftp", comp: "file, ftp", desc: "Upload local files to FTP" },
+      { num: "152", name: "sftp-to-s3", comp: "sftp, aws2-s3", desc: "Transfer SFTP files to S3" },
+      { num: "153", name: "file-watch-notify", comp: "file-watch, slack", desc: "Watch directory, notify on changes" },
+      { num: "154", name: "pdf-generate", comp: "platform-http, pdf", desc: "Generate PDF documents" },
+      { num: "155", name: "pdf-extract-text", comp: "file, tika", desc: "Extract text from PDF files" },
+      { num: "156", name: "csv-to-json", comp: "file, csv, jackson", desc: "Convert CSV files to JSON" },
+      { num: "157", name: "xml-to-json-xj", comp: "platform-http, xj", desc: "XML to JSON via XJ" },
+      { num: "158", name: "excel-to-db", comp: "file, sql", desc: "Import Excel data to database" },
+      { num: "159", name: "flatpack-parse", comp: "file, flatpack", desc: "Parse fixed-width files with Flatpack" },
+      { num: "160", name: "smb-share-sync", comp: "smb, file", desc: "Sync files from SMB share" },
+      { num: "161", name: "zip-archive", comp: "file, log", desc: "Create ZIP archives" },
+      { num: "162", name: "tar-extract", comp: "file, log", desc: "Extract TAR archives" },
+      { num: "163", name: "file-split-merge", comp: "file, log", desc: "Split large files, merge results" },
+      { num: "164", name: "dropbox-sync", comp: "dropbox, file", desc: "Sync files with Dropbox" },
+      { num: "165", name: "box-upload", comp: "platform-http, box", desc: "Upload files to Box.com" },
+      { num: "166", name: "fop-pdf-render", comp: "platform-http, fop", desc: "Render PDF with Apache FOP" },
+      { num: "167", name: "stax-xml-stream", comp: "file, stax", desc: "Stream large XML with StAX" },
+      { num: "168", name: "schematron-validate", comp: "platform-http, schematron", desc: "Validate XML with Schematron" },
+      { num: "169", name: "json-schema-validate", comp: "platform-http, json-validator", desc: "Validate JSON against schema" },
+      { num: "170", name: "xml-schema-validate", comp: "platform-http, validator", desc: "Validate XML against XSD" }
+    ]
+  },
+  {
+    id: "iot", icon: "\uD83D\uDCE1", title: "IoT / Industrial",
+    examples: [
+      { num: "171", name: "mqtt-sensor-data", comp: "paho-mqtt5, influxdb", desc: "MQTT sensor data to InfluxDB" },
+      { num: "172", name: "coap-device-read", comp: "coap, log", desc: "Read CoAP device endpoints" },
+      { num: "173", name: "opc-ua-telemetry", comp: "milo, kafka", desc: "OPC-UA telemetry to Kafka" },
+      { num: "174", name: "mllp-hl7-message", comp: "mllp, log", desc: "HL7 MLLP healthcare messages" },
+      { num: "175", name: "fhir-patient-query", comp: "fhir, log", desc: "FHIR patient record queries" },
+      { num: "176", name: "modbus-plc-read", comp: "timer, exec", desc: "Read PLC data via Modbus" },
+      { num: "177", name: "snmp-poll", comp: "snmp, log", desc: "Poll SNMP network devices" },
+      { num: "178", name: "iec60870-scada", comp: "iec60870-client, log", desc: "IEC 60870 SCADA client" },
+      { num: "179", name: "iot-gateway-kafka", comp: "paho-mqtt5, kafka", desc: "IoT gateway aggregating to Kafka" },
+      { num: "180", name: "sensor-to-influxdb", comp: "platform-http, influxdb", desc: "HTTP sensor API to InfluxDB" },
+      { num: "181", name: "mqtt-to-timescaledb", comp: "paho-mqtt5, jdbc", desc: "MQTT to TimescaleDB time series" },
+      { num: "182", name: "opcua-to-elasticsearch", comp: "milo, elasticsearch-rest-client", desc: "OPC-UA data to Elasticsearch" },
+      { num: "183", name: "device-alert-email", comp: "paho-mqtt5, smtp", desc: "Device threshold alerts via email" },
+      { num: "184", name: "iot-data-lake", comp: "paho-mqtt5, aws2-s3", desc: "IoT data to S3 data lake" },
+      { num: "185", name: "industrial-etl", comp: "milo, sql", desc: "Industrial data ETL to SQL" }
+    ]
+  },
+  {
+    id: "finance", icon: "\uD83D\uDCB0", title: "Finance / Compliance",
+    examples: [
+      { num: "186", name: "quickfix-trade", comp: "quickfix, log", desc: "FIX protocol trade execution" },
+      { num: "187", name: "xchange-crypto", comp: "xchange, log", desc: "Cryptocurrency market data" },
+      { num: "188", name: "payment-processor", comp: "platform-http, sql", desc: "Payment processing pipeline" },
+      { num: "189", name: "invoice-generator", comp: "platform-http, freemarker, pdf", desc: "Generate PDF invoices" },
+      { num: "190", name: "audit-trail-log", comp: "kafka, elasticsearch-rest-client", desc: "Immutable audit trail logging" },
+      { num: "191", name: "compliance-check", comp: "platform-http, bean", desc: "Regulatory compliance validation" },
+      { num: "192", name: "transaction-saga", comp: "platform-http, saga", desc: "Distributed transaction saga" },
+      { num: "193", name: "fraud-detection", comp: "kafka, langchain4j-chat", desc: "Real-time fraud detection with AI" },
+      { num: "194", name: "currency-convert", comp: "platform-http, http", desc: "Currency conversion service" },
+      { num: "195", name: "bank-statement-parse", comp: "file, flatpack", desc: "Parse bank statement files" },
+      { num: "196", name: "psd2-payment", comp: "platform-http, http", desc: "PSD2 Open Banking payment initiation" },
+      { num: "197", name: "kyc-verification", comp: "platform-http, http", desc: "KYC identity verification flow" },
+      { num: "198", name: "aml-screening", comp: "platform-http, http", desc: "Anti-money laundering screening" },
+      { num: "199", name: "tax-calculation", comp: "platform-http, bean", desc: "Tax calculation engine" },
+      { num: "200", name: "financial-report", comp: "quartz, sql, freemarker", desc: "Scheduled financial reporting" }
+    ]
+  },
+  {
+    id: "monitoring", icon: "\uD83D\uDCCA", title: "Monitoring / Observability",
+    examples: [
+      { num: "201", name: "micrometer-metrics", comp: "micrometer, platform-http", desc: "Custom Micrometer metrics" },
+      { num: "202", name: "log-aggregator", comp: "kafka, elasticsearch-rest-client", desc: "Centralized log aggregation" },
+      { num: "203", name: "health-check-monitor", comp: "timer, http", desc: "Periodic HTTP health checks" },
+      { num: "204", name: "splunk-hec-log", comp: "kafka, splunk-hec", desc: "Forward logs to Splunk HEC" },
+      { num: "205", name: "splunk-search", comp: "timer, splunk", desc: "Execute Splunk searches" },
+      { num: "206", name: "influxdb-metrics", comp: "timer, influxdb", desc: "Write metrics to InfluxDB" },
+      { num: "207", name: "lumberjack-receiver", comp: "lumberjack, kafka", desc: "Receive Lumberjack logs" },
+      { num: "208", name: "cloudwatch-alarm", comp: "timer, aws2-cw", desc: "Push CloudWatch metrics" },
+      { num: "209", name: "pagerduty-alert", comp: "platform-http, http", desc: "Trigger PagerDuty alerts" },
+      { num: "210", name: "prometheus-push", comp: "timer, http", desc: "Push to Prometheus Pushgateway" },
+      { num: "211", name: "error-rate-monitor", comp: "kafka, micrometer", desc: "Monitor error rates from Kafka" },
+      { num: "212", name: "latency-tracker", comp: "platform-http, micrometer", desc: "Track API latency percentiles" },
+      { num: "213", name: "sla-checker", comp: "timer, http, slack", desc: "SLA compliance checker" },
+      { num: "214", name: "uptime-ping", comp: "timer, http, log", desc: "Service uptime monitor" },
+      { num: "215", name: "log-to-elasticsearch", comp: "log, elasticsearch-rest-client", desc: "Ship logs to Elasticsearch" }
+    ]
+  },
+  {
+    id: "integration", icon: "\uD83D\uDD17", title: "Integration Patterns",
+    examples: [
+      { num: "216", name: "api-gateway", comp: "platform-http, http", desc: "API gateway with routing" },
+      { num: "217", name: "service-mesh-proxy", comp: "platform-http, vertx-http", desc: "Service mesh sidecar proxy" },
+      { num: "218", name: "event-sourcing", comp: "platform-http, kafka", desc: "Event sourcing with Kafka" },
+      { num: "219", name: "cqrs-pattern", comp: "platform-http, kafka, mongodb", desc: "CQRS command/query separation" },
+      { num: "220", name: "outbox-pattern", comp: "debezium-postgres, kafka", desc: "Transactional outbox pattern" },
+      { num: "221", name: "change-data-capture", comp: "debezium-mysql, kafka", desc: "CDC with Debezium MySQL" },
+      { num: "222", name: "debezium-mysql", comp: "debezium-mysql, log", desc: "MySQL change data capture" },
+      { num: "223", name: "debezium-postgres", comp: "debezium-postgres, log", desc: "PostgreSQL change data capture" },
+      { num: "224", name: "debezium-mongodb", comp: "debezium-mongodb, log", desc: "MongoDB change data capture" },
+      { num: "225", name: "pg-replication-slot", comp: "pg-replication-slot, log", desc: "PostgreSQL WAL replication" },
+      { num: "226", name: "pgevent-notify", comp: "pgevent, log", desc: "PostgreSQL LISTEN/NOTIFY" },
+      { num: "227", name: "etl-batch", comp: "quartz, sql, aws2-s3", desc: "Scheduled ETL batch processing" },
+      { num: "228", name: "data-pipeline", comp: "kafka, jolt, mongodb", desc: "Real-time data pipeline" },
+      { num: "229", name: "stream-processor", comp: "kafka, log", desc: "Kafka stream processor" },
+      { num: "230", name: "fan-out-fan-in", comp: "direct, seda", desc: "Fan-out/fan-in parallel processing" },
+      { num: "231", name: "request-reply", comp: "jms", desc: "JMS request-reply pattern" },
+      { num: "232", name: "publish-subscribe", comp: "jms, log", desc: "JMS pub/sub with topics" },
+      { num: "233", name: "competing-consumers", comp: "jms, log", desc: "Multiple consumers on a queue" },
+      { num: "234", name: "message-broker-bridge", comp: "activemq, kafka", desc: "Bridge ActiveMQ to Kafka" },
+      { num: "235", name: "protocol-translator", comp: "paho-mqtt5, amqp", desc: "MQTT to AMQP protocol bridge" }
+    ]
+  },
+  {
+    id: "enterprise", icon: "\uD83C\uDFE2", title: "Enterprise / SaaS",
+    examples: [
+      { num: "236", name: "sap-netweaver", comp: "sap-netweaver", desc: "SAP NetWeaver Gateway integration" },
+      { num: "237", name: "workday-api", comp: "timer, workday", desc: "Workday HR data sync" },
+      { num: "238", name: "zendesk-ticket", comp: "platform-http, zendesk", desc: "Create Zendesk support tickets" },
+      { num: "239", name: "servicenow-cmdb", comp: "timer, servicenow", desc: "ServiceNow CMDB sync" },
+      { num: "240", name: "salesforce-lead", comp: "platform-http, salesforce", desc: "Salesforce lead management" },
+      { num: "241", name: "salesforce-event", comp: "salesforce, kafka", desc: "Salesforce platform events to Kafka" },
+      { num: "242", name: "google-calendar-sync", comp: "google-calendar, sql", desc: "Sync Google Calendar to DB" },
+      { num: "243", name: "google-sheets-import", comp: "google-sheets-stream, sql", desc: "Import Google Sheets to database" },
+      { num: "244", name: "google-drive-backup", comp: "google-drive, aws2-s3", desc: "Backup Google Drive to S3" },
+      { num: "245", name: "google-mail-filter", comp: "google-mail-stream, jira", desc: "Filter Gmail and create JIRA tickets" },
+      { num: "246", name: "box-workflow", comp: "box, log", desc: "Box.com content workflow" },
+      { num: "247", name: "dropbox-archive", comp: "dropbox, aws2-s3", desc: "Archive Dropbox to S3" },
+      { num: "248", name: "ldap-user-sync", comp: "ldap, sql", desc: "LDAP user directory sync" },
+      { num: "249", name: "keycloak-user", comp: "timer, keycloak", desc: "Keycloak user management" },
+      { num: "250", name: "hashicorp-vault", comp: "timer, hashicorp-vault", desc: "Read secrets from HashiCorp Vault" },
+      { num: "251", name: "aws-secrets-manager", comp: "timer, aws-secrets-manager", desc: "AWS Secrets Manager integration" },
+      { num: "252", name: "azure-keyvault-rotate", comp: "timer, azure-key-vault", desc: "Azure Key Vault secret rotation" },
+      { num: "253", name: "consul-config", comp: "consul, log", desc: "Consul configuration management" },
+      { num: "254", name: "wordpress-publish", comp: "platform-http, wordpress", desc: "Publish content to WordPress" },
+      { num: "255", name: "jt400-as400", comp: "jt400, log", desc: "IBM AS/400 iSeries integration" }
+    ]
+  }
+];
+
+let currentFilter = "all";
+let searchTerm = "";
+
+function renderCatalog() {
+  const container = document.getElementById("catalog");
+  let totalVisible = 0;
+  let html = "";
+
+  CATEGORIES.forEach(cat => {
+    const filtered = cat.examples.filter(ex => {
+      if (currentFilter !== "all" && cat.id !== currentFilter) return false;
+      if (searchTerm) {
+        const s = searchTerm.toLowerCase();
+        return ex.name.includes(s) || ex.comp.includes(s) || ex.desc.toLowerCase().includes(s) || cat.title.toLowerCase().includes(s);
+      }
+      return true;
+    });
+    if (filtered.length === 0) return;
+    totalVisible += filtered.length;
+
+    html += `<div class="category">
+      <h2><span class="cat-icon">${cat.icon}</span> ${cat.title} <span class="cat-count">(${filtered.length})</span></h2>
+      <div class="grid">`;
+    filtered.forEach(ex => {
+      const tags = ex.comp.split(", ").map(c => `<span class="tag comp">${c}</span>`).join("");
+      html += `<div class="card" data-num="${ex.num}" data-name="${ex.name}" data-cat="${cat.id}">
+        <div class="card-id">#${ex.num}</div>
+        <div class="card-name">${ex.name}</div>
+        <div class="card-desc">${ex.desc}</div>
+        <div class="card-tags">${tags}</div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html || `<p style="text-align:center;color:var(--text-muted);padding:3rem;">No examples match your search.</p>`;
+  document.getElementById("countLabel").textContent = `Showing ${totalVisible} of 255`;
+
+  container.querySelectorAll(".card").forEach(card => {
+    card.addEventListener("click", () => showModal(card.dataset.num, card.dataset.name, card.dataset.cat));
+  });
+}
+
+function showModal(num, name, catId) {
+  const cat = CATEGORIES.find(c => c.id === catId);
+  const ex = cat.examples.find(e => e.num === num);
+  const comps = ex.comp.split(", ");
+  const fromUri = comps[0].replace(/-/g, "-");
+  const toUri = comps.length > 1 ? comps[comps.length - 1] : "log";
+
+  const yaml = `apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ${name}
+  labels:
+    platform.io/catalog-category: ${catId}
+    platform.io/camel-component: ${comps[0]}
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/${name}
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    - route:
+        id: ${name}
+        from:
+          uri: "${fromUri}:${name.replace(/-/g, "")}"
+          steps:
+            - log:
+                message: "Processing: \${body}"
+            - to:
+                uri: "${toUri}:output"`;
+
+  document.getElementById("modalTitle").textContent = `#${num} — ${name}`;
+  document.getElementById("modalDesc").textContent = ex.desc;
+  document.getElementById("modalCode").textContent = yaml;
+  document.getElementById("modal").classList.add("show");
+}
+
+document.getElementById("closeModal").addEventListener("click", () => {
+  document.getElementById("modal").classList.remove("show");
+});
+document.getElementById("modal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) document.getElementById("modal").classList.remove("show");
+});
+document.getElementById("copyBtn").addEventListener("click", () => {
+  navigator.clipboard.writeText(document.getElementById("modalCode").textContent);
+  document.getElementById("copyBtn").textContent = "Copied!";
+  setTimeout(() => { document.getElementById("copyBtn").textContent = "Copy YAML"; }, 2000);
+});
+
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  searchTerm = e.target.value;
+  renderCatalog();
+});
+
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentFilter = btn.dataset.cat;
+    renderCatalog();
+  });
+});
+
+renderCatalog();
+</script>
+</body>
+</html>

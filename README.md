@@ -23,7 +23,8 @@
   <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a> ·
   <a href="docs/architecture.html">Architecture</a> ·
   <a href="docs/quickstart.html">Quick Start</a> ·
-  <a href="docs/operations.html">Operations</a>
+  <a href="docs/operations.html">Operations</a> ·
+  <a href="docs/examples-catalog.html">Examples (255)</a>
 </p>
 
 ---
@@ -144,8 +145,13 @@ metadata:
   namespace: openshift-integration
 spec:
   integrationType: CAMEL_ROUTE
+  engine: CAMEL
   gitRepository: https://gitea.example.com/user1/rest-to-kafka
   branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
   kaotoDesign: |
     - route:
         id: rest-to-kafka
@@ -170,8 +176,13 @@ metadata:
   namespace: openshift-integration
 spec:
   integrationType: CAMEL_ROUTE
+  engine: CAMEL
   gitRepository: https://gitea.example.com/user1/order-routing-cbr
   branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
   kaotoDesign: |
     - route:
         id: order-routing-cbr
@@ -207,6 +218,10 @@ spec:
   engine: SONATAFLOW
   gitRepository: https://gitea.example.com/user1/file-processor-workflow
   branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
   kaotoDesign: |
     id: file-processor-workflow
     version: "1.0"
@@ -265,9 +280,9 @@ oc get integrationflow ephemeral-camel-demo -w
 # POST /api/flows/ephemeral-camel-demo/promote-to-gitops
 ```
 
-The platform ships **9 pre-built examples** covering Camel Routes, Kamelets, Pipes, SonataFlow workflows, and ephemeral Quick Try.
+The platform ships **9 pre-built examples** covering Camel Routes, Kamelets, Pipes, SonataFlow workflows, and ephemeral Quick Try, plus a **[catalog of 255 examples](docs/examples-catalog.html)** spanning 15 categories and 310 Apache Camel Quarkus components.
 
-See the [Quick Start Guide](docs/quickstart.html) for all 9 examples, and the [Operations Guide](docs/operations.html) for validation and troubleshooting.
+See the [Quick Start Guide](docs/quickstart.html) for all 9 examples, the [Examples Catalog](docs/examples-catalog.html) for 255 ready-to-use flows, and the [Operations Guide](docs/operations.html) for validation and troubleshooting.
 
 ## Project Structure
 
@@ -398,6 +413,46 @@ Contributions are welcome! To get started:
 5. Submit a pull request with a clear description of the change
 
 Please follow existing code conventions and keep changes focused.
+
+## OperatorHub Publication
+
+The operator automatically generates an OLM bundle with each Maven build via `quarkus-operator-sdk-bundle-generator`.
+
+### Bundle Location
+After building (`mvn clean package`), the bundle is generated at:
+- `target/bundle/openshift-integration-operator/manifests/` — CSV and CRD manifests
+- `target/bundle/openshift-integration-operator/metadata/` — annotations.yaml
+
+### Validating the Bundle
+
+```bash
+# Install operator-sdk if not present
+# Validate bundle structure
+operator-sdk bundle validate target/bundle/openshift-integration-operator
+
+# Validate against OperatorHub requirements
+operator-sdk bundle validate target/bundle/openshift-integration-operator \
+  --select-optional name=operatorhub
+
+# Build bundle image
+docker build -f target/bundle/openshift-integration-operator/bundle.Dockerfile \
+  -t quay.io/yourorg/openshift-integration-operator-bundle:v0.2.0 .
+```
+
+### Required CSV Annotations
+The generated CSV must include these annotations for OperatorHub:
+- `capabilities`: e.g., "Full Lifecycle"
+- `categories`: e.g., "Integration & Delivery"
+- `containerImage`: operator image reference
+- `repository`: GitHub repository URL
+- `description`: Short operator description
+- `alm-examples`: JSON array of example CRs
+
+### Publishing Steps
+1. Fork [community-operators](https://github.com/k8s-operatorhub/community-operators)
+2. Copy bundle to `operators/openshift-integration-operator/0.2.0/`
+3. Submit PR — CI validates CSV, CRD ownership, RBAC, and metadata
+4. After merge, operator appears on OperatorHub.io within 24h
 
 ## License
 

@@ -101,8 +101,10 @@ spec:
   engine: CAMEL
   gitRepository: https://gitea.example.com/demo/test-worker.git
   branch: main
-  targetClusters:
-    - local
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
   kaotoDesign: |
     - route:
         from:

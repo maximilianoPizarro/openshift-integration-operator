@@ -50,9 +50,30 @@ spec:
         - name: basic-auth
           workspace: basic-auth
 
-    - name: build-maven
+    {{- if .Values.tekton.approvalEnabled }}
+    - name: approve-build
       runAfter:
         - fetch-source
+      taskRef:
+        apiVersion: openshift-pipelines.org/v1alpha1
+        kind: ApprovalTask
+      params:
+        - name: approvers
+          value:
+            - {{ .Values.tekton.approver | default "system:admin" }}
+        - name: numberOfApprovalsRequired
+          value: "1"
+        - name: description
+          value: "Approve build for IntegrationFlow worker image"
+    {{- end }}
+
+    - name: build-maven
+      runAfter:
+        {{- if .Values.tekton.approvalEnabled }}
+        - approve-build
+        {{- else }}
+        - fetch-source
+        {{- end }}
       taskRef:
         resolver: cluster
         params:

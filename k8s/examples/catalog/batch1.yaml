@@ -1,0 +1,4009 @@
+# =============================================================================
+# OpenShift Integration Operator - IntegrationFlow Catalog (001-085)
+# =============================================================================
+# This file contains 85 example IntegrationFlow CRs covering common Camel
+# components across messaging, HTTP/REST, data/storage, transformation, and
+# cloud services categories.
+# =============================================================================
+
+# =============================================================================
+# MESSAGING (001-020)
+# =============================================================================
+
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: timer-log
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: timer
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/timer-log
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Simple heartbeat timer that logs a message every 5 seconds
+    - route:
+        id: timer-log-route
+        from:
+          uri: "timer:heartbeat"
+          parameters:
+            period: "5000"
+            timerName: heartbeat
+          steps:
+            - setBody:
+                simple: "Heartbeat at ${date:now:yyyy-MM-dd HH:mm:ss}"
+            - log:
+                message: "${body}"
+                loggingLevel: INFO
+                logName: io.platform.heartbeat
+            - to:
+                uri: "log:io.platform.heartbeat"
+                parameters:
+                  level: INFO
+                  showAll: "true"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: kafka-producer
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: kafka
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/kafka-producer
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Produces messages to a Kafka topic on a timer schedule
+    - route:
+        id: kafka-producer-route
+        from:
+          uri: "timer:kafka-tick"
+          parameters:
+            period: "10000"
+          steps:
+            - setBody:
+                simple: '{"event":"order-created","orderId":"${exchangeId}","timestamp":"${date:now:ISO}"}'
+            - setHeader:
+                name: kafka.KEY
+                simple: "${exchangeId}"
+            - log:
+                message: "Producing to Kafka: ${body}"
+            - to:
+                uri: "kafka:orders-topic"
+                parameters:
+                  brokers: "my-cluster-kafka-bootstrap:9092"
+                  securityProtocol: SASL_SSL
+                  saslMechanism: SCRAM-SHA-512
+                  serializerClass: org.apache.kafka.common.serialization.StringSerializer
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: kafka-consumer-log
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: kafka
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/kafka-consumer-log
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Consumes messages from a Kafka topic and logs them
+    - route:
+        id: kafka-consumer-log-route
+        from:
+          uri: "kafka:orders-topic"
+          parameters:
+            brokers: "my-cluster-kafka-bootstrap:9092"
+            groupId: integration-consumer-group
+            autoOffsetReset: earliest
+            consumersCount: "3"
+            securityProtocol: SASL_SSL
+            saslMechanism: SCRAM-SHA-512
+          steps:
+            - log:
+                message: "Received from Kafka [partition=${headers[kafka.PARTITION]}, offset=${headers[kafka.OFFSET]}]: ${body}"
+            - choice:
+                when:
+                  - simple: "${body} contains 'error'"
+                    steps:
+                      - to:
+                          uri: "log:io.platform.errors"
+                          parameters:
+                            level: ERROR
+                otherwise:
+                  steps:
+                    - to:
+                        uri: "log:io.platform.orders"
+                        parameters:
+                          level: INFO
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: amqp-to-log
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: amqp
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/amqp-to-log
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Consumes AMQP 1.0 messages from a queue and logs with metadata
+    - route:
+        id: amqp-to-log-route
+        from:
+          uri: "amqp:queue:incoming.events"
+          parameters:
+            connectionFactory: "#amqpConnectionFactory"
+            acknowledgementModeName: CLIENT_ACKNOWLEDGE
+          steps:
+            - log:
+                message: "AMQP message received: ${body}"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - setHeader:
+                name: processedAt
+                simple: "${date:now:ISO}"
+            - log:
+                message: "Processed event type=${body[eventType]}, id=${body[id]}"
+            - to:
+                uri: "log:io.platform.amqp"
+                parameters:
+                  level: INFO
+                  showHeaders: "true"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: jms-bridge
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: jms
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/jms-bridge
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Bridges messages between two JMS queues with transformation
+    - route:
+        id: jms-bridge-route
+        from:
+          uri: "jms:queue:source.queue"
+          parameters:
+            connectionFactory: "#sourceConnectionFactory"
+            concurrentConsumers: "5"
+            maxConcurrentConsumers: "10"
+          steps:
+            - log:
+                message: "Bridging message from source: ${headers[JMSMessageID]}"
+            - setHeader:
+                name: bridgedAt
+                simple: "${date:now:ISO}"
+            - setHeader:
+                name: sourceQueue
+                constant: "source.queue"
+            - marshal:
+                json:
+                  library: Jackson
+            - to:
+                uri: "jms:queue:destination.queue"
+                parameters:
+                  connectionFactory: "#destConnectionFactory"
+                  deliveryPersistent: "true"
+                  timeToLive: "3600000"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: activemq-consumer
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: activemq
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/activemq-consumer
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Consumes from ActiveMQ Artemis with retry and DLQ handling
+    - route:
+        id: activemq-consumer-route
+        from:
+          uri: "activemq:queue:orders.incoming"
+          parameters:
+            connectionFactory: "#artemisConnectionFactory"
+            concurrentConsumers: "3"
+            transacted: "true"
+          steps:
+            - log:
+                message: "ActiveMQ order received: ${body}"
+            - doTry:
+                steps:
+                  - unmarshal:
+                      json:
+                        library: Jackson
+                  - setHeader:
+                      name: orderId
+                      simple: "${body[orderId]}"
+                  - to:
+                      uri: "bean:orderValidationService"
+                      parameters:
+                        method: validate
+                  - log:
+                      message: "Order ${headers[orderId]} validated successfully"
+                doCatch:
+                  - exception:
+                      - java.lang.Exception
+                    steps:
+                      - log:
+                          message: "Failed to process order: ${exception.message}"
+                          loggingLevel: ERROR
+                      - to:
+                          uri: "activemq:queue:orders.dlq"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: mqtt-to-kafka
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: paho-mqtt5
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/mqtt-to-kafka
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Bridges IoT sensor data from MQTT to Kafka for stream processing
+    - route:
+        id: mqtt-to-kafka-route
+        from:
+          uri: "paho-mqtt5:sensors/+/telemetry"
+          parameters:
+            brokerUrl: "tcp://mqtt-broker:1883"
+            qos: "1"
+            clientId: "openshift-mqtt-bridge"
+            cleanStart: "true"
+          steps:
+            - log:
+                message: "MQTT telemetry from topic=${headers[CamelMqttTopic]}: ${body}"
+            - setHeader:
+                name: kafka.KEY
+                simple: "${headers[CamelMqttTopic]}"
+            - setHeader:
+                name: sensorId
+                simple: "${headers[CamelMqttTopic].replaceAll('sensors/', '').replaceAll('/telemetry', '')}"
+            - marshal:
+                json:
+                  library: Jackson
+            - to:
+                uri: "kafka:iot-telemetry"
+                parameters:
+                  brokers: "my-cluster-kafka-bootstrap:9092"
+                  serializerClass: org.apache.kafka.common.serialization.StringSerializer
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: mqtt-publish
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: paho-mqtt5
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/mqtt-publish
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Publishes control commands to MQTT topics on a schedule
+    - route:
+        id: mqtt-publish-route
+        from:
+          uri: "timer:command-tick"
+          parameters:
+            period: "30000"
+          steps:
+            - setBody:
+                simple: '{"command":"status-check","timestamp":"${date:now:ISO}","requestId":"${exchangeId}"}'
+            - log:
+                message: "Publishing MQTT command: ${body}"
+            - to:
+                uri: "paho-mqtt5:devices/all/commands"
+                parameters:
+                  brokerUrl: "tcp://mqtt-broker:1883"
+                  qos: "1"
+                  retained: "false"
+                  clientId: "openshift-commander"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: nats-pubsub
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: nats
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/nats-pubsub
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Subscribes to NATS subjects and republishes to another subject
+    - route:
+        id: nats-pubsub-route
+        from:
+          uri: "nats:events.incoming"
+          parameters:
+            servers: "nats://nats-server:4222"
+            queueName: integration-workers
+            maxMessages: "100"
+          steps:
+            - log:
+                message: "NATS event received on subject=${headers[CamelNatsSubject]}: ${body}"
+            - setBody:
+                simple: '{"original":${body},"processed":true,"processedAt":"${date:now:ISO}"}'
+            - to:
+                uri: "nats:events.processed"
+                parameters:
+                  servers: "nats://nats-server:4222"
+            - log:
+                message: "Republished to events.processed"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: pulsar-consumer
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: pulsar
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/pulsar-consumer
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Consumes messages from Apache Pulsar and routes by content
+    - route:
+        id: pulsar-consumer-route
+        from:
+          uri: "pulsar:persistent://public/default/events"
+          parameters:
+            subscriptionName: integration-sub
+            subscriptionType: Shared
+            consumerName: openshift-consumer
+            numberOfConsumers: "3"
+          steps:
+            - log:
+                message: "Pulsar message: key=${headers[CamelPulsarMessageKey]}, body=${body}"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - choice:
+                when:
+                  - simple: "${body[priority]} == 'high'"
+                    steps:
+                      - log:
+                          message: "High-priority event: ${body[type]}"
+                      - to:
+                          uri: "direct:high-priority-handler"
+                  - simple: "${body[priority]} == 'low'"
+                    steps:
+                      - to:
+                          uri: "direct:low-priority-handler"
+                otherwise:
+                  steps:
+                    - to:
+                        uri: "log:io.platform.pulsar.default"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: stomp-listener
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: stomp
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/stomp-listener
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Listens to a STOMP destination and logs incoming frames
+    - route:
+        id: stomp-listener-route
+        from:
+          uri: "stomp:/topic/notifications"
+          parameters:
+            brokerURL: "tcp://stomp-broker:61613"
+            login: "admin"
+            passcode: "{{stomp.password}}"
+          steps:
+            - log:
+                message: "STOMP notification: ${body}"
+            - setHeader:
+                name: receivedAt
+                simple: "${date:now:ISO}"
+            - convertBodyTo:
+                type: "java.lang.String"
+            - to:
+                uri: "log:io.platform.stomp"
+                parameters:
+                  level: INFO
+                  showAll: "true"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: seda-pipeline
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: seda
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/seda-pipeline
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # In-memory async pipeline using SEDA queues for parallel processing
+    - route:
+        id: seda-pipeline-ingest
+        from:
+          uri: "timer:data-generator"
+          parameters:
+            period: "1000"
+          steps:
+            - setBody:
+                simple: '{"id":"${exchangeId}","value":${random(1,1000)},"ts":"${date:now:ISO}"}'
+            - to:
+                uri: "seda:stage1"
+                parameters:
+                  size: "1000"
+                  concurrentConsumers: "5"
+                  blockWhenFull: "true"
+    - route:
+        id: seda-pipeline-process
+        from:
+          uri: "seda:stage1"
+          parameters:
+            concurrentConsumers: "5"
+          steps:
+            - log:
+                message: "Stage 1 processing: ${body}"
+            - setHeader:
+                name: stage1Complete
+                constant: "true"
+            - to:
+                uri: "seda:stage2"
+    - route:
+        id: seda-pipeline-output
+        from:
+          uri: "seda:stage2"
+          parameters:
+            concurrentConsumers: "3"
+          steps:
+            - log:
+                message: "Stage 2 final output: ${body}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: direct-chain
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: direct
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/direct-chain
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Chains multiple direct routes for synchronous in-process messaging
+    - route:
+        id: direct-chain-entry
+        from:
+          uri: "timer:trigger"
+          parameters:
+            period: "5000"
+          steps:
+            - setBody:
+                simple: '{"step":"start","exchangeId":"${exchangeId}"}'
+            - log:
+                message: "Starting chain: ${body}"
+            - to:
+                uri: "direct:validate"
+    - route:
+        id: direct-chain-validate
+        from:
+          uri: "direct:validate"
+          steps:
+            - log:
+                message: "Validating: ${body}"
+            - setHeader:
+                name: validated
+                constant: "true"
+            - to:
+                uri: "direct:enrich"
+    - route:
+        id: direct-chain-enrich
+        from:
+          uri: "direct:enrich"
+          steps:
+            - log:
+                message: "Enriching: ${body}"
+            - setBody:
+                simple: '${body.replaceAll("start", "enriched")}'
+            - log:
+                message: "Chain complete: ${body}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: disruptor-async
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: disruptor
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/disruptor-async
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # High-throughput async processing using LMAX Disruptor ring buffer
+    - route:
+        id: disruptor-async-route
+        from:
+          uri: "timer:high-throughput"
+          parameters:
+            period: "100"
+          steps:
+            - setBody:
+                simple: '{"event":"tick","seq":"${exchangeProperty.CamelTimerCounter}","ts":"${date:now:ISO}"}'
+            - to:
+                uri: "disruptor:fast-queue"
+                parameters:
+                  size: "4096"
+                  concurrentConsumers: "8"
+                  producerType: Multi
+                  waitStrategy: Blocking
+    - route:
+        id: disruptor-async-consumer
+        from:
+          uri: "disruptor:fast-queue"
+          parameters:
+            concurrentConsumers: "8"
+          steps:
+            - log:
+                message: "Disruptor processed: ${body}"
+                loggingLevel: DEBUG
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: spring-rabbitmq
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: spring-rabbitmq
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/spring-rabbitmq
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Consumes from RabbitMQ and routes based on routing key
+    - route:
+        id: spring-rabbitmq-route
+        from:
+          uri: "spring-rabbitmq:orders-exchange"
+          parameters:
+            queues: "orders.new"
+            routingKey: "order.created"
+            autoDeclare: "true"
+            connectionFactory: "#rabbitConnectionFactory"
+          steps:
+            - log:
+                message: "RabbitMQ order: routing-key=${headers[CamelSpringRabbitmqRoutingKey]}, body=${body}"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - choice:
+                when:
+                  - simple: "${body[amount]} > 1000"
+                    steps:
+                      - log:
+                          message: "High-value order ${body[orderId]}: $${body[amount]}"
+                      - to:
+                          uri: "spring-rabbitmq:orders-exchange"
+                          parameters:
+                            routingKey: "order.high-value"
+                otherwise:
+                  steps:
+                    - to:
+                        uri: "spring-rabbitmq:orders-exchange"
+                        parameters:
+                          routingKey: "order.standard"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-sqs-consumer
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: aws2-sqs
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-sqs-consumer
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Consumes messages from AWS SQS with visibility timeout handling
+    - route:
+        id: aws-sqs-consumer-route
+        from:
+          uri: "aws2-sqs:integration-queue"
+          parameters:
+            region: us-east-1
+            deleteAfterRead: "true"
+            maxMessagesPerPoll: "10"
+            waitTimeSeconds: "20"
+            visibilityTimeout: "60"
+            useDefaultCredentialsProvider: "true"
+          steps:
+            - log:
+                message: "SQS message: id=${headers[CamelAwsSqsMessageId]}, body=${body}"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - setHeader:
+                name: processedTimestamp
+                simple: "${date:now:ISO}"
+            - to:
+                uri: "bean:messageProcessor"
+                parameters:
+                  method: "process"
+            - log:
+                message: "SQS message processed successfully"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-sns-publish
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: aws2-sns
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-sns-publish
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Publishes notifications to AWS SNS topic
+    - route:
+        id: aws-sns-publish-route
+        from:
+          uri: "timer:notification-check"
+          parameters:
+            period: "60000"
+          steps:
+            - setBody:
+                simple: '{"alert":"system-health","status":"OK","checkedAt":"${date:now:ISO}","node":"${env:HOSTNAME}"}'
+            - setHeader:
+                name: CamelAwsSnsSubject
+                constant: "System Health Check"
+            - setHeader:
+                name: CamelAwsSnsMessageGroupId
+                constant: "health-checks"
+            - log:
+                message: "Publishing SNS notification: ${body}"
+            - to:
+                uri: "aws2-sns:system-alerts"
+                parameters:
+                  region: us-east-1
+                  useDefaultCredentialsProvider: "true"
+                  messageStructure: json
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: azure-servicebus
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: azure-servicebus
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/azure-servicebus
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Consumes from Azure Service Bus queue and processes messages
+    - route:
+        id: azure-servicebus-route
+        from:
+          uri: "azure-servicebus:integration-queue"
+          parameters:
+            serviceBusType: queue
+            connectionString: "{{azure.servicebus.connectionString}}"
+            peekMode: "false"
+          steps:
+            - log:
+                message: "Azure Service Bus: messageId=${headers[CamelAzureServiceBusMessageId]}, body=${body}"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - setHeader:
+                name: correlationId
+                simple: "${headers[CamelAzureServiceBusCorrelationId]}"
+            - choice:
+                when:
+                  - simple: "${body[action]} == 'process'"
+                    steps:
+                      - to:
+                          uri: "direct:process-message"
+                  - simple: "${body[action]} == 'archive'"
+                    steps:
+                      - to:
+                          uri: "direct:archive-message"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Unknown action: ${body[action]}"
+                        loggingLevel: WARN
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: google-pubsub
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: google-pubsub
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/google-pubsub
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Subscribes to Google Cloud Pub/Sub and forwards events
+    - route:
+        id: google-pubsub-route
+        from:
+          uri: "google-pubsub:my-gcp-project:events-subscription"
+          parameters:
+            synchronousPull: "true"
+            maxMessagesPerPoll: "10"
+            ackMode: AUTO
+          steps:
+            - log:
+                message: "GCP Pub/Sub: messageId=${headers[CamelGooglePubsubMessageId]}, body=${body}"
+            - convertBodyTo:
+                type: "java.lang.String"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - setHeader:
+                name: eventType
+                simple: "${body[type]}"
+            - log:
+                message: "Processing GCP event: type=${headers[eventType]}"
+            - to:
+                uri: "log:io.platform.gcp.pubsub"
+                parameters:
+                  level: INFO
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: knative-event
+  labels:
+    platform.io/catalog-category: messaging
+    platform.io/camel-component: knative
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/knative-event
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Produces and consumes Knative CloudEvents
+    - route:
+        id: knative-event-producer
+        from:
+          uri: "timer:cloud-event-trigger"
+          parameters:
+            period: "15000"
+          steps:
+            - setBody:
+                simple: '{"source":"integration-operator","type":"io.platform.event.created","data":{"id":"${exchangeId}"}}'
+            - setHeader:
+                name: ce-type
+                constant: "io.platform.event.created"
+            - setHeader:
+                name: ce-source
+                constant: "/integration-operator"
+            - log:
+                message: "Sending CloudEvent: ${body}"
+            - to:
+                uri: "knative:event/io.platform.event.created"
+                parameters:
+                  kind: InMemoryChannel
+    - route:
+        id: knative-event-consumer
+        from:
+          uri: "knative:event/io.platform.event.created"
+          parameters:
+            kind: InMemoryChannel
+          steps:
+            - log:
+                message: "Received CloudEvent: type=${headers[ce-type]}, source=${headers[ce-source]}, body=${body}"
+---
+# =============================================================================
+# HTTP/REST (021-035)
+# =============================================================================
+
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: rest-api-crud
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: rest
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/rest-api-crud
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Exposes a CRUD REST API for managing items
+    - rest:
+        id: rest-api-crud-definition
+        path: /api/items
+        consumes: application/json
+        produces: application/json
+        get:
+          - id: get-all-items
+            path: /
+            to: "direct:getAll"
+          - id: get-item-by-id
+            path: "/{id}"
+            to: "direct:getById"
+        post:
+          - id: create-item
+            path: /
+            to: "direct:createItem"
+        put:
+          - id: update-item
+            path: "/{id}"
+            to: "direct:updateItem"
+        delete:
+          - id: delete-item
+            path: "/{id}"
+            to: "direct:deleteItem"
+    - route:
+        id: rest-api-get-all
+        from:
+          uri: "direct:getAll"
+          steps:
+            - log:
+                message: "GET /api/items"
+            - to:
+                uri: "bean:itemService"
+                parameters:
+                  method: "findAll"
+            - marshal:
+                json:
+                  library: Jackson
+    - route:
+        id: rest-api-get-by-id
+        from:
+          uri: "direct:getById"
+          steps:
+            - log:
+                message: "GET /api/items/${headers[id]}"
+            - to:
+                uri: "bean:itemService"
+                parameters:
+                  method: "findById(${headers[id]})"
+            - marshal:
+                json:
+                  library: Jackson
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: platform-http-server
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: platform-http
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/platform-http-server
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Lightweight HTTP server using platform-http for health and webhook endpoints
+    - route:
+        id: platform-http-health
+        from:
+          uri: "platform-http:/health"
+          parameters:
+            httpMethodRestrict: GET
+          steps:
+            - setBody:
+                constant: '{"status":"UP","timestamp":"${date:now:ISO}"}'
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+    - route:
+        id: platform-http-webhook
+        from:
+          uri: "platform-http:/webhook"
+          parameters:
+            httpMethodRestrict: POST
+          steps:
+            - log:
+                message: "Webhook received: ${body}"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - to:
+                uri: "direct:process-webhook"
+            - setBody:
+                constant: '{"accepted":true}'
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: http-client-get
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: http
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/http-client-get
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Polls an external REST API and logs the response
+    - route:
+        id: http-client-get-route
+        from:
+          uri: "timer:api-poll"
+          parameters:
+            period: "30000"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - setHeader:
+                name: Accept
+                constant: "application/json"
+            - setHeader:
+                name: Authorization
+                simple: "Bearer {{api.token}}"
+            - to:
+                uri: "http:api.example.com/v1/status"
+                parameters:
+                  httpMethod: GET
+                  connectTimeout: "5000"
+                  socketTimeout: "10000"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - log:
+                message: "API status: ${body[status]}, version: ${body[version]}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: http-client-post
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: http
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/http-client-post
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Posts data to an external API endpoint with retry
+    - route:
+        id: http-client-post-route
+        from:
+          uri: "direct:send-data"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: POST
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+            - setHeader:
+                name: Authorization
+                simple: "Bearer {{api.token}}"
+            - log:
+                message: "Posting data: ${body}"
+            - to:
+                uri: "http:api.example.com/v1/events"
+                parameters:
+                  httpMethod: POST
+                  connectTimeout: "5000"
+                  socketTimeout: "30000"
+            - log:
+                message: "POST response: status=${headers[CamelHttpResponseCode]}"
+            - choice:
+                when:
+                  - simple: "${headers[CamelHttpResponseCode]} != 200"
+                    steps:
+                      - log:
+                          message: "POST failed with ${headers[CamelHttpResponseCode]}"
+                          loggingLevel: ERROR
+                      - throwException:
+                          exceptionType: "java.lang.RuntimeException"
+                          message: "HTTP POST failed"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: vertx-http-proxy
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: vertx-http
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/vertx-http-proxy
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # HTTP proxy/gateway using Vert.x HTTP client for non-blocking I/O
+    - route:
+        id: vertx-http-proxy-route
+        from:
+          uri: "platform-http:/proxy/{path}"
+          parameters:
+            httpMethodRestrict: "GET,POST,PUT,DELETE"
+          steps:
+            - log:
+                message: "Proxying ${headers[CamelHttpMethod]} /proxy/${headers[path]}"
+            - setHeader:
+                name: CamelHttpUri
+                simple: "http://backend-service:8080/${headers[path]}"
+            - removeHeader:
+                name: path
+            - to:
+                uri: "vertx-http:http://backend-service:8080"
+                parameters:
+                  connectTimeout: "5000"
+                  idleTimeout: "30000"
+            - log:
+                message: "Proxy response: ${headers[CamelHttpResponseCode]}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: netty-http-server
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: netty-http
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/netty-http-server
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # High-performance HTTP server using Netty for low-latency endpoints
+    - route:
+        id: netty-http-server-route
+        from:
+          uri: "netty-http:http://0.0.0.0:8888/api/data"
+          parameters:
+            keepAlive: "true"
+            reuseAddress: "true"
+            sync: "true"
+            maxHeaderSize: "8192"
+          steps:
+            - log:
+                message: "Netty request: method=${headers[CamelHttpMethod]}, uri=${headers[CamelHttpUri]}"
+            - choice:
+                when:
+                  - simple: "${headers[CamelHttpMethod]} == 'GET'"
+                    steps:
+                      - setBody:
+                          constant: '{"message":"Hello from Netty","timestamp":"${date:now:ISO}"}'
+                  - simple: "${headers[CamelHttpMethod]} == 'POST'"
+                    steps:
+                      - log:
+                          message: "POST body: ${body}"
+                      - setBody:
+                          simple: '{"received":true,"id":"${exchangeId}"}'
+                otherwise:
+                  steps:
+                    - setHeader:
+                        name: CamelHttpResponseCode
+                        constant: "405"
+                    - setBody:
+                        constant: '{"error":"Method not allowed"}'
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: graphql-query
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: graphql
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/graphql-query
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Queries a GraphQL API on schedule and logs results
+    - route:
+        id: graphql-query-route
+        from:
+          uri: "timer:graphql-poll"
+          parameters:
+            period: "60000"
+          steps:
+            - setHeader:
+                name: Authorization
+                simple: "Bearer {{graphql.token}}"
+            - to:
+                uri: "graphql:http://api.example.com/graphql"
+                parameters:
+                  query: "{ users(limit: 10) { id name email createdAt } }"
+                  operationName: "GetUsers"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - log:
+                message: "GraphQL response: ${body[data][users].size()} users returned"
+            - split:
+                jsonpath: "$.data.users[*]"
+                steps:
+                  - log:
+                      message: "User: ${body[name]} (${body[email]})"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: rest-openapi-client
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: rest-openapi
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/rest-openapi-client
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Calls an external service using an OpenAPI specification
+    - route:
+        id: rest-openapi-client-route
+        from:
+          uri: "timer:openapi-call"
+          parameters:
+            period: "30000"
+          steps:
+            - setBody:
+                simple: '{"name":"test-item","category":"integration"}'
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+            - log:
+                message: "Calling OpenAPI endpoint"
+            - to:
+                uri: "rest-openapi:petstore.json#listPets"
+                parameters:
+                  host: "http://petstore.example.com"
+                  consumerComponentName: http
+            - log:
+                message: "OpenAPI response: ${body}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: servlet-filter
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: servlet
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/servlet-filter
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # HTTP servlet endpoint with request filtering and validation
+    - route:
+        id: servlet-filter-route
+        from:
+          uri: "servlet:/api/submit"
+          parameters:
+            httpMethodRestrict: POST
+            matchOnUriPrefix: "false"
+          steps:
+            - log:
+                message: "Servlet request from ${headers[CamelHttpServletRequest].remoteAddr}"
+            - choice:
+                when:
+                  - simple: "${headers[Content-Type]} not contains 'application/json'"
+                    steps:
+                      - setHeader:
+                          name: CamelHttpResponseCode
+                          constant: "415"
+                      - setBody:
+                          constant: '{"error":"Content-Type must be application/json"}'
+                otherwise:
+                  steps:
+                    - unmarshal:
+                        json:
+                          library: Jackson
+                    - to:
+                        uri: "bean:requestValidator"
+                        parameters:
+                          method: "validate"
+                    - setHeader:
+                        name: CamelHttpResponseCode
+                        constant: "202"
+                    - setBody:
+                        simple: '{"accepted":true,"id":"${exchangeId}"}'
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: webhook-receiver
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: webhook
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/webhook-receiver
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Receives GitHub/GitLab webhooks and routes by event type
+    - route:
+        id: webhook-receiver-route
+        from:
+          uri: "platform-http:/webhooks/git"
+          parameters:
+            httpMethodRestrict: POST
+          steps:
+            - log:
+                message: "Webhook event: ${headers[X-GitHub-Event]}"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - choice:
+                when:
+                  - simple: "${headers[X-GitHub-Event]} == 'push'"
+                    steps:
+                      - log:
+                          message: "Push to ${body[repository][full_name]}, branch=${body[ref]}"
+                      - to:
+                          uri: "direct:handle-push"
+                  - simple: "${headers[X-GitHub-Event]} == 'pull_request'"
+                    steps:
+                      - log:
+                          message: "PR ${body[action]}: #${body[pull_request][number]}"
+                      - to:
+                          uri: "direct:handle-pr"
+                  - simple: "${headers[X-GitHub-Event]} == 'issues'"
+                    steps:
+                      - to:
+                          uri: "direct:handle-issue"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Unhandled webhook event: ${headers[X-GitHub-Event]}"
+            - setBody:
+                constant: '{"status":"received"}'
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: cxf-soap-client
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: cxf
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/cxf-soap-client
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Calls a SOAP web service using CXF
+    - route:
+        id: cxf-soap-client-route
+        from:
+          uri: "timer:soap-call"
+          parameters:
+            period: "60000"
+          steps:
+            - setBody:
+                constant: |
+                  <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="http://example.com/ws">
+                    <soapenv:Body>
+                      <ws:GetAccountRequest>
+                        <ws:accountId>12345</ws:accountId>
+                      </ws:GetAccountRequest>
+                    </soapenv:Body>
+                  </soapenv:Envelope>
+            - setHeader:
+                name: operationName
+                constant: "GetAccount"
+            - log:
+                message: "Calling SOAP service: GetAccount"
+            - to:
+                uri: "cxf:http://soap-service:8080/ws/account"
+                parameters:
+                  wsdlURL: "http://soap-service:8080/ws/account?wsdl"
+                  dataFormat: PAYLOAD
+                  serviceClass: "com.example.AccountService"
+            - log:
+                message: "SOAP response: ${body}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: grpc-client
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: grpc
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/grpc-client
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Calls a gRPC service on a timer schedule
+    - route:
+        id: grpc-client-route
+        from:
+          uri: "timer:grpc-call"
+          parameters:
+            period: "10000"
+          steps:
+            - setBody:
+                simple: '{"userId":"user-${random(1,100)}"}'
+            - log:
+                message: "Calling gRPC: GetUser with ${body}"
+            - to:
+                uri: "grpc:grpc-service:50051/com.example.UserService"
+                parameters:
+                  method: getUser
+                  synchronous: "true"
+                  negotiationType: PLAINTEXT
+            - log:
+                message: "gRPC response: ${body}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: coap-iot
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: coap
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/coap-iot
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # CoAP server for constrained IoT device communication
+    - route:
+        id: coap-iot-server-route
+        from:
+          uri: "coap:tcp://0.0.0.0:5683/sensors/temperature"
+          steps:
+            - log:
+                message: "CoAP request from IoT device: ${body}"
+            - convertBodyTo:
+                type: "java.lang.String"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - setHeader:
+                name: sensorId
+                simple: "${body[sensorId]}"
+            - log:
+                message: "Temperature reading from sensor ${headers[sensorId]}: ${body[value]}°C"
+            - to:
+                uri: "kafka:iot-temperature-readings"
+                parameters:
+                  brokers: "my-cluster-kafka-bootstrap:9092"
+            - setBody:
+                constant: '{"ack":true}'
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: websocket-server
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: vertx-websocket
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/websocket-server
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # WebSocket server broadcasting periodic updates to connected clients
+    - route:
+        id: websocket-server-route
+        from:
+          uri: "vertx-websocket:0.0.0.0:9292/feed"
+          steps:
+            - log:
+                message: "WebSocket message from client: ${body}"
+            - setBody:
+                simple: '{"echo":"${body}","serverTime":"${date:now:ISO}"}'
+            - to:
+                uri: "vertx-websocket:0.0.0.0:9292/feed"
+                parameters:
+                  sendToAll: "true"
+    - route:
+        id: websocket-broadcast-route
+        from:
+          uri: "timer:ws-broadcast"
+          parameters:
+            period: "5000"
+          steps:
+            - setBody:
+                simple: '{"type":"heartbeat","timestamp":"${date:now:ISO}"}'
+            - to:
+                uri: "vertx-websocket:0.0.0.0:9292/feed"
+                parameters:
+                  sendToAll: "true"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: rest-content-negotiation
+  labels:
+    platform.io/catalog-category: http-rest
+    platform.io/camel-component: rest
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/rest-content-negotiation
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # REST endpoint with content negotiation (JSON/XML response)
+    - route:
+        id: rest-content-negotiation-route
+        from:
+          uri: "platform-http:/api/products/{id}"
+          parameters:
+            httpMethodRestrict: GET
+          steps:
+            - log:
+                message: "GET /api/products/${headers[id]}, Accept=${headers[Accept]}"
+            - to:
+                uri: "bean:productService"
+                parameters:
+                  method: "findById(${headers[id]})"
+            - choice:
+                when:
+                  - simple: "${headers[Accept]} contains 'application/xml'"
+                    steps:
+                      - marshal:
+                          jaxb:
+                            contextPath: "com.example.model"
+                      - setHeader:
+                          name: Content-Type
+                          constant: "application/xml"
+                otherwise:
+                  steps:
+                    - marshal:
+                        json:
+                          library: Jackson
+                    - setHeader:
+                        name: Content-Type
+                        constant: "application/json"
+---
+# =============================================================================
+# DATA/STORAGE (036-055)
+# =============================================================================
+
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: sql-query
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: sql
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/sql-query
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Polls a database table for new records and processes them
+    - route:
+        id: sql-query-route
+        from:
+          uri: "sql:SELECT * FROM orders WHERE status = 'NEW' ORDER BY created_at"
+          parameters:
+            dataSource: "#dataSource"
+            delay: "10000"
+            maxMessagesPerPoll: "50"
+            onConsume: "UPDATE orders SET status = 'PROCESSING' WHERE id = :#id"
+          steps:
+            - log:
+                message: "New order found: id=${body[id]}, customer=${body[customer_name]}, amount=${body[total_amount]}"
+            - setHeader:
+                name: orderId
+                simple: "${body[id]}"
+            - marshal:
+                json:
+                  library: Jackson
+            - to:
+                uri: "direct:process-order"
+            - log:
+                message: "Order ${headers[orderId]} sent for processing"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: jdbc-insert
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: jdbc
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/jdbc-insert
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Inserts records into a database using JDBC
+    - route:
+        id: jdbc-insert-route
+        from:
+          uri: "direct:insert-record"
+          steps:
+            - log:
+                message: "Inserting record: ${body}"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - setBody:
+                simple: "INSERT INTO audit_log (event_type, payload, created_at) VALUES ('${body[eventType]}', '${body[payload]}', NOW())"
+            - to:
+                uri: "jdbc:dataSource"
+                parameters:
+                  useHeadersAsParameters: "true"
+            - log:
+                message: "Record inserted, update count: ${headers[CamelJdbcUpdateCount]}"
+            - setBody:
+                simple: '{"inserted":true,"count":${headers[CamelJdbcUpdateCount]}}'
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: jpa-crud
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: jpa
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/jpa-crud
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # JPA-based entity polling and persistence
+    - route:
+        id: jpa-crud-poll-route
+        from:
+          uri: "jpa:com.example.entity.Task"
+          parameters:
+            consumeDelete: "false"
+            consumeLockEntity: "true"
+            delay: "5000"
+            query: "select t from Task t where t.status = 'PENDING'"
+            maximumResults: "20"
+          steps:
+            - log:
+                message: "JPA entity: id=${body.id}, title=${body.title}"
+            - to:
+                uri: "bean:taskProcessor"
+                parameters:
+                  method: "process"
+            - to:
+                uri: "jpa:com.example.entity.Task"
+                parameters:
+                  usePersist: "false"
+            - log:
+                message: "Task ${body.id} updated to ${body.status}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: mongodb-crud
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: mongodb
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/mongodb-crud
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # CRUD operations against MongoDB with change stream tailing
+    - route:
+        id: mongodb-insert-route
+        from:
+          uri: "direct:mongo-insert"
+          steps:
+            - log:
+                message: "Inserting into MongoDB: ${body}"
+            - to:
+                uri: "mongodb:mongoClient"
+                parameters:
+                  database: integration_db
+                  collection: events
+                  operation: insert
+            - log:
+                message: "Inserted with _id=${body[_id]}"
+    - route:
+        id: mongodb-changestream-route
+        from:
+          uri: "mongodb:mongoClient"
+          parameters:
+            database: integration_db
+            collection: events
+            consumerType: changeStreams
+          steps:
+            - log:
+                message: "MongoDB change: operation=${body[operationType]}, docId=${body[documentKey][_id]}"
+            - choice:
+                when:
+                  - simple: "${body[operationType]} == 'insert'"
+                    steps:
+                      - log:
+                          message: "New document: ${body[fullDocument]}"
+                  - simple: "${body[operationType]} == 'update'"
+                    steps:
+                      - log:
+                          message: "Updated fields: ${body[updateDescription][updatedFields]}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: cassandra-cql
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: cql
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/cassandra-cql
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Queries Cassandra using CQL and writes results
+    - route:
+        id: cassandra-cql-route
+        from:
+          uri: "timer:cassandra-poll"
+          parameters:
+            period: "30000"
+          steps:
+            - setBody:
+                constant: "SELECT event_id, event_type, payload, created_at FROM events.recent WHERE partition_key = 'today' LIMIT 100"
+            - to:
+                uri: "cql:cassandra-host:9042/events"
+                parameters:
+                  cql: "SELECT event_id, event_type, payload, created_at FROM recent WHERE partition_key = 'today' LIMIT 100"
+                  consistencyLevel: LOCAL_QUORUM
+            - log:
+                message: "Cassandra query returned ${body.size()} rows"
+            - split:
+                simple: "${body}"
+                steps:
+                  - log:
+                      message: "Event: id=${body[0]}, type=${body[1]}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: couchdb-changes
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: couchdb
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/couchdb-changes
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Listens to CouchDB changes feed and processes document updates
+    - route:
+        id: couchdb-changes-route
+        from:
+          uri: "couchdb:http://couchdb:5984/integration_db"
+          parameters:
+            heartbeat: "30000"
+            style: main_only
+            since: now
+          steps:
+            - log:
+                message: "CouchDB change: rev=${headers[CamelCouchDbRev]}, id=${headers[CamelCouchDbId]}"
+            - choice:
+                when:
+                  - simple: "${headers[CamelCouchDbDeleted]} == true"
+                    steps:
+                      - log:
+                          message: "Document deleted: ${headers[CamelCouchDbId]}"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Document updated: ${body}"
+                    - to:
+                        uri: "direct:process-doc-change"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: infinispan-cache
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: infinispan
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/infinispan-cache
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Caches API responses in Infinispan with TTL
+    - route:
+        id: infinispan-cache-route
+        from:
+          uri: "direct:cached-lookup"
+          steps:
+            - setHeader:
+                name: CamelInfinispanKey
+                simple: "cache:${headers[lookupKey]}"
+            - to:
+                uri: "infinispan:api-cache"
+                parameters:
+                  hosts: "infinispan-server:11222"
+                  operation: GET
+                  secure: "true"
+                  username: "{{infinispan.user}}"
+                  password: "{{infinispan.password}}"
+            - choice:
+                when:
+                  - simple: "${body} != null"
+                    steps:
+                      - log:
+                          message: "Cache HIT for ${headers[lookupKey]}"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Cache MISS for ${headers[lookupKey]}, fetching..."
+                    - to:
+                        uri: "http:api.example.com/v1/data/${headers[lookupKey]}"
+                    - setHeader:
+                        name: CamelInfinispanLifespanTime
+                        constant: "300"
+                    - setHeader:
+                        name: CamelInfinispanLifespanTimeUnit
+                        constant: "SECONDS"
+                    - to:
+                        uri: "infinispan:api-cache"
+                        parameters:
+                          hosts: "infinispan-server:11222"
+                          operation: PUT
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: redis-cache
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: spring-redis
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/redis-cache
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Redis cache-aside pattern with TTL
+    - route:
+        id: redis-cache-route
+        from:
+          uri: "direct:redis-get"
+          steps:
+            - setHeader:
+                name: CamelRedis.Command
+                constant: GET
+            - setHeader:
+                name: CamelRedis.Key
+                simple: "integration:${headers[cacheKey]}"
+            - to:
+                uri: "spring-redis://redis-server:6379"
+            - choice:
+                when:
+                  - simple: "${body} != null"
+                    steps:
+                      - log:
+                          message: "Redis cache hit: ${headers[cacheKey]}"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Redis cache miss: ${headers[cacheKey]}"
+                    - to:
+                        uri: "direct:fetch-from-source"
+                    - setHeader:
+                        name: CamelRedis.Command
+                        constant: SETEX
+                    - setHeader:
+                        name: CamelRedis.Key
+                        simple: "integration:${headers[cacheKey]}"
+                    - setHeader:
+                        name: CamelRedis.Timeout
+                        constant: "600"
+                    - to:
+                        uri: "spring-redis://redis-server:6379"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: elasticsearch-search
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: elasticsearch
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/elasticsearch-search
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Indexes documents and performs search queries against Elasticsearch
+    - route:
+        id: elasticsearch-index-route
+        from:
+          uri: "direct:es-index"
+          steps:
+            - log:
+                message: "Indexing document: ${body}"
+            - setHeader:
+                name: CamelElasticsearchOperation
+                constant: Index
+            - setHeader:
+                name: CamelElasticsearchIndexName
+                constant: "integration-events"
+            - to:
+                uri: "elasticsearch-rest://my-cluster"
+                parameters:
+                  hostAddresses: "elasticsearch:9200"
+                  operation: Index
+                  indexName: integration-events
+            - log:
+                message: "Indexed: id=${body}"
+    - route:
+        id: elasticsearch-search-route
+        from:
+          uri: "timer:es-search"
+          parameters:
+            period: "60000"
+          steps:
+            - setBody:
+                constant: '{"query":{"range":{"timestamp":{"gte":"now-1h"}}},"size":10}'
+            - to:
+                uri: "elasticsearch-rest://my-cluster"
+                parameters:
+                  hostAddresses: "elasticsearch:9200"
+                  operation: Search
+                  indexName: integration-events
+            - log:
+                message: "Search returned ${body.hits.totalHits.value} hits"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: solr-index
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: solr
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/solr-index
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Indexes documents into Apache Solr for full-text search
+    - route:
+        id: solr-index-route
+        from:
+          uri: "direct:solr-index"
+          steps:
+            - log:
+                message: "Indexing to Solr: ${body}"
+            - setHeader:
+                name: SolrOperation
+                constant: INSERT
+            - to:
+                uri: "solr:http://solr-server:8983/solr/integration_core"
+                parameters:
+                  requestHandler: "/update"
+                  streamingQueueSize: "10"
+                  streamingThreadCount: "2"
+            - log:
+                message: "Document indexed in Solr"
+            - to:
+                uri: "solr:http://solr-server:8983/solr/integration_core"
+                parameters:
+                  requestHandler: "/update"
+                  SolrOperation: COMMIT
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-s3-upload
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: aws2-s3
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-s3-upload
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Uploads files to AWS S3 with metadata
+    - route:
+        id: aws-s3-upload-route
+        from:
+          uri: "direct:s3-upload"
+          steps:
+            - log:
+                message: "Uploading to S3: ${headers[CamelAwsS3Key]}"
+            - setHeader:
+                name: CamelAwsS3Key
+                simple: "uploads/${date:now:yyyy/MM/dd}/${exchangeId}.json"
+            - setHeader:
+                name: CamelAwsS3ContentType
+                constant: "application/json"
+            - setHeader:
+                name: CamelAwsS3StorageClass
+                constant: "STANDARD_IA"
+            - to:
+                uri: "aws2-s3:integration-bucket"
+                parameters:
+                  region: us-east-1
+                  useDefaultCredentialsProvider: "true"
+                  operation: putObject
+            - log:
+                message: "Uploaded to s3://integration-bucket/${headers[CamelAwsS3Key]}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-s3-download
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: aws2-s3
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-s3-download
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Polls S3 bucket for new objects and processes them
+    - route:
+        id: aws-s3-download-route
+        from:
+          uri: "aws2-s3:integration-inbox"
+          parameters:
+            region: us-east-1
+            useDefaultCredentialsProvider: "true"
+            deleteAfterRead: "true"
+            prefix: "incoming/"
+            delay: "10000"
+            maxMessagesPerPoll: "10"
+          steps:
+            - log:
+                message: "S3 object: key=${headers[CamelAwsS3Key]}, size=${headers[CamelAwsS3ContentLength]} bytes"
+            - convertBodyTo:
+                type: "java.lang.String"
+            - choice:
+                when:
+                  - simple: "${headers[CamelAwsS3Key]} regex '.*\\.json$'"
+                    steps:
+                      - unmarshal:
+                          json:
+                            library: Jackson
+                      - to:
+                          uri: "direct:process-json"
+                  - simple: "${headers[CamelAwsS3Key]} regex '.*\\.csv$'"
+                    steps:
+                      - unmarshal:
+                          csv: {}
+                      - to:
+                          uri: "direct:process-csv"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Unknown file type: ${headers[CamelAwsS3Key]}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-dynamodb
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: aws2-ddb
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-dynamodb
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # CRUD operations against AWS DynamoDB
+    - route:
+        id: aws-dynamodb-put-route
+        from:
+          uri: "direct:dynamo-put"
+          steps:
+            - log:
+                message: "DynamoDB PutItem: ${body}"
+            - setHeader:
+                name: CamelAwsDdbOperation
+                constant: PutItem
+            - setHeader:
+                name: CamelAwsDdbItem
+                groovy: |
+                  import software.amazon.awssdk.services.dynamodb.model.AttributeValue
+                  def item = [:]
+                  item['pk'] = AttributeValue.builder().s(exchange.in.getHeader('itemId')).build()
+                  item['data'] = AttributeValue.builder().s(exchange.in.body).build()
+                  item['timestamp'] = AttributeValue.builder().s(new Date().toInstant().toString()).build()
+                  return item
+            - to:
+                uri: "aws2-ddb:integration-table"
+                parameters:
+                  region: us-east-1
+                  useDefaultCredentialsProvider: "true"
+                  operation: PutItem
+            - log:
+                message: "DynamoDB item stored"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: azure-blob-storage
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: azure-storage-blob
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/azure-blob-storage
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Uploads and lists blobs in Azure Blob Storage
+    - route:
+        id: azure-blob-upload-route
+        from:
+          uri: "direct:azure-blob-upload"
+          steps:
+            - setHeader:
+                name: CamelAzureStorageBlobName
+                simple: "data/${date:now:yyyy-MM-dd}/${exchangeId}.json"
+            - log:
+                message: "Uploading to Azure Blob: ${headers[CamelAzureStorageBlobName]}"
+            - to:
+                uri: "azure-storage-blob:integrationaccount/integration-container"
+                parameters:
+                  operation: uploadBlockBlob
+                  credentialType: SHARED_ACCOUNT_KEY
+                  accessKey: "{{azure.storage.accessKey}}"
+            - log:
+                message: "Azure Blob uploaded successfully"
+    - route:
+        id: azure-blob-list-route
+        from:
+          uri: "timer:azure-list"
+          parameters:
+            period: "60000"
+          steps:
+            - to:
+                uri: "azure-storage-blob:integrationaccount/integration-container"
+                parameters:
+                  operation: listBlobs
+                  credentialType: SHARED_ACCOUNT_KEY
+                  accessKey: "{{azure.storage.accessKey}}"
+            - log:
+                message: "Azure container has ${body.size()} blobs"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: azure-cosmosdb
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: azure-cosmosdb
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/azure-cosmosdb
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Queries Azure Cosmos DB and inserts documents
+    - route:
+        id: azure-cosmosdb-route
+        from:
+          uri: "direct:cosmos-upsert"
+          steps:
+            - log:
+                message: "Upserting to Cosmos DB: ${body}"
+            - to:
+                uri: "azure-cosmosdb:integrationDB"
+                parameters:
+                  containerName: events
+                  databaseEndpoint: "https://myaccount.documents.azure.com:443/"
+                  accountKey: "{{azure.cosmos.key}}"
+                  operation: upsertItem
+                  containerPartitionKeyPath: "/partitionKey"
+            - log:
+                message: "Cosmos DB upsert complete"
+    - route:
+        id: azure-cosmosdb-query-route
+        from:
+          uri: "timer:cosmos-query"
+          parameters:
+            period: "30000"
+          steps:
+            - setHeader:
+                name: CamelAzureCosmosDbQuery
+                constant: "SELECT TOP 10 * FROM c WHERE c.status = 'active' ORDER BY c._ts DESC"
+            - to:
+                uri: "azure-cosmosdb:integrationDB"
+                parameters:
+                  containerName: events
+                  databaseEndpoint: "https://myaccount.documents.azure.com:443/"
+                  accountKey: "{{azure.cosmos.key}}"
+                  operation: queryItems
+            - log:
+                message: "Cosmos DB query returned ${body.size()} items"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: google-storage
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: google-storage
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/google-storage
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Polls Google Cloud Storage for new objects and processes them
+    - route:
+        id: google-storage-route
+        from:
+          uri: "google-storage:integration-bucket"
+          parameters:
+            moveAfterRead: "true"
+            destinationBucket: "integration-bucket-processed"
+            includeBody: "true"
+            delay: "10000"
+          steps:
+            - log:
+                message: "GCS object: name=${headers[CamelGoogleCloudStorageObjectName]}, size=${headers[CamelGoogleCloudStorageContentLength]}"
+            - convertBodyTo:
+                type: "java.lang.String"
+            - log:
+                message: "Object content (first 100 chars): ${body.substring(0, Math.min(body.length(), 100))}"
+            - to:
+                uri: "direct:process-gcs-object"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: minio-upload
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: minio
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/minio-upload
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Uploads objects to MinIO (S3-compatible) object storage
+    - route:
+        id: minio-upload-route
+        from:
+          uri: "direct:minio-upload"
+          steps:
+            - setHeader:
+                name: CamelMinioObjectName
+                simple: "data/${date:now:yyyy/MM/dd}/${exchangeId}.json"
+            - setHeader:
+                name: CamelMinioContentType
+                constant: "application/json"
+            - log:
+                message: "Uploading to MinIO: ${headers[CamelMinioObjectName]}"
+            - to:
+                uri: "minio:integration-bucket"
+                parameters:
+                  endpoint: "http://minio:9000"
+                  accessKey: "{{minio.accessKey}}"
+                  secretKey: "{{minio.secretKey}}"
+                  operation: putObject
+            - log:
+                message: "MinIO upload complete"
+    - route:
+        id: minio-poll-route
+        from:
+          uri: "minio:integration-inbox"
+          parameters:
+            endpoint: "http://minio:9000"
+            accessKey: "{{minio.accessKey}}"
+            secretKey: "{{minio.secretKey}}"
+            deleteAfterRead: "true"
+            prefix: "incoming/"
+          steps:
+            - log:
+                message: "MinIO new object: ${headers[CamelMinioObjectName]}"
+            - to:
+                uri: "direct:process-incoming"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: file-processor
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: file
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/file-processor
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Watches a directory for new files and processes them
+    - route:
+        id: file-processor-route
+        from:
+          uri: "file:/data/incoming"
+          parameters:
+            noop: "false"
+            move: ".done"
+            moveFailed: ".error"
+            readLock: changed
+            readLockCheckInterval: "1000"
+            include: ".*\\.(json|csv|xml)"
+            sortBy: "file:modified"
+          steps:
+            - log:
+                message: "Processing file: ${headers[CamelFileName]}, size=${headers[CamelFileLength]} bytes"
+            - choice:
+                when:
+                  - simple: "${headers[CamelFileName]} regex '.*\\.json$'"
+                    steps:
+                      - unmarshal:
+                          json:
+                            library: Jackson
+                      - to:
+                          uri: "direct:process-json-file"
+                  - simple: "${headers[CamelFileName]} regex '.*\\.csv$'"
+                    steps:
+                      - unmarshal:
+                          csv: {}
+                      - to:
+                          uri: "direct:process-csv-file"
+                  - simple: "${headers[CamelFileName]} regex '.*\\.xml$'"
+                    steps:
+                      - unmarshal:
+                          jaxb:
+                            contextPath: "com.example.model"
+                      - to:
+                          uri: "direct:process-xml-file"
+            - log:
+                message: "File ${headers[CamelFileName]} processed successfully"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ftp-download
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: ftp
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/ftp-download
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Downloads files from an FTP server and processes them
+    - route:
+        id: ftp-download-route
+        from:
+          uri: "ftp:ftp.example.com:21/outgoing"
+          parameters:
+            username: "{{ftp.user}}"
+            password: "{{ftp.password}}"
+            delay: "60000"
+            noop: "false"
+            move: ".processed"
+            passiveMode: "true"
+            binary: "true"
+            include: ".*\\.dat"
+          steps:
+            - log:
+                message: "FTP file downloaded: ${headers[CamelFileName]}, size=${headers[CamelFileLength]}"
+            - convertBodyTo:
+                type: "java.lang.String"
+            - to:
+                uri: "direct:process-ftp-file"
+            - log:
+                message: "FTP file ${headers[CamelFileName]} processed"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: sftp-upload
+  labels:
+    platform.io/catalog-category: data-storage
+    platform.io/camel-component: sftp
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/sftp-upload
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Uploads files to an SFTP server with temp naming
+    - route:
+        id: sftp-upload-route
+        from:
+          uri: "direct:sftp-upload"
+          steps:
+            - setHeader:
+                name: CamelFileName
+                simple: "export_${date:now:yyyyMMdd_HHmmss}.csv"
+            - log:
+                message: "Uploading via SFTP: ${headers[CamelFileName]}"
+            - to:
+                uri: "sftp:sftp.example.com:22/incoming"
+                parameters:
+                  username: "{{sftp.user}}"
+                  privateKeyFile: "/secrets/sftp/id_rsa"
+                  strictHostKeyChecking: "no"
+                  tempPrefix: ".tmp_"
+                  tempFileName: "${headers[CamelFileName]}.tmp"
+                  chmod: "0644"
+            - log:
+                message: "SFTP upload complete: ${headers[CamelFileName]}"
+---
+# =============================================================================
+# TRANSFORMATION (056-070)
+# =============================================================================
+
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: jolt-transform
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: jolt
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/jolt-transform
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Transforms JSON payloads using JOLT specifications
+    - route:
+        id: jolt-transform-route
+        from:
+          uri: "direct:jolt-transform"
+          steps:
+            - log:
+                message: "Input JSON: ${body}"
+            - to:
+                uri: "jolt:classpath:transforms/order-transform.json"
+                parameters:
+                  transformDsl: Chainr
+                  inputType: JsonString
+                  outputType: JsonString
+            - log:
+                message: "Transformed JSON: ${body}"
+            - to:
+                uri: "direct:transformed-output"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: jslt-transform
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: jslt
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/jslt-transform
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Transforms JSON using JSLT (JSON query and transformation language)
+    - route:
+        id: jslt-transform-route
+        from:
+          uri: "direct:jslt-transform"
+          steps:
+            - log:
+                message: "JSLT input: ${body}"
+            - to:
+                uri: "jslt:classpath:transforms/event-mapping.jslt"
+                parameters:
+                  prettyPrint: "true"
+            - log:
+                message: "JSLT output: ${body}"
+            - to:
+                uri: "direct:mapped-output"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: jsonata-transform
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: jsonata
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/jsonata-transform
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Transforms JSON data using JSONata expressions
+    - route:
+        id: jsonata-transform-route
+        from:
+          uri: "direct:jsonata-transform"
+          steps:
+            - log:
+                message: "JSONata input: ${body}"
+            - to:
+                uri: "jsonata:classpath:transforms/flatten-order.jsonata"
+                parameters:
+                  inputType: JsonString
+                  outputType: JsonString
+            - log:
+                message: "JSONata output: ${body}"
+            - to:
+                uri: "direct:flattened-output"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: xslt-transform
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: xslt
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/xslt-transform
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Transforms XML documents using XSLT stylesheets
+    - route:
+        id: xslt-transform-route
+        from:
+          uri: "direct:xslt-transform"
+          steps:
+            - log:
+                message: "XSLT input XML: ${body}"
+            - to:
+                uri: "xslt:classpath:transforms/invoice-to-html.xslt"
+                parameters:
+                  output: string
+                  transformerCacheSize: "10"
+            - log:
+                message: "XSLT output: ${body}"
+            - setHeader:
+                name: Content-Type
+                constant: "text/html"
+            - to:
+                uri: "direct:html-output"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: freemarker-template
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: freemarker
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/freemarker-template
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Generates HTML emails using FreeMarker templates
+    - route:
+        id: freemarker-template-route
+        from:
+          uri: "direct:send-notification-email"
+          steps:
+            - log:
+                message: "Generating email for: ${body[recipientEmail]}"
+            - setHeader:
+                name: subject
+                simple: "Order Confirmation #${body[orderId]}"
+            - to:
+                uri: "freemarker:templates/order-confirmation.ftl"
+                parameters:
+                  contentCache: "true"
+            - setHeader:
+                name: Content-Type
+                constant: "text/html"
+            - log:
+                message: "Email body generated, sending to ${body[recipientEmail]}"
+            - to:
+                uri: "direct:send-email"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: mustache-template
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: mustache
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/mustache-template
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Renders output using Mustache logic-less templates
+    - route:
+        id: mustache-template-route
+        from:
+          uri: "direct:render-report"
+          steps:
+            - log:
+                message: "Rendering report for: ${body[reportName]}"
+            - to:
+                uri: "mustache:templates/report.mustache"
+                parameters:
+                  contentCache: "true"
+                  encoding: UTF-8
+            - setHeader:
+                name: Content-Type
+                constant: "text/html"
+            - log:
+                message: "Report rendered successfully"
+            - to:
+                uri: "direct:deliver-report"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: velocity-template
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: velocity
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/velocity-template
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Generates dynamic content using Apache Velocity templates
+    - route:
+        id: velocity-template-route
+        from:
+          uri: "direct:generate-config"
+          steps:
+            - log:
+                message: "Generating config from template for env=${headers[environment]}"
+            - to:
+                uri: "velocity:templates/app-config.vm"
+                parameters:
+                  contentCache: "true"
+                  loaderCache: "true"
+            - log:
+                message: "Config generated: ${body.length()} chars"
+            - to:
+                uri: "direct:deploy-config"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: bean-processor
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: bean
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/bean-processor
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Custom business logic processing using Java beans
+    - route:
+        id: bean-processor-route
+        from:
+          uri: "direct:process-order"
+          steps:
+            - log:
+                message: "Processing order: ${body}"
+            - to:
+                uri: "bean:orderValidator"
+                parameters:
+                  method: "validate"
+            - to:
+                uri: "bean:pricingService"
+                parameters:
+                  method: "calculateTotal"
+            - to:
+                uri: "bean:inventoryService"
+                parameters:
+                  method: "checkAvailability"
+            - log:
+                message: "Order processed: total=${headers[orderTotal]}, available=${headers[inStock]}"
+            - to:
+                uri: "bean:orderService"
+                parameters:
+                  method: "submit"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: data-format-json
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: dataformat
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/data-format-json
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # JSON marshalling/unmarshalling with Jackson
+    - route:
+        id: data-format-json-route
+        from:
+          uri: "direct:json-processing"
+          steps:
+            - log:
+                message: "Raw input: ${body}"
+            - unmarshal:
+                json:
+                  library: Jackson
+                  unmarshalType: "java.util.Map"
+            - log:
+                message: "Unmarshalled: type=${body[type]}, count=${body[items].size()}"
+            - setBody:
+                groovy: |
+                  def result = [:]
+                  result.processedAt = new Date().toInstant().toString()
+                  result.itemCount = body.items.size()
+                  result.summary = body.items.collect { it.name }.join(', ')
+                  return result
+            - marshal:
+                json:
+                  library: Jackson
+                  prettyPrint: "true"
+            - log:
+                message: "Marshalled output: ${body}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: data-format-xml
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: dataformat
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/data-format-xml
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # XML marshalling/unmarshalling with JAXB
+    - route:
+        id: data-format-xml-route
+        from:
+          uri: "direct:xml-processing"
+          steps:
+            - log:
+                message: "Raw XML input: ${body}"
+            - unmarshal:
+                jaxb:
+                  contextPath: "com.example.model"
+            - log:
+                message: "Unmarshalled XML to object: ${body.class.simpleName}"
+            - to:
+                uri: "bean:xmlProcessor"
+                parameters:
+                  method: "enrich"
+            - marshal:
+                jaxb:
+                  contextPath: "com.example.model"
+                  prettyPrint: "true"
+                  encoding: UTF-8
+            - log:
+                message: "Marshalled back to XML: ${body.substring(0, 100)}..."
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: data-format-csv
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: dataformat
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/data-format-csv
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # CSV parsing and generation for batch data processing
+    - route:
+        id: data-format-csv-route
+        from:
+          uri: "file:/data/csv-input"
+          parameters:
+            include: ".*\\.csv"
+            noop: "false"
+            move: ".processed"
+          steps:
+            - log:
+                message: "Processing CSV: ${headers[CamelFileName]}"
+            - unmarshal:
+                csv:
+                  useMaps: "true"
+                  skipHeaderRecord: "true"
+            - log:
+                message: "CSV parsed: ${body.size()} rows"
+            - split:
+                simple: "${body}"
+                steps:
+                  - log:
+                      message: "Row: ${body}"
+                  - marshal:
+                      json:
+                        library: Jackson
+                  - to:
+                      uri: "kafka:csv-records"
+                      parameters:
+                        brokers: "my-cluster-kafka-bootstrap:9092"
+            - log:
+                message: "CSV file ${headers[CamelFileName]} fully processed"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: content-based-router
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: eip
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/content-based-router
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Routes messages to different endpoints based on content
+    - route:
+        id: content-based-router-route
+        from:
+          uri: "kafka:incoming-events"
+          parameters:
+            brokers: "my-cluster-kafka-bootstrap:9092"
+            groupId: cbr-group
+          steps:
+            - unmarshal:
+                json:
+                  library: Jackson
+            - log:
+                message: "CBR input: type=${body[eventType]}, priority=${body[priority]}"
+            - choice:
+                when:
+                  - simple: "${body[eventType]} == 'ORDER'"
+                    steps:
+                      - log:
+                          message: "Routing to order processing"
+                      - to:
+                          uri: "kafka:orders-processing"
+                          parameters:
+                            brokers: "my-cluster-kafka-bootstrap:9092"
+                  - simple: "${body[eventType]} == 'PAYMENT'"
+                    steps:
+                      - log:
+                          message: "Routing to payment processing"
+                      - to:
+                          uri: "kafka:payments-processing"
+                          parameters:
+                            brokers: "my-cluster-kafka-bootstrap:9092"
+                  - simple: "${body[eventType]} == 'NOTIFICATION'"
+                    steps:
+                      - log:
+                          message: "Routing to notification service"
+                      - to:
+                          uri: "kafka:notifications"
+                          parameters:
+                            brokers: "my-cluster-kafka-bootstrap:9092"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Unknown event type: ${body[eventType]}, sending to DLQ"
+                        loggingLevel: WARN
+                    - to:
+                        uri: "kafka:dead-letter-queue"
+                        parameters:
+                          brokers: "my-cluster-kafka-bootstrap:9092"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: message-filter
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: eip
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/message-filter
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Filters messages based on criteria, discarding non-matching
+    - route:
+        id: message-filter-route
+        from:
+          uri: "kafka:raw-sensor-data"
+          parameters:
+            brokers: "my-cluster-kafka-bootstrap:9092"
+            groupId: filter-group
+          steps:
+            - unmarshal:
+                json:
+                  library: Jackson
+            - log:
+                message: "Sensor reading: sensor=${body[sensorId]}, value=${body[value]}"
+            - filter:
+                simple: "${body[value]} > 100"
+                steps:
+                  - log:
+                      message: "HIGH READING: sensor=${body[sensorId]}, value=${body[value]} (threshold=100)"
+                  - setHeader:
+                      name: alertLevel
+                      constant: "warning"
+                  - marshal:
+                      json:
+                        library: Jackson
+                  - to:
+                      uri: "kafka:sensor-alerts"
+                      parameters:
+                        brokers: "my-cluster-kafka-bootstrap:9092"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: splitter-aggregator
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: eip
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/splitter-aggregator
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Splits a batch message, processes items individually, then aggregates results
+    - route:
+        id: splitter-aggregator-route
+        from:
+          uri: "direct:batch-process"
+          steps:
+            - log:
+                message: "Splitting batch of ${body[items].size()} items"
+            - split:
+                jsonpath: "$.items[*]"
+                aggregationStrategy: "#groupedBodyStrategy"
+                parallelProcessing: "true"
+                steps:
+                  - log:
+                      message: "Processing item: ${body[id]}"
+                  - to:
+                      uri: "bean:itemProcessor"
+                      parameters:
+                        method: "process"
+                  - setBody:
+                      simple: '{"id":"${body[id]}","status":"processed","processedAt":"${date:now:ISO}"}'
+            - log:
+                message: "All items processed, aggregated result: ${body}"
+            - marshal:
+                json:
+                  library: Jackson
+            - to:
+                uri: "direct:batch-complete"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: multicast-parallel
+  labels:
+    platform.io/catalog-category: transformation
+    platform.io/camel-component: eip
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/multicast-parallel
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Sends the same message to multiple endpoints in parallel
+    - route:
+        id: multicast-parallel-route
+        from:
+          uri: "kafka:order-completed"
+          parameters:
+            brokers: "my-cluster-kafka-bootstrap:9092"
+            groupId: multicast-group
+          steps:
+            - log:
+                message: "Order completed, multicasting: ${body}"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - multicast:
+                parallelProcessing: "true"
+                stopOnException: "false"
+                steps:
+                  - to:
+                      uri: "direct:send-confirmation-email"
+                  - to:
+                      uri: "direct:update-inventory"
+                  - to:
+                      uri: "direct:notify-warehouse"
+                  - to:
+                      uri: "direct:update-analytics"
+            - log:
+                message: "Multicast complete for order ${body[orderId]}"
+---
+# =============================================================================
+# CLOUD SERVICES (071-085)
+# =============================================================================
+
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-lambda-invoke
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: aws2-lambda
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-lambda-invoke
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Invokes an AWS Lambda function and processes the response
+    - route:
+        id: aws-lambda-invoke-route
+        from:
+          uri: "direct:invoke-lambda"
+          steps:
+            - log:
+                message: "Invoking Lambda with payload: ${body}"
+            - marshal:
+                json:
+                  library: Jackson
+            - to:
+                uri: "aws2-lambda:data-processor"
+                parameters:
+                  region: us-east-1
+                  useDefaultCredentialsProvider: "true"
+                  operation: invokeFunction
+            - unmarshal:
+                json:
+                  library: Jackson
+            - log:
+                message: "Lambda response: statusCode=${body[statusCode]}, body=${body[body]}"
+            - choice:
+                when:
+                  - simple: "${body[statusCode]} == 200"
+                    steps:
+                      - setBody:
+                          simple: "${body[body]}"
+                      - to:
+                          uri: "direct:lambda-success"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Lambda error: ${body[errorMessage]}"
+                        loggingLevel: ERROR
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-bedrock-chat
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: aws-bedrock-agent-runtime
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-bedrock-chat
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Invokes AWS Bedrock for AI/LLM-powered text generation
+    - route:
+        id: aws-bedrock-chat-route
+        from:
+          uri: "direct:ai-chat"
+          steps:
+            - log:
+                message: "Bedrock prompt: ${body}"
+            - setHeader:
+                name: CamelAwsBedrockModelId
+                constant: "anthropic.claude-3-sonnet-20240229-v1:0"
+            - setHeader:
+                name: CamelAwsBedrockContentType
+                constant: "application/json"
+            - setBody:
+                simple: '{"anthropic_version":"bedrock-2023-05-31","max_tokens":1024,"messages":[{"role":"user","content":"${body}"}]}'
+            - to:
+                uri: "aws-bedrock-agent-runtime:myAgent"
+                parameters:
+                  region: us-east-1
+                  useDefaultCredentialsProvider: "true"
+                  operation: invokeModel
+                  modelId: "anthropic.claude-3-sonnet-20240229-v1:0"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - setBody:
+                simple: "${body[content][0][text]}"
+            - log:
+                message: "Bedrock response: ${body}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-ses-email
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: aws2-ses
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-ses-email
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Sends transactional emails via AWS SES
+    - route:
+        id: aws-ses-email-route
+        from:
+          uri: "direct:send-email"
+          steps:
+            - log:
+                message: "Sending email to: ${headers[to]}"
+            - setHeader:
+                name: CamelAwsSesFrom
+                constant: "noreply@example.com"
+            - setHeader:
+                name: CamelAwsSesTo
+                simple: "${headers[to]}"
+            - setHeader:
+                name: CamelAwsSesSubject
+                simple: "${headers[subject]}"
+            - setHeader:
+                name: CamelAwsSesHtmlEmail
+                constant: "true"
+            - to:
+                uri: "aws2-ses:noreply@example.com"
+                parameters:
+                  region: us-east-1
+                  useDefaultCredentialsProvider: "true"
+            - log:
+                message: "Email sent: messageId=${headers[CamelAwsSesMessageId]}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-kinesis-stream
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: aws2-kinesis
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-kinesis-stream
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Produces and consumes records from AWS Kinesis Data Streams
+    - route:
+        id: aws-kinesis-producer-route
+        from:
+          uri: "direct:kinesis-put"
+          steps:
+            - setHeader:
+                name: CamelAwsKinesisPartitionKey
+                simple: "${exchangeId}"
+            - log:
+                message: "Putting record to Kinesis: partitionKey=${headers[CamelAwsKinesisPartitionKey]}"
+            - to:
+                uri: "aws2-kinesis:integration-stream"
+                parameters:
+                  region: us-east-1
+                  useDefaultCredentialsProvider: "true"
+            - log:
+                message: "Kinesis record sent: sequenceNumber=${headers[CamelAwsKinesisSequenceNumber]}"
+    - route:
+        id: aws-kinesis-consumer-route
+        from:
+          uri: "aws2-kinesis:integration-stream"
+          parameters:
+            region: us-east-1
+            useDefaultCredentialsProvider: "true"
+            iteratorType: TRIM_HORIZON
+            shardCount: "2"
+          steps:
+            - convertBodyTo:
+                type: "java.lang.String"
+            - log:
+                message: "Kinesis record: shard=${headers[CamelAwsKinesisShardId]}, seq=${headers[CamelAwsKinesisSequenceNumber]}, body=${body}"
+            - to:
+                uri: "direct:process-kinesis-record"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: aws-athena-query
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: aws2-athena
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/aws-athena-query
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Executes SQL queries against AWS Athena and retrieves results
+    - route:
+        id: aws-athena-query-route
+        from:
+          uri: "timer:athena-report"
+          parameters:
+            period: "3600000"
+          steps:
+            - log:
+                message: "Executing Athena query for hourly report"
+            - setBody:
+                constant: "SELECT date_trunc('hour', event_time) as hour, count(*) as event_count, avg(duration_ms) as avg_duration FROM integration_logs.events WHERE event_time > current_timestamp - interval '1' hour GROUP BY 1 ORDER BY 1"
+            - to:
+                uri: "aws2-athena:integration-query"
+                parameters:
+                  region: us-east-1
+                  useDefaultCredentialsProvider: "true"
+                  database: integration_logs
+                  outputLocation: "s3://athena-results/integration/"
+                  waitTimeout: "60000"
+                  operation: startQueryExecutionAndGetResults
+            - log:
+                message: "Athena query complete: ${body}"
+            - to:
+                uri: "direct:process-athena-results"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: azure-eventhubs
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: azure-eventhubs
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/azure-eventhubs
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Produces and consumes events from Azure Event Hubs
+    - route:
+        id: azure-eventhubs-consumer-route
+        from:
+          uri: "azure-eventhubs:integration-namespace/integration-hub"
+          parameters:
+            connectionString: "{{azure.eventhubs.connectionString}}"
+            consumerGroupName: "$Default"
+            blobContainerName: checkpoints
+            blobStorageSharedKeyCredential: "{{azure.storage.accessKey}}"
+            blobAccountName: integrationcheckpoints
+          steps:
+            - log:
+                message: "Event Hub: partition=${headers[CamelAzureEventHubsPartitionId]}, offset=${headers[CamelAzureEventHubsOffset]}"
+            - convertBodyTo:
+                type: "java.lang.String"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - log:
+                message: "Event type=${body[type]}: ${body[data]}"
+            - to:
+                uri: "direct:process-event"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: azure-keyvault
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: azure-key-vault
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/azure-keyvault
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Retrieves secrets from Azure Key Vault for dynamic configuration
+    - route:
+        id: azure-keyvault-route
+        from:
+          uri: "direct:get-secret"
+          steps:
+            - log:
+                message: "Retrieving secret: ${headers[secretName]}"
+            - toD:
+                uri: "azure-key-vault:integration-vault"
+                parameters:
+                  secretName: "${headers[secretName]}"
+                  clientId: "{{azure.keyvault.clientId}}"
+                  clientSecret: "{{azure.keyvault.clientSecret}}"
+                  tenantId: "{{azure.keyvault.tenantId}}"
+                  operation: getSecret
+            - log:
+                message: "Secret ${headers[secretName]} retrieved successfully"
+    - route:
+        id: azure-keyvault-refresh-route
+        from:
+          uri: "timer:secret-refresh"
+          parameters:
+            period: "300000"
+          steps:
+            - setHeader:
+                name: secretName
+                constant: "database-connection-string"
+            - to:
+                uri: "direct:get-secret"
+            - log:
+                message: "Secrets refreshed"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: google-bigquery
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: google-bigquery
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/google-bigquery
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Streams data into Google BigQuery for analytics
+    - route:
+        id: google-bigquery-route
+        from:
+          uri: "kafka:analytics-events"
+          parameters:
+            brokers: "my-cluster-kafka-bootstrap:9092"
+            groupId: bigquery-sink
+          steps:
+            - unmarshal:
+                json:
+                  library: Jackson
+            - log:
+                message: "Streaming to BigQuery: ${body[eventType]}"
+            - setHeader:
+                name: CamelGoogleBigQueryInsertId
+                simple: "${body[eventId]}"
+            - to:
+                uri: "google-bigquery:my-gcp-project:analytics_dataset:integration_events"
+                parameters:
+                  useAsInsertId: "eventId"
+            - log:
+                message: "BigQuery insert complete"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: google-sheets
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: google-sheets
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/google-sheets
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Reads from and appends to Google Sheets
+    - route:
+        id: google-sheets-read-route
+        from:
+          uri: "timer:sheets-sync"
+          parameters:
+            period: "300000"
+          steps:
+            - to:
+                uri: "google-sheets:data"
+                parameters:
+                  spreadsheetId: "{{google.sheets.spreadsheetId}}"
+                  range: "Sheet1!A1:F100"
+                  applicationName: "integration-operator"
+                  operation: get
+            - log:
+                message: "Read ${body.values.size()} rows from Google Sheets"
+            - split:
+                simple: "${body.values}"
+                steps:
+                  - log:
+                      message: "Row: ${body}"
+    - route:
+        id: google-sheets-append-route
+        from:
+          uri: "direct:sheets-append"
+          steps:
+            - log:
+                message: "Appending row to Google Sheets: ${body}"
+            - to:
+                uri: "google-sheets:data"
+                parameters:
+                  spreadsheetId: "{{google.sheets.spreadsheetId}}"
+                  range: "Sheet1"
+                  applicationName: "integration-operator"
+                  operation: append
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: google-mail
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: google-mail
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/google-mail
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Sends emails via Gmail API
+    - route:
+        id: google-mail-route
+        from:
+          uri: "direct:send-gmail"
+          steps:
+            - log:
+                message: "Sending Gmail to: ${headers[to]}, subject: ${headers[subject]}"
+            - setHeader:
+                name: CamelGoogleMailTo
+                simple: "${headers[to]}"
+            - setHeader:
+                name: CamelGoogleMailSubject
+                simple: "${headers[subject]}"
+            - setHeader:
+                name: CamelGoogleMailFrom
+                constant: "integration@example.com"
+            - to:
+                uri: "google-mail:messages/send"
+                parameters:
+                  applicationName: "integration-operator"
+                  clientId: "{{google.mail.clientId}}"
+                  clientSecret: "{{google.mail.clientSecret}}"
+                  refreshToken: "{{google.mail.refreshToken}}"
+            - log:
+                message: "Gmail sent: messageId=${body.id}"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: google-calendar
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: google-calendar
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/google-calendar
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Polls Google Calendar for upcoming events and sends reminders
+    - route:
+        id: google-calendar-route
+        from:
+          uri: "google-calendar:events/list"
+          parameters:
+            calendarId: "primary"
+            applicationName: "integration-operator"
+            clientId: "{{google.calendar.clientId}}"
+            clientSecret: "{{google.calendar.clientSecret}}"
+            refreshToken: "{{google.calendar.refreshToken}}"
+            delay: "300000"
+            query: "integration"
+          steps:
+            - log:
+                message: "Calendar events found: ${body.items.size()}"
+            - split:
+                simple: "${body.items}"
+                steps:
+                  - log:
+                      message: "Event: ${body.summary} at ${body.start.dateTime}"
+                  - choice:
+                      when:
+                        - simple: "${body.start.dateTime} < ${date:now+30m:ISO}"
+                          steps:
+                            - log:
+                                message: "REMINDER: '${body.summary}' starts in < 30 minutes!"
+                            - to:
+                                uri: "direct:send-reminder"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: google-drive
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: google-drive
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/google-drive
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Uploads and downloads files from Google Drive
+    - route:
+        id: google-drive-upload-route
+        from:
+          uri: "direct:drive-upload"
+          steps:
+            - log:
+                message: "Uploading to Google Drive: ${headers[fileName]}"
+            - setHeader:
+                name: CamelGoogleDriveFileName
+                simple: "${headers[fileName]}"
+            - to:
+                uri: "google-drive:drive-files/insert"
+                parameters:
+                  applicationName: "integration-operator"
+                  clientId: "{{google.drive.clientId}}"
+                  clientSecret: "{{google.drive.clientSecret}}"
+                  refreshToken: "{{google.drive.refreshToken}}"
+            - log:
+                message: "Uploaded to Drive: fileId=${body.id}"
+    - route:
+        id: google-drive-list-route
+        from:
+          uri: "timer:drive-list"
+          parameters:
+            period: "600000"
+          steps:
+            - to:
+                uri: "google-drive:drive-files/list"
+                parameters:
+                  applicationName: "integration-operator"
+                  clientId: "{{google.drive.clientId}}"
+                  clientSecret: "{{google.drive.clientSecret}}"
+                  refreshToken: "{{google.drive.refreshToken}}"
+            - log:
+                message: "Drive files: ${body.files.size()} found"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: google-functions
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: google-functions
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/google-functions
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Invokes a Google Cloud Function
+    - route:
+        id: google-functions-route
+        from:
+          uri: "direct:call-function"
+          steps:
+            - log:
+                message: "Invoking GCP function: ${headers[functionName]}"
+            - marshal:
+                json:
+                  library: Jackson
+            - to:
+                uri: "google-functions:data-processor"
+                parameters:
+                  project: my-gcp-project
+                  location: us-central1
+                  functionName: data-processor
+                  operation: callFunction
+            - unmarshal:
+                json:
+                  library: Jackson
+            - log:
+                message: "Function response: ${body}"
+            - choice:
+                when:
+                  - simple: "${body[success]} == true"
+                    steps:
+                      - log:
+                          message: "Function executed successfully: ${body[result]}"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Function error: ${body[error]}"
+                        loggingLevel: ERROR
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ibm-cos
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: aws2-s3
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/ibm-cos
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Stores and retrieves objects from IBM Cloud Object Storage (S3-compatible)
+    - route:
+        id: ibm-cos-upload-route
+        from:
+          uri: "direct:ibm-cos-upload"
+          steps:
+            - setHeader:
+                name: CamelAwsS3Key
+                simple: "integration/${date:now:yyyy/MM/dd}/${exchangeId}.json"
+            - setHeader:
+                name: CamelAwsS3ContentType
+                constant: "application/json"
+            - log:
+                message: "Uploading to IBM COS: ${headers[CamelAwsS3Key]}"
+            - to:
+                uri: "aws2-s3:integration-bucket"
+                parameters:
+                  region: us-south
+                  overrideEndpoint: "https://s3.us-south.cloud-object-storage.appdomain.cloud"
+                  accessKey: "{{ibm.cos.accessKey}}"
+                  secretKey: "{{ibm.cos.secretKey}}"
+                  operation: putObject
+            - log:
+                message: "IBM COS upload complete"
+    - route:
+        id: ibm-cos-poll-route
+        from:
+          uri: "aws2-s3:integration-inbox"
+          parameters:
+            region: us-south
+            overrideEndpoint: "https://s3.us-south.cloud-object-storage.appdomain.cloud"
+            accessKey: "{{ibm.cos.accessKey}}"
+            secretKey: "{{ibm.cos.secretKey}}"
+            deleteAfterRead: "true"
+            prefix: "incoming/"
+            delay: "30000"
+          steps:
+            - log:
+                message: "IBM COS object: ${headers[CamelAwsS3Key]}"
+            - convertBodyTo:
+                type: "java.lang.String"
+            - to:
+                uri: "direct:process-cos-object"
+---
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: salesforce-query
+  labels:
+    platform.io/catalog-category: cloud-services
+    platform.io/camel-component: salesforce
+spec:
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  gitRepository: https://gitea.example.com/user1/salesforce-query
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters:
+      - local
+  kaotoDesign: |
+    # Queries Salesforce objects and syncs data
+    - route:
+        id: salesforce-query-route
+        from:
+          uri: "timer:sf-sync"
+          parameters:
+            period: "300000"
+          steps:
+            - log:
+                message: "Querying Salesforce for recent opportunities"
+            - to:
+                uri: "salesforce:query"
+                parameters:
+                  sObjectQuery: "SELECT Id, Name, Amount, StageName, CloseDate, Account.Name FROM Opportunity WHERE LastModifiedDate > LAST_N_HOURS:1 AND StageName != 'Closed Won' ORDER BY Amount DESC LIMIT 50"
+                  rawPayload: "true"
+                  clientId: "{{salesforce.clientId}}"
+                  clientSecret: "{{salesforce.clientSecret}}"
+                  userName: "{{salesforce.username}}"
+                  password: "{{salesforce.password}}"
+                  loginUrl: "https://login.salesforce.com"
+            - unmarshal:
+                json:
+                  library: Jackson
+            - log:
+                message: "Salesforce returned ${body[totalSize]} opportunities"
+            - split:
+                jsonpath: "$.records[*]"
+                steps:
+                  - log:
+                      message: "Opportunity: ${body[Name]}, Amount=$${body[Amount]}, Stage=${body[StageName]}"
+                  - marshal:
+                      json:
+                        library: Jackson
+                  - to:
+                      uri: "kafka:salesforce-opportunities"
+                      parameters:
+                        brokers: "my-cluster-kafka-bootstrap:9092"
