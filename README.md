@@ -38,7 +38,20 @@
 - **Observable** — OpenTelemetry instrumentation with real-time SSE telemetry for canvas node coloring
 - **Auto-scaling Workers** — HPA v2-driven worker pods scale on CPU and memory utilization
 - **Multi-cluster** — Target multiple clusters from a single IntegrationFlow spec via ArgoCD ApplicationSets
+- **SonataFlow Integration** — Auto-deploys SonataFlow CRs to the OpenShift Serverless Logic operator with Management Console links
+- **Lifecycle Management** — Pause/Resume/Stop, scheduled execution, declarative retry + circuit breaker
+- **Platform Dashboard** — Real-time health monitoring of Operator, Kaoto, Gitea, ArgoCD, Tekton, OTel
 - **Apache 2.0 License** — Free to use, modify, and distribute
+
+## Screenshots
+
+| Integration Flows | Visual Diagram | Kaoto Designer |
+|---|---|---|
+| ![Flows](docs/images/console-plugin.png) | ![Visualizer](docs/images/console-plugin-saga.png) | ![Kaoto](docs/images/console-plugin-kaoto.png) |
+
+| YAML Editor | Spec & Status | Platform Status |
+|---|---|---|
+| ![Editor](docs/images/console-plugin-editor.png) | ![Spec](docs/images/console-plugin-spec.png) | ![Status](docs/images/console-plugin-status.png) |
 
 ## Architecture Overview
 

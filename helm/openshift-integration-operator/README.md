@@ -239,18 +239,36 @@ The operator watches `IntegrationFlow` custom resources in the `platform.io/v1al
 | Field | Type | Description |
 |---|---|---|
 | `engine` | enum | `CAMEL` or `SONATAFLOW` — selects the worker runtime engine |
+| `integrationType` | enum | `CAMEL_ROUTE`, `CAMEL_KAMELET`, `CAMEL_PIPE`, `CAMEL_TEST`, `SONATAFLOW` |
 | `gitRepository` | string | Git remote URL for scaffolded worker source |
 | `branch` | string | Git branch (default: `main`) |
 | `targetClusters` | []string | Clusters where ArgoCD deploys the worker |
 | `kaotoDesign` | string | Raw Kaoto design — YAML for Camel routes, JSON/YAML for SonataFlow |
+| `desiredState` | string | Lifecycle control: `running`, `paused`, or `stopped` |
+| `schedule` | string | Cron expression for scheduled execution (e.g. `0 2 * * *`) |
+| `resilience.retry` | object | Retry policy: `maxAttempts`, `backoff`, `initialDelay`, `maxDelay` |
+| `resilience.circuitBreaker` | object | Circuit breaker: `failureThreshold`, `halfOpenAfter`, `successThreshold` |
+| `resilience.maxInflightExchanges` | integer | Throttling max inflight exchanges |
+| `alerting.enabled` | boolean | Enable auto-generated PrometheusRule for this flow |
+| `alerting.errorRateThreshold` | number | Error rate threshold (0.05 = 5%) |
+| `owner` | string | OpenShift user with admin access to this flow |
+| `editors` | []string | Users/groups with edit access |
+| `viewers` | []string | Users/groups with read access |
 
 ### Status
 
 | Field | Type | Description |
 |---|---|---|
-| `phase` | enum | `Scaffolding` → `Building` → `Deploying` → `Running` / `Error` |
+| `phase` | enum | `Scaffolding` → `Building` → `Deploying` → `Running` / `Paused` / `Stopped` / `Error` |
 | `gitCommitHash` | string | SHA of the last successful Git push |
 | `argoApplicationName` | string | ArgoCD Application name (e.g. `iflow-<name>`) |
+| `applicationSetName` | string | ArgoCD ApplicationSet name |
+| `currentState` | string | Current lifecycle state (`running`, `paused`, `stopped`) |
+| `circuitBreakerState` | string | Circuit breaker state (`open`, `closed`) |
+| `sonataFlowName` | string | SonataFlow CR name in kogito-bpm namespace |
+| `sonataFlowNamespace` | string | Namespace where the SonataFlow CR was deployed |
+| `sonataFlowReady` | string | SonataFlow CR readiness status |
+| `prometheusRuleName` | string | Auto-generated PrometheusRule name for alerting |
 | `message` | string | Human-readable status or error message |
 
 ### Example: Apache Camel Flow
@@ -335,13 +353,18 @@ The operator ClusterRole includes permissions for:
 | `apiextensions.k8s.io` | `customresourcedefinitions` | get, list, watch, create, update, patch |
 | `platform.io` | `integrationflows`, `integrationflows/status`, `integrationflows/finalizers` | get, list, watch, create, update, patch, delete |
 | `tekton.dev` | `pipelineruns` | get, list, watch, create, delete |
-| `argoproj.io` | `applications`, `applicationsets` | get, list, watch, create, update, patch |
-| `""` (core) | `configmaps`, `secrets`, `services`, `events` | get, list, watch, create, update, patch |
+| `argoproj.io` | `applications`, `applicationsets` | get, list, watch, create, update, patch, delete |
+| `monitoring.coreos.com` | `prometheusrules` | get, list, watch, create, update, patch, delete |
+| `batch` | `cronjobs` | get, list, watch, create, update, patch, delete |
+| `sonataflow.org` | `sonataflows`, `sonataflows/status` | get, list, watch, create, update, patch, delete |
+| `""` (core) | `configmaps`, `secrets`, `services`, `events`, `pods` | get, list, watch, create, update, patch |
 | `apps` | `deployments` | get, list, watch, create, update, patch, delete |
 
 ## API Endpoints
 
 The operator exposes the following REST endpoints on port 8080:
+
+### Telemetry & MCP
 
 | Method | Path | Description |
 |---|---|---|
@@ -349,6 +372,24 @@ The operator exposes the following REST endpoints on port 8080:
 | GET | `/api/telemetry/snapshot/{flowId}` | Point-in-time snapshot of node status |
 | GET | `/api/mcp/tools?serverUrl=<url>` | List available MCP tools from a server |
 | POST | `/api/mcp/tools/{toolName}/call?serverUrl=<url>` | Invoke an MCP tool |
+
+### Flow Lifecycle & Operations
+
+| Method | Path | Description |
+|---|---|---|
+| PATCH | `/api/flows/{name}/state` | Change flow state (`running`, `paused`, `stopped`) |
+| PUT | `/api/flows/{name}/design` | Update flow design and sync to Git |
+| POST | `/api/flows/{name}/rollback?commitHash=<hash>` | Rollback flow to a previous Git commit |
+| POST | `/api/flows/{name}/circuit/{action}` | Open/close circuit breaker (`open`, `close`) |
+| POST | `/api/flows/{name}/promote?to=<namespace>` | Promote flow to another namespace |
+| GET | `/api/flows/{name}/history` | Get flow Git history metadata |
+| GET | `/api/flows/{name}/dependencies` | Get flows that depend on this flow |
+| GET | `/api/flows/{name}/sonataflow` | Get SonataFlow CR deployment status |
+
+### Health & OpenAPI
+
+| Method | Path | Description |
+|---|---|---|
 | GET | `/q/health/live` | Liveness probe |
 | GET | `/q/health/ready` | Readiness probe |
 | GET | `/q/openapi` | OpenAPI 3.0 specification |

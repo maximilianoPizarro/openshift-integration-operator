@@ -273,6 +273,7 @@
       <a href="index.html" class="logo"><img src="images/logo.svg" alt="" width="24" height="24" style="vertical-align: middle; margin-right: 6px;">OpenShift Integration Operator</a>
       <ul>
         <li><a href="#features">Features</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
         <li><a href="#quickstart">Quick Start</a></li>
         <li><a href="architecture.html">Architecture</a></li>
         <li><a href="quickstart.html">Guide</a></li>
@@ -372,6 +373,57 @@ oc get crd integrationflows.platform.io</code></pre>
         <p style="margin-top: 1.25rem; color: var(--text-muted);">
           See the full <a href="quickstart.html">Quick Start Guide</a> for IntegrationFlow examples and console plugin access.
         </p>
+      </div>
+    </section>
+
+    <section id="screenshots">
+      <div class="container">
+        <h2>Console Plugin</h2>
+        <p class="section-lead">Integration Platform embedded in the OpenShift Console — manage flows, monitor services, and design workflows visually.</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+          <figure style="margin: 0;">
+            <a href="images/console-plugin.png" target="_blank">
+              <img src="images/console-plugin.png" alt="Integration Flows list with search, filters, and resource links" loading="lazy"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+            </a>
+            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Integration Flows — search, type/phase filters, Pods &amp; Pipeline links</figcaption>
+          </figure>
+          <figure style="margin: 0;">
+            <a href="images/console-plugin-saga.png" target="_blank">
+              <img src="images/console-plugin-saga.png" alt="Visual flow diagram with branching logic" loading="lazy"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+            </a>
+            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Visual Flow Diagram — branching logic, click-to-YAML highlighting</figcaption>
+          </figure>
+          <figure style="margin: 0;">
+            <a href="images/console-plugin-kaoto.png" target="_blank">
+              <img src="images/console-plugin-kaoto.png" alt="Kaoto visual designer embedded in OpenShift Console" loading="lazy"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+            </a>
+            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Kaoto Designer — visual Camel route editor embedded in the console</figcaption>
+          </figure>
+          <figure style="margin: 0;">
+            <a href="images/console-plugin-editor.png" target="_blank">
+              <img src="images/console-plugin-editor.png" alt="YAML editor with Git sync" loading="lazy"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+            </a>
+            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">YAML Editor — edit and save with automatic Git sync</figcaption>
+          </figure>
+          <figure style="margin: 0;">
+            <a href="images/console-plugin-spec.png" target="_blank">
+              <img src="images/console-plugin-spec.png" alt="IntegrationFlow spec viewer" loading="lazy"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+            </a>
+            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Spec &amp; Status — lifecycle controls, circuit breaker, RBAC, alerting</figcaption>
+          </figure>
+          <figure style="margin: 0;">
+            <a href="images/console-plugin-status.png" target="_blank">
+              <img src="images/console-plugin-status.png" alt="Platform status dashboard" loading="lazy"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+            </a>
+            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Platform Status — real-time health checks for all external services</figcaption>
+          </figure>
+        </div>
       </div>
     </section>
 

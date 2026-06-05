@@ -101,3 +101,21 @@ annotations:
       description: MCP Bridge for AI tool discovery and invocation
     - kind: added
       description: HPA v2 worker autoscaling with configurable thresholds
+    - kind: added
+      description: SonataFlow CR auto-deployment to OpenShift Serverless Logic operator (kogito-bpm)
+    - kind: added
+      description: Git sync on flow modification — Save pushes design changes to Git immediately
+    - kind: added
+      description: Platform Status dashboard — real-time health checks for Operator, Kaoto, Gitea, ArgoCD, Tekton, OTel
+    - kind: added
+      description: Flow Overview dashboard — KPI cards, flow distribution by type/phase, recent builds
+    - kind: added
+      description: Pause/Resume/Stop lifecycle controls, circuit breaker toggle, scheduled execution
+    - kind: added
+      description: Declarative retry policy and circuit breaker configuration in IntegrationFlow spec
+    - kind: added
+      description: PrometheusRule auto-generation for per-flow alerting
+    - kind: added
+      description: RBAC for SonataFlow CRs, PrometheusRules, CronJobs, and ApplicationSets
+    - kind: added
+      description: values.schema.json for Helm chart validation and IDE autocompletion

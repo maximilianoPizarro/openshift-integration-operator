@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "OpenShift Integration Operator Helm Values",
+  "description": "Configuration values for the OpenShift Integration Operator chart — Real-Time Integration & Orchestration Platform with Apache Camel, SonataFlow, Kaoto, and GitOps",
+  "type": "object",
+  "properties": {
+    "operator": {
+      "type": "object",
+      "description": "Operator deployment configuration",
+      "properties": {
+        "image": {
+          "type": "object",
+          "description": "Container image for the operator",
+          "properties": {
+            "repository": {
+              "type": "string",
+              "description": "Operator container image repository",
+              "default": "quay.io/maximilianopizarro/openshift-integration-operator"
+            },
+            "tag": {
+              "type": "string",
+              "description": "Image tag",
+              "default": "v0.2.0"
+            },
+            "pullPolicy": {
+              "type": "string",
+              "description": "Image pull policy",
+              "enum": ["Always", "IfNotPresent", "Never"],
+              "default": "IfNotPresent"
+            }
+          },
+          "required": ["repository", "tag"]
+        },
+        "replicas": {
+          "type": "integer",
+          "description": "Number of operator pod replicas",
+          "minimum": 1,
+          "default": 1
+        },
+        "resources": {
+          "type": "object",
+          "description": "CPU and memory resource limits/requests",
+          "properties": {
+            "requests": {
+              "type": "object",
+              "properties": {
+                "cpu": { "type": "string", "description": "CPU request", "default": "250m" },
+                "memory": { "type": "string", "description": "Memory request", "default": "512Mi" }
+              }
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "cpu": { "type": "string", "description": "CPU limit", "default": "1000m" },
+                "memory": { "type": "string", "description": "Memory limit", "default": "1Gi" }
+              }
+            }
+          }
+        },
+        "serviceAccount": {
+          "type": "object",
+          "description": "ServiceAccount configuration",
+          "properties": {
+            "create": {
+              "type": "boolean",
+              "description": "Create a dedicated ServiceAccount",
+              "default": true
+            },
+            "name": {
+              "type": "string",
+              "description": "ServiceAccount name",
+              "default": "integration-operator-sa"
+            }
+          }
+        }
+      }
+    },
+    "workers": {
+      "type": "object",
+      "description": "Worker pod autoscaling (HPA) configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable HPA for worker pods",
+          "default": true
+        },
+        "minReplicas": {
+          "type": "integer",
+          "description": "Minimum worker replicas",
+          "minimum": 0,
+          "default": 1
+        },
+        "maxReplicas": {
+          "type": "integer",
+          "description": "Maximum worker replicas",
+          "minimum": 1,
+          "default": 10
+        },
+        "targetCPUUtilization": {
+          "type": "integer",
+          "description": "Target CPU utilization percentage for scaling",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 70
+        },
+        "targetMemoryUtilization": {
+          "type": "integer",
+          "description": "Target memory utilization percentage for scaling",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 80
+        },
+        "resources": {
+          "type": "object",
+          "description": "Default resource requests/limits for worker pods",
+          "properties": {
+            "requests": {
+              "type": "object",
+              "properties": {
+                "cpu": { "type": "string", "default": "500m" },
+                "memory": { "type": "string", "default": "512Mi" }
+              }
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "cpu": { "type": "string", "default": "2000m" },
+                "memory": { "type": "string", "default": "2Gi" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "description": "OpenTelemetry configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable OpenTelemetry instrumentation and collector integration",
+          "default": true
+        },
+        "otelCollectorEndpoint": {
+          "type": "string",
+          "description": "OTel Collector gRPC endpoint URL",
+          "format": "uri",
+          "default": "http://integration-otel-collector:4317"
+        }
+      }
+    },
+    "git": {
+      "type": "object",
+      "description": "Git provider configuration — supports Gitea, GitHub, and GitLab with auto-detection",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Git provider type. 'auto' detects from the gitRepository URL in each IntegrationFlow CR",
+          "enum": ["auto", "gitea", "github", "gitlab"],
+          "default": "auto"
+        },
+        "url": {
+          "type": "string",
+          "description": "Base API URL for the git provider. Empty means auto-detect from CR gitRepository",
+          "default": ""
+        },
+        "username": {
+          "type": "string",
+          "description": "Git authentication username",
+          "default": ""
+        },
+        "password": {
+          "type": "string",
+          "description": "Git authentication password or token",
+          "default": ""
+        },
+        "org": {
+          "type": "string",
+          "description": "Git organization or owner for repository creation",
+          "default": ""
+        }
+      }
+    },
+    "gitea": {
+      "type": "object",
+      "description": "Legacy Gitea-specific configuration (overrides git.* equivalents for backward compatibility)",
+      "properties": {
+        "url": { "type": "string", "description": "Gitea API URL", "default": "" },
+        "username": { "type": "string", "description": "Gitea username", "default": "" },
+        "password": { "type": "string", "description": "Gitea password", "default": "" },
+        "org": { "type": "string", "description": "Gitea organization", "default": "" }
+      }
+    },
+    "github": {
+      "type": "object",
+      "description": "GitHub-specific configuration",
+      "properties": {
+        "url": { "type": "string", "description": "GitHub API URL", "default": "https://api.github.com" },
+        "token": { "type": "string", "description": "GitHub personal access token", "default": "" }
+      }
+    },
+    "gitlab": {
+      "type": "object",
+      "description": "GitLab-specific configuration",
+      "properties": {
+        "url": { "type": "string", "description": "GitLab API URL", "default": "https://gitlab.com" },
+        "token": { "type": "string", "description": "GitLab personal access token", "default": "" }
+      }
+    },
+    "argocd": {
+      "type": "object",
+      "description": "ArgoCD / OpenShift GitOps integration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable ArgoCD ApplicationSet creation for multi-cluster deployment",
+          "default": true
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Namespace where ArgoCD is installed",
+          "default": "openshift-gitops"
+        }
+      }
+    },
+    "kaoto": {
+      "type": "object",
+      "description": "Kaoto visual designer deployment",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Deploy the Kaoto visual designer alongside the operator",
+          "default": true
+        },
+        "image": {
+          "type": "object",
+          "properties": {
+            "repository": { "type": "string", "default": "quay.io/kaotoio/kaoto-app" },
+            "tag": { "type": "string", "default": "main" }
+          }
+        },
+        "replicas": {
+          "type": "integer",
+          "description": "Kaoto replica count",
+          "minimum": 0,
+          "default": 1
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "requests": {
+              "type": "object",
+              "properties": {
+                "cpu": { "type": "string", "default": "100m" },
+                "memory": { "type": "string", "default": "256Mi" }
+              }
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "cpu": { "type": "string", "default": "500m" },
+                "memory": { "type": "string", "default": "512Mi" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "consolePlugin": {
+      "type": "object",
+      "description": "OpenShift Console Dynamic Plugin — extends the console with Integration Platform views",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Deploy the console plugin (adds Integration Platform section to OpenShift Console navigation)",
+          "default": true
+        },
+        "image": {
+          "type": "object",
+          "properties": {
+            "repository": {
+              "type": "string",
+              "description": "Console plugin container image",
+              "default": "quay.io/maximilianopizarro/integration-console-plugin"
+            },
+            "tag": {
+              "type": "string",
+              "description": "Console plugin image tag",
+              "default": "v0.2.0"
+            }
+          }
+        },
+        "replicas": {
+          "type": "integer",
+          "description": "Console plugin replica count",
+          "minimum": 0,
+          "default": 1
+        }
+      }
+    },
+    "namespace": {
+      "type": "string",
+      "description": "Target namespace for all platform resources",
+      "default": "openshift-integration"
+    }
+  },
+  "required": ["operator", "namespace"]
+}
