@@ -5,6 +5,8 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     {{- include "operator.labels" . | nindent 4 }}
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: {{ include "operator.fullname" . }}-serving-cert
 spec:
   type: ClusterIP
   ports:
@@ -12,5 +14,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: {{ .Values.operator.proxyPort | default 8443 }}
+      targetPort: https
+      protocol: TCP
+      name: https
   selector:
     {{- include "operator.selectorLabels" . | nindent 4 }}

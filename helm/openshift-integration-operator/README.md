@@ -184,6 +184,28 @@ helm uninstall integration-operator --namespace openshift-integration
 | `consolePlugin.image.tag` | Console plugin image tag | `v0.2.0` |
 | `consolePlugin.replicas` | Console plugin replicas | `1` |
 
+### SonataFlow
+
+| Parameter | Description | Default |
+|---|---|---|
+| `sonataflow.enabled` | Auto-deploy SonataFlow CRs to Serverless Logic operator | `true` |
+| `sonataflow.namespace` | Target namespace for SonataFlow CRs | `kogito-bpm` |
+| `sonataflow.crNamePrefix` | Prefix for generated SonataFlow CR names | `iflow-` |
+| `sonataflow.apiVersion` | SonataFlow CRD apiVersion | `sonataflow.org/v1alpha08` |
+| `sonataflow.consoleUrl` | Management Console URL (auto-detected if empty) | `""` |
+| `sonataflow.consoleRouteHost` | Route host for embedded console iframe | `sonataflow-management-console-kogito-bpm` |
+
+### Ephemeral (Quick Try)
+
+| Parameter | Description | Default |
+|---|---|---|
+| `ephemeral.enabled` | Enable ephemeral deployment mode | `true` |
+| `ephemeral.defaultTtlSeconds` | Default TTL when not specified in CR | `3600` |
+| `ephemeral.maxTtlSeconds` | Maximum TTL for extend API | `86400` |
+| `ephemeral.camelWorkerImage` | Container image for ephemeral Camel route workers | `quay.io/.../camel-yaml-worker:v0.2.0` |
+| `ephemeral.camelTestImage` | Container image for ephemeral Camel test jobs | `quay.io/.../camel-test-runner:v0.2.0` |
+| `ephemeral.camelK.detect` | Auto-detect Camel K for Kamelet/Pipe ephemeral deploys | `true` |
+
 ### General
 
 | Parameter | Description | Default |
@@ -259,7 +281,7 @@ The operator watches `IntegrationFlow` custom resources in the `platform.io/v1al
 
 | Field | Type | Description |
 |---|---|---|
-| `phase` | enum | `Scaffolding` → `Building` → `Deploying` → `Running` / `Paused` / `Stopped` / `Error` |
+| `phase` | enum | `Scaffolding` → `Building` → `Deploying` → `Running` / `Paused` / `Stopped` / `Expired` / `Error` |
 | `gitCommitHash` | string | SHA of the last successful Git push |
 | `argoApplicationName` | string | ArgoCD Application name (e.g. `iflow-<name>`) |
 | `applicationSetName` | string | ArgoCD ApplicationSet name |
@@ -382,6 +404,9 @@ The operator exposes the following REST endpoints on port 8080:
 | POST | `/api/flows/{name}/rollback?commitHash=<hash>` | Rollback flow to a previous Git commit |
 | POST | `/api/flows/{name}/circuit/{action}` | Open/close circuit breaker (`open`, `close`) |
 | POST | `/api/flows/{name}/promote?to=<namespace>` | Promote flow to another namespace |
+| POST | `/api/flows/{name}/promote-to-gitops` | Promote ephemeral flow to GitOps |
+| POST | `/api/flows/{name}/ephemeral/extend?seconds=` | Extend ephemeral TTL |
+| GET | `/api/flows/{name}/logs` | Fetch worker pod logs |
 | GET | `/api/flows/{name}/history` | Get flow Git history metadata |
 | GET | `/api/flows/{name}/dependencies` | Get flows that depend on this flow |
 | GET | `/api/flows/{name}/sonataflow` | Get SonataFlow CR deployment status |
@@ -435,11 +460,11 @@ oc apply -f target/kubernetes/integrationflows.platform.io-v1.yml
 
 ### Console plugin shows "Failed to load scripts"
 
-1. Verify the plugin pod is running and serving over HTTPS:
+1. Verify the plugin Deployment is running and serving over HTTPS on port 9443:
 ```bash
 oc get pods -n openshift-integration -l app=integration-console-plugin
 oc exec -n openshift-integration deployment/integration-console-plugin -- \
-  curl -sk https://localhost:8443/plugin-manifest.json
+  curl -sk https://localhost:9443/plugin-manifest.json
 ```
 
 2. Check plugin is enabled in the console operator:

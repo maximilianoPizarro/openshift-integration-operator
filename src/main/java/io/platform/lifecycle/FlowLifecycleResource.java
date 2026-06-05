@@ -32,6 +32,12 @@ public class FlowLifecycleResource {
     @Inject
     io.platform.ephemeral.EphemeralCleanupService ephemeralCleanupService;
 
+    @Inject
+    FlowLogService flowLogService;
+
+    @Inject
+    io.platform.service.git.GitUrlResolver gitUrlResolver;
+
     @PATCH
     @Path("/{name}/state")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -164,7 +170,7 @@ public class FlowLifecycleResource {
             client.resources(IntegrationFlow.class).inNamespace(NAMESPACE).resource(flow).update();
 
             // Also push the updated design directly to Git for immediate sync
-            String gitRepo = flow.getSpec().getGitRepository();
+            String gitRepo = gitUrlResolver.resolve(flow.getSpec().getGitRepository());
             String branch = flow.getSpec().getBranch();
             if (gitRepo != null && !gitRepo.isBlank()) {
                 try {
@@ -351,6 +357,48 @@ public class FlowLifecycleResource {
             return new String[]{parts[parts.length - 2], parts[parts.length - 1]};
         }
         return new String[]{"", parts[0]};
+    }
+
+    @GET
+    @Path("/{name}/logs")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getLogs(@PathParam("name") String name,
+                            @QueryParam("tailLines") @DefaultValue("500") int tailLines,
+                            @QueryParam("container") String container) {
+        try {
+            var flow = client.resources(IntegrationFlow.class)
+                    .inNamespace(NAMESPACE).withName(name).get();
+            if (flow == null) return Response.status(404).entity(Map.of("error", "Flow not found")).build();
+
+            var result = flowLogService.fetchLogs(flow, tailLines, container);
+            return Response.ok(Map.of(
+                    "name", name,
+                    "namespace", result.pod().namespace(),
+                    "podName", result.pod().podName(),
+                    "container", result.pod().container() != null ? result.pod().container() : "",
+                    "containers", result.containers(),
+                    "logs", result.logs(),
+                    "timestamp", result.timestamp()
+            )).build();
+        } catch (IllegalStateException e) {
+            return Response.status(404).entity(Map.of("error", e.getMessage())).build();
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to fetch logs for %s", name);
+            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+        }
+    }
+
+    @GET
+    @Path("/{name}/resources")
+    public Response getResources(@PathParam("name") String name) {
+        try {
+            var flow = client.resources(IntegrationFlow.class)
+                    .inNamespace(NAMESPACE).withName(name).get();
+            if (flow == null) return Response.status(404).entity(Map.of("error", "Flow not found")).build();
+            return Response.ok(flowLogService.listResources(flow)).build();
+        } catch (Exception e) {
+            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+        }
     }
 
     @GET

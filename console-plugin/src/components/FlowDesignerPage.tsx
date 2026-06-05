@@ -27,10 +27,18 @@ import EphemeralBanner from './ephemeral/EphemeralBanner';
 import EphemeralBadge from './ephemeral/EphemeralBadge';
 import ExtendTtlModal from './ephemeral/ExtendTtlModal';
 import PromoteToGitOpsModal from './ephemeral/PromoteToGitOpsModal';
+import FlowLogsTab from './FlowLogsTab';
+import ConfirmLifecycleModal from './modals/ConfirmLifecycleModal';
+import { API_BASE, NAMESPACE, PROXY_BASE } from '../constants';
+import { buildPodLinks } from '../utils/podLinks';
 
-const API_BASE = '/api/kubernetes/apis/platform.io/v1alpha1';
-const PROXY_BASE = '/api/proxy/plugin/openshift-integration-operator/backend';
-const NAMESPACE = 'openshift-integration';
+interface PlatformConfig {
+  kaotoUrl?: string;
+  kaotoRouteHost?: string;
+  sonataFlowConsoleUrl?: string;
+  sonataFlowConsoleRouteHost?: string;
+  sonataFlowEnabled?: boolean;
+}
 
 interface IntegrationFlow {
   metadata: { name: string; namespace: string };
@@ -100,18 +108,26 @@ function getBaseAppsDomain(): string {
   return 'apps.cluster.local';
 }
 
-function getKaotoUrl(): string {
-  return `https://kaoto-openshift-integration.${getBaseAppsDomain()}`;
+function resolveKaotoUrl(config: PlatformConfig | null): string {
+  if (config?.kaotoUrl) return config.kaotoUrl;
+  const host = config?.kaotoRouteHost || `kaoto-${NAMESPACE}`;
+  return `https://${host}.${getBaseAppsDomain()}`;
 }
 
-function getSonataFlowConsoleUrl(): string {
-  return `https://sonataflow-management-console-kogito-bpm.${getBaseAppsDomain()}`;
+function resolveSonataFlowConsoleUrl(config: PlatformConfig | null): string {
+  if (config?.sonataFlowConsoleUrl) return config.sonataFlowConsoleUrl;
+  const host = config?.sonataFlowConsoleRouteHost || 'sonataflow-management-console-kogito-bpm';
+  return `https://${host}.${getBaseAppsDomain()}`;
 }
 
-const KAOTO_URL = getKaotoUrl();
-const SONATAFLOW_CONSOLE_URL = getSonataFlowConsoleUrl();
+type TabId = 'visual' | 'kaoto' | 'sonataflow' | 'design' | 'spec' | 'status' | 'history' | 'dependencies' | 'logs';
 
-type TabId = 'visual' | 'kaoto' | 'sonataflow' | 'design' | 'spec' | 'status' | 'history' | 'dependencies';
+function initialTabFromUrl(): TabId {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  if (tab === 'logs') return 'logs';
+  return 'visual';
+}
 
 const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const flowName = match?.params?.name || extractFlowName();
@@ -121,7 +137,9 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const [design, setDesign] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const [saved, setSaved] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<TabId>('visual');
+  const [activeTab, setActiveTab] = React.useState<TabId>(initialTabFromUrl());
+  const [platformConfig, setPlatformConfig] = React.useState<PlatformConfig | null>(null);
+  const [lifecycleModal, setLifecycleModal] = React.useState<'pause' | 'stop' | null>(null);
   const [zoom, setZoom] = React.useState(1);
   const [fullscreen, setFullscreen] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
@@ -132,6 +150,16 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const [copiedDesign, setCopiedDesign] = React.useState(false);
   const [showExtendModal, setShowExtendModal] = React.useState(false);
   const [showPromoteModal, setShowPromoteModal] = React.useState(false);
+
+  const kaotoUrl = resolveKaotoUrl(platformConfig);
+  const sonataFlowConsoleUrl = resolveSonataFlowConsoleUrl(platformConfig);
+
+  React.useEffect(() => {
+    fetch(`${PROXY_BASE}/api/config`)
+      .then(r => r.ok ? r.json() : null)
+      .then(cfg => { if (cfg) setPlatformConfig(cfg); })
+      .catch(() => undefined);
+  }, []);
   const [bannerDismissed, setBannerDismissed] = React.useState(false);
 
   const fetchFlow = React.useCallback(async () => {
@@ -330,7 +358,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             {saved && <span style={{ color: '#3e8635', fontSize: '13px' }}>Saved!</span>}
             {gitSyncStatus && <span style={{ color: '#2b9af3', fontSize: '11px' }}>{gitSyncStatus}</span>}
             {phase === 'Running' && (
-              <Button variant="warning" onClick={() => changeState('paused')} isDisabled={stateChanging}>
+              <Button variant="warning" onClick={() => setLifecycleModal('pause')} isDisabled={stateChanging}>
                 {'\u23F8'} Pause
               </Button>
             )}
@@ -340,7 +368,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
               </Button>
             )}
             {phase !== 'Stopped' && (
-              <Button variant="danger" onClick={() => { if (confirm('Stop this flow?')) changeState('stopped'); }} isDisabled={stateChanging}>
+              <Button variant="danger" onClick={() => setLifecycleModal('stop')} isDisabled={stateChanging}>
                 {'\u25A0'} Stop
               </Button>
             )}
@@ -385,6 +413,18 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
         isOpen={showPromoteModal}
         onClose={() => setShowPromoteModal(false)}
         onPromoted={fetchFlow}
+      />
+      <ConfirmLifecycleModal
+        isOpen={lifecycleModal !== null}
+        action={lifecycleModal || 'pause'}
+        flowName={flowName}
+        onClose={() => setLifecycleModal(null)}
+        onConfirm={() => {
+          if (lifecycleModal === 'pause') changeState('paused');
+          if (lifecycleModal === 'stop') changeState('stopped');
+          setLifecycleModal(null);
+        }}
+        loading={stateChanging}
       />
 
       {/* Tabs + Content + Sidebar */}
@@ -446,13 +486,13 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                     <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontStyle: 'italic' }}>
                       Paste into Kaoto Source tab to sync
                     </span>
-                    <Button variant="link" component="a" href={KAOTO_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', marginLeft: 'auto' }}>
+                    <Button variant="link" component="a" href={kaotoUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', marginLeft: 'auto' }}>
                       Open in new tab &#x2197;
                     </Button>
                   </div>
                   {renderZoomToolbar()}
                   <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-                    <iframe src={KAOTO_URL}
+                    <iframe src={kaotoUrl}
                       style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
                       title="Kaoto Designer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
                     <div style={{ width: '280px', borderLeft: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
@@ -477,8 +517,8 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                   const sfNs = flow?.status?.sonataFlowNamespace || 'kogito-bpm';
                   const sfReady = flow?.status?.sonataFlowReady;
                   const sfWorkflowUrl = sfName
-                    ? `${SONATAFLOW_CONSOLE_URL}/Workflow/${sfName}`
-                    : SONATAFLOW_CONSOLE_URL;
+                    ? `${sonataFlowConsoleUrl}/Workflow/${sfName}`
+                    : sonataFlowConsoleUrl;
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 260px)' }}>
                       <div style={{ padding: '8px 12px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
@@ -627,6 +667,10 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
               }}>{JSON.stringify(flow.spec, null, 2)}</pre>
             </Tab>
 
+            <Tab eventKey="logs" title={<TabTitleText>Logs</TabTitleText>}>
+              <FlowLogsTab flowName={flowName} />
+            </Tab>
+
             <Tab eventKey="status" title={<TabTitleText>Status</TabTitleText>}>
               <pre style={{
                 margin: 0, padding: '16px', overflow: 'auto', minHeight: '300px',
@@ -650,33 +694,47 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                 <DescriptionListTerm>Resources</DescriptionListTerm>
                 <DescriptionListDescription>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <Button variant="link" isInline component="a"
-                      href={`/k8s/ns/${NAMESPACE}/pods?labelSelector=platform.io%2Fflow-name%3D${flowName}`}>
-                      <span style={{ color: '#3e8635' }}>{'\u25A3'}</span> Pods
-                    </Button>
-                    {!isEphemeral && (
-                      <Button variant="link" isInline component="a"
-                        href={`/k8s/ns/${NAMESPACE}/tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`}>
-                        <span style={{ color: '#f0ab00' }}>{'\u29D7'}</span> PipelineRuns
-                      </Button>
-                    )}
-                    {!isEphemeral && flow.status?.argoApplicationName && (
-                      <Button variant="link" isInline component="a"
-                        href={`/k8s/ns/openshift-gitops/argoproj.io~v1alpha1~Application/${flow.status.argoApplicationName}`}>
-                        <span style={{ color: '#2b9af3' }}>{'\u21BB'}</span> ArgoCD App
-                      </Button>
-                    )}
+                    {(() => {
+                      const links = buildPodLinks(flowName, flow.status?.sonataFlowNamespace);
+                      return (
+                        <>
+                          <Button variant="link" isInline component="a" href={`/integration-flows/${flowName}?tab=logs`}>
+                            <span style={{ color: '#2b9af3' }}>{'\u2630'}</span> Logs
+                          </Button>
+                          <Button variant="link" isInline component="a" href={links.runtimePodsUrl}>
+                            <span style={{ color: '#3e8635' }}>{'\u25A3'}</span> Runtime Pods
+                          </Button>
+                          {!isEphemeral && (
+                            <Button variant="link" isInline component="a" href={links.buildPodsUrl}>
+                              <span style={{ color: '#6a6e73' }}>{'\u2699'}</span> Build Pods
+                            </Button>
+                          )}
+                          {!isEphemeral && (
+                            <Button variant="link" isInline component="a"
+                              href={`/k8s/ns/${NAMESPACE}/tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`}>
+                              <span style={{ color: '#f0ab00' }}>{'\u29D7'}</span> PipelineRuns
+                            </Button>
+                          )}
+                          {!isEphemeral && flow.status?.argoApplicationName && (
+                            <Button variant="link" isInline component="a"
+                              href={`/k8s/ns/openshift-gitops/argoproj.io~v1alpha1~Application/${flow.status.argoApplicationName}`}>
+                              <span style={{ color: '#2b9af3' }}>{'\u21BB'}</span> ArgoCD App
+                            </Button>
+                          )}
+                        </>
+                      );
+                    })()}
                     {flow.spec.gitRepository && !isEphemeral && (
                       <Button variant="link" isInline component="a"
                         href={flow.spec.gitRepository} target="_blank" rel="noopener noreferrer">
                         <span style={{ color: '#8476d1' }}>{'\u2197'}</span> Git Repository
                       </Button>
                     )}
-                    {isSonataFlow && (() => {
+                    {isSonataFlow && (platformConfig?.sonataFlowEnabled !== false) && (() => {
                       const sfName = flow?.status?.sonataFlowName;
                       const sfLink = sfName
-                        ? `${SONATAFLOW_CONSOLE_URL}/Workflow/${sfName}`
-                        : SONATAFLOW_CONSOLE_URL;
+                        ? `${sonataFlowConsoleUrl}/Workflow/${sfName}`
+                        : sonataFlowConsoleUrl;
                       return (
                         <>
                           <Button variant="link" isInline component="a" href={sfLink} target="_blank" rel="noopener noreferrer">

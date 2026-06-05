@@ -12,16 +12,20 @@ globs: ["**/*.java", "**/*.yaml", "**/*.yml", "**/*.tsx", "**/*.ts"]
 - TypeScript/React for OpenShift Console Dynamic Plugin
 
 ## Package Structure
-- `io.platform.api.v1alpha1` -- CRD model classes (IntegrationFlow, Spec, Status, EngineType)
+- `io.platform.api.v1alpha1` -- CRD model classes (IntegrationFlow, Spec, Status, EngineType, DeploymentMode, EphemeralSpec)
 - `io.platform.operator` -- JOSDK Reconciler implementations
+- `io.platform.ephemeral` -- Ephemeral runtime deployers and cleanup (Quick Try mode)
+- `io.platform.lifecycle` -- Flow lifecycle REST API (pause/resume/stop, extend TTL, promote, logs)
 - `io.platform.service` -- Business logic (ScaffoldingService, GitOpsService)
+- `io.platform.service.git` -- GitProvider implementations and GitUrlResolver (placeholder host rewrite)
 - `io.platform.telemetry` -- REST/SSE telemetry endpoints
 - `io.platform.mcp` -- MCP (Model Context Protocol) bridge for AI tool calling
 
 ## JOSDK Patterns
 - Reconcilers implement `Reconciler<T>` and are annotated with `@ControllerConfiguration`
 - Always use `UpdateControl.patchStatus()` for status updates, never `updateResource()`
-- Status transitions follow: Scaffolding -> Building -> Deploying -> Running | Error
+- Status transitions follow: Scaffolding -> Building -> Deploying -> Running | Paused | Stopped | Expired | Error
+- Ephemeral flows (`deploymentMode: EPHEMERAL`) skip GitOps; `Expired` phase set when TTL elapses
 - Use Fabric8 `KubernetesClient` for creating Tekton PipelineRun resources
 - CDI injection with `@Inject`, services are `@ApplicationScoped`
 

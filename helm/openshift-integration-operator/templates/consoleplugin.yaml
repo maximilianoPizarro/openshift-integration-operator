@@ -15,7 +15,7 @@ spec:
         service:
           name: {{ include "operator.fullname" . }}
           namespace: {{ .Values.namespace }}
-          port: 8080
+          port: {{ .Values.operator.proxyPort | default 8443 }}
   backend:
     type: Service
     service:

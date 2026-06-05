@@ -27,6 +27,9 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+            - name: https
+              containerPort: {{ .Values.operator.proxyPort | default 8443 }}
+              protocol: TCP
           env:
             - name: QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .Values.telemetry.otelCollectorEndpoint }}
@@ -68,6 +71,38 @@ spec:
               value: {{ .Values.ephemeral.camelWorkerImage | quote }}
             - name: EPHEMERAL_CAMEL_TEST_IMAGE
               value: {{ .Values.ephemeral.camelTestImage | quote }}
+            - name: PLATFORM_NAMESPACE
+              value: {{ .Values.namespace | quote }}
+            - name: SONATAFLOW_ENABLED
+              value: {{ .Values.sonataflow.enabled | quote }}
+            - name: SONATAFLOW_NAMESPACE
+              value: {{ .Values.sonataflow.namespace | quote }}
+            - name: SONATAFLOW_CR_NAME_PREFIX
+              value: {{ .Values.sonataflow.crNamePrefix | quote }}
+            - name: SONATAFLOW_API_VERSION
+              value: {{ .Values.sonataflow.apiVersion | quote }}
+            - name: SONATAFLOW_CONSOLE_URL
+              value: {{ .Values.sonataflow.consoleUrl | quote }}
+            - name: SONATAFLOW_CONSOLE_ROUTE_HOST
+              value: {{ .Values.sonataflow.consoleRouteHost | quote }}
+            - name: KAOTO_INSTANCE_URL
+              value: {{ .Values.kaoto.instanceUrl | quote }}
+            - name: KAOTO_ROUTE_HOST
+              value: {{ .Values.kaoto.routeHost | quote }}
+            - name: ARGOCD_NAMESPACE
+              value: {{ .Values.argocd.namespace | quote }}
+            - name: QUARKUS_HTTP_SSL_PORT
+              value: {{ .Values.operator.proxyPort | default 8443 | quote }}
+            - name: QUARKUS_HTTP_SSL_CERTIFICATE_FILES
+              value: /etc/serving-cert/tls.crt
+            - name: QUARKUS_HTTP_SSL_CERTIFICATE_KEY_FILES
+              value: /etc/serving-cert/tls.key
+            - name: QUARKUS_HTTP_INSECURE_REQUESTS
+              value: enabled
+          volumeMounts:
+            - name: serving-cert
+              readOnly: true
+              mountPath: /etc/serving-cert
           livenessProbe:
             httpGet:
               path: /q/health/live
@@ -82,3 +117,8 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.operator.resources | nindent 12 }}
+      volumes:
+        - name: serving-cert
+          secret:
+            secretName: {{ include "operator.fullname" . }}-serving-cert
+            defaultMode: 420

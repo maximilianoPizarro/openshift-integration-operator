@@ -16,7 +16,9 @@ import io.platform.api.v1alpha1.TargetingSpec;
 import io.platform.ephemeral.EphemeralCleanupService;
 import io.platform.ephemeral.EphemeralResourceLabels;
 import io.platform.ephemeral.EphemeralRuntimeService;
+import io.platform.lifecycle.FlowLifecycleService;
 import io.platform.service.ArgoService;
+import io.platform.service.git.GitUrlResolver;
 import io.platform.service.GitOpsService;
 import io.platform.service.ScaffoldingService;
 import jakarta.inject.Inject;
@@ -54,6 +56,24 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
     @Inject
     EphemeralCleanupService ephemeralCleanupService;
 
+    @Inject
+    FlowLifecycleService flowLifecycleService;
+
+    @Inject
+    GitUrlResolver gitUrlResolver;
+
+    @ConfigProperty(name = "sonataflow.enabled", defaultValue = "true")
+    boolean sonataFlowEnabled;
+
+    @ConfigProperty(name = "sonataflow.namespace", defaultValue = "kogito-bpm")
+    String sonataFlowNamespace;
+
+    @ConfigProperty(name = "sonataflow.cr-name-prefix", defaultValue = "iflow-")
+    String sonataFlowCrPrefix;
+
+    @ConfigProperty(name = "sonataflow.api-version", defaultValue = "sonataflow.org/v1alpha08")
+    String sonataFlowApiVersion;
+
     @ConfigProperty(name = "ephemeral.default-ttl-seconds", defaultValue = "3600")
     int defaultTtlSeconds;
 
@@ -77,12 +97,18 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         // Idempotency guard: skip re-scaffolding if the design hasn't changed
         String currentDesignHash = computeDesignHash(spec.getKaotoDesign());
         DeploymentMode mode = spec.getDeploymentMode();
-        if (!currentDesignHash.isEmpty()
+        String desiredState = spec.getDesiredState();
+        boolean lifecyclePending = desiredState != null
+                && !desiredState.equals(status.getCurrentState());
+        if (!lifecyclePending
+                && !currentDesignHash.isEmpty()
                 && currentDesignHash.equals(status.getLastScaffoldedHash())
                 && status.getPhase() != null
                 && (status.getPhase() == IntegrationFlowStatus.Phase.Running
                     || status.getPhase() == IntegrationFlowStatus.Phase.Building
                     || status.getPhase() == IntegrationFlowStatus.Phase.Deploying
+                    || status.getPhase() == IntegrationFlowStatus.Phase.Paused
+                    || status.getPhase() == IntegrationFlowStatus.Phase.Stopped
                     || (mode == DeploymentMode.EPHEMERAL && status.getPhase() != IntegrationFlowStatus.Phase.Expired))) {
             LOG.debugf("Design hash unchanged for '%s/%s', skipping reconciliation",
                     resource.getMetadata().getNamespace(), resource.getMetadata().getName());
@@ -123,12 +149,12 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                 namespace, flowName, type, spec.getEngine());
 
         // Handle lifecycle state changes (pause/stop/resume)
-        String desiredState = spec.getDesiredState();
         if (desiredState != null) {
             switch (desiredState) {
                 case "paused" -> {
                     if (status.getPhase() != IntegrationFlowStatus.Phase.Paused) {
                         LOG.infof("Pausing flow '%s'", flowName);
+                        flowLifecycleService.apply(resource, "paused");
                         status.setPhase(IntegrationFlowStatus.Phase.Paused);
                         status.setCurrentState("paused");
                         status.setMessage("Flow paused by user");
@@ -140,6 +166,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                 case "stopped" -> {
                     if (status.getPhase() != IntegrationFlowStatus.Phase.Stopped) {
                         LOG.infof("Stopping flow '%s'", flowName);
+                        flowLifecycleService.apply(resource, "stopped");
                         status.setPhase(IntegrationFlowStatus.Phase.Stopped);
                         status.setCurrentState("stopped");
                         status.setMessage("Flow stopped by user");
@@ -152,6 +179,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                     if (status.getPhase() == IntegrationFlowStatus.Phase.Paused
                             || status.getPhase() == IntegrationFlowStatus.Phase.Stopped) {
                         LOG.infof("Resuming flow '%s'", flowName);
+                        flowLifecycleService.apply(resource, "running");
                         status.setPhase(IntegrationFlowStatus.Phase.Resuming);
                         status.setCurrentState("running");
                         status.setMessage("Flow resuming...");
@@ -162,7 +190,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         }
 
         // For SONATAFLOW, create/update the SonataFlow CR early (independent of Git/Tekton)
-        if (type == IntegrationType.SONATAFLOW) {
+        if (type == IntegrationType.SONATAFLOW && sonataFlowEnabled) {
             reconcileSonataFlowCR(namespace, flowName, spec.getKaotoDesign(), status);
         }
 
@@ -174,7 +202,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
             // Step 2: Push to Git via GitOps service
             var gitResult = gitOpsService.pushScaffold(
-                    spec.getGitRepository(), spec.getBranch(), scaffoldResult);
+                    gitUrlResolver.resolve(spec.getGitRepository()), spec.getBranch(), scaffoldResult);
 
             if (!gitResult.success()) {
                 status.setPhase(IntegrationFlowStatus.Phase.Error);
@@ -190,7 +218,8 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
             // Step 3: Trigger Tekton PipelineRun for the build
             status.setPhase(IntegrationFlowStatus.Phase.Building);
-            createTektonPipelineRun(namespace, flowName, spec.getGitRepository(),
+            createTektonPipelineRun(namespace, flowName,
+                    gitUrlResolver.resolve(spec.getGitRepository()),
                     spec.getBranch(), gitResult.commitHash());
 
             // Step 4: Reconcile ArgoCD ApplicationSet for multi-cluster deployment
@@ -230,8 +259,16 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
             // Step 7: Final status update
             status.setCurrentState("running");
-            if (deployments.isEmpty()) {
+            String buildPhase = resolveBuildPhase(flowName, namespace);
+            if ("Failed".equals(buildPhase) && !hasHealthyLocalDeployment(flowName, namespace)) {
+                status.setPhase(IntegrationFlowStatus.Phase.Error);
+                status.setMessage("Latest PipelineRun failed; check build logs");
+                updateCondition(status, "BuildComplete", "False", "BuildFailed", "Latest Tekton build failed");
+            } else if (deployments.isEmpty()) {
                 status.setMessage("ApplicationSet reconciled, waiting for cluster Applications");
+                status.setPhase("Failed".equals(buildPhase)
+                        ? IntegrationFlowStatus.Phase.Building
+                        : IntegrationFlowStatus.Phase.Deploying);
             } else {
                 status.setMessage("ApplicationSet reconciled, tracking "
                         + deployments.size() + " cluster deployment(s)");
@@ -412,8 +449,8 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
      */
     private void reconcileSonataFlowCR(String namespace, String flowName,
                                         String kaotoDesign, IntegrationFlowStatus status) {
-        String sonataFlowNs = "kogito-bpm";
-        String sfName = "iflow-" + flowName;
+        String sonataFlowNs = sonataFlowNamespace;
+        String sfName = sonataFlowCrPrefix + flowName;
 
         if (kaotoDesign == null || kaotoDesign.isBlank()) {
             LOG.warnf("No kaotoDesign provided for SonataFlow CR '%s', skipping creation", sfName);
@@ -429,7 +466,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             java.util.Map<String, Object> flowSpec = objectMapper.readValue(kaotoDesign, java.util.Map.class);
 
             var sonataFlow = new io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder()
-                    .withApiVersion("sonataflow.org/v1alpha08")
+                    .withApiVersion(sonataFlowApiVersion)
                     .withKind("SonataFlow")
                     .withMetadata(new ObjectMetaBuilder()
                             .withName(sfName)
@@ -542,15 +579,56 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         podSpec.put("restartPolicy", "OnFailure");
         podSpec.put("containers", java.util.List.of(container));
 
-        var spec = Map.of(
+        var cronSpec = Map.of(
                 "schedule", (Object) schedule,
                 "jobTemplate", Map.of(
                         "spec", Map.of(
                                 "template", Map.of("spec", podSpec))));
-        cronJob.setAdditionalProperties(Map.of("spec", spec));
+        cronJob.setAdditionalProperties(Map.of("spec", cronSpec));
 
         kubernetesClient.resource(cronJob).inNamespace(namespace).createOrReplace();
         LOG.infof("Reconciled CronJob '%s' for scheduled execution of flow '%s'", cronJobName, flowName);
+    }
+
+    private String resolveBuildPhase(String flowName, String namespace) {
+        try {
+            var runs = kubernetesClient.genericKubernetesResources("tekton.dev/v1", "PipelineRun")
+                    .inNamespace(namespace)
+                    .withLabel(EphemeralResourceLabels.LABEL_FLOW_NAME, flowName)
+                    .list().getItems();
+            if (runs.isEmpty()) {
+                return "Unknown";
+            }
+            var latest = runs.stream()
+                    .max(java.util.Comparator.comparing(r -> r.getMetadata().getCreationTimestamp()))
+                    .orElse(null);
+            if (latest == null) {
+                return "Unknown";
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> statusMap = (Map<String, Object>) latest.getAdditionalProperties().get("status");
+            if (statusMap == null) {
+                return "Running";
+            }
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> conditions = (List<Map<String, Object>>) statusMap.get("conditions");
+            if (conditions == null || conditions.isEmpty()) {
+                return "Running";
+            }
+            Object reason = conditions.get(0).get("reason");
+            return reason != null ? reason.toString() : "Unknown";
+        } catch (Exception e) {
+            LOG.debugf("Could not resolve build phase for %s: %s", flowName, e.getMessage());
+            return "Unknown";
+        }
+    }
+
+    private boolean hasHealthyLocalDeployment(String flowName, String namespace) {
+        var dep = kubernetesClient.apps().deployments()
+                .inNamespace(namespace).withName(sonataFlowCrPrefix + flowName).get();
+        return dep != null && dep.getStatus() != null
+                && dep.getStatus().getReadyReplicas() != null
+                && dep.getStatus().getReadyReplicas() > 0;
     }
 
     private UpdateControl<IntegrationFlow> reconcileEphemeral(IntegrationFlow resource,
@@ -564,6 +642,22 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         LOG.infof("Reconciling ephemeral IntegrationFlow '%s/%s' type=%s", namespace, flowName, type);
         status.setDeploymentMode(DeploymentMode.EPHEMERAL);
         ensureFinalizer(resource, EphemeralResourceLabels.FINALIZER);
+
+        String desiredState = spec.getDesiredState();
+        if ("paused".equals(desiredState) || "stopped".equals(desiredState)) {
+            flowLifecycleService.apply(resource, desiredState);
+            status.setPhase("paused".equals(desiredState)
+                    ? IntegrationFlowStatus.Phase.Paused : IntegrationFlowStatus.Phase.Stopped);
+            status.setCurrentState(desiredState);
+            status.setMessage("Ephemeral flow " + desiredState + " by user");
+            finalizeStatus(resource, status);
+            return UpdateControl.patchStatus(resource);
+        }
+        if ("running".equals(desiredState) && status.getEphemeralWorkerRef() != null
+                && (status.getPhase() == IntegrationFlowStatus.Phase.Paused
+                || status.getPhase() == IntegrationFlowStatus.Phase.Stopped)) {
+            flowLifecycleService.apply(resource, "running");
+        }
 
         if (spec.getKaotoDesign() == null || spec.getKaotoDesign().isBlank()) {
             status.setPhase(IntegrationFlowStatus.Phase.Error);

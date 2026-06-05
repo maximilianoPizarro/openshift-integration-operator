@@ -294,6 +294,9 @@ openshift-integration-operator/
 │   ├── quickstart.html
 │   ├── operations.html
 │   └── artifacthub-repo.yml
+├── scripts/
+│   ├── deploy-cluster.sh      # Binary-build operator + plugin, Helm upgrade
+│   └── cleanup-failed-builds.sh
 ├── .github/workflows/
 │   └── build-push-quay.yml    # CI: build, test, push to Quay.io
 └── pom.xml                      # Quarkus + Operator SDK
@@ -325,6 +328,7 @@ The operator exposes REST endpoints at `http://localhost:8080`:
 | `POST /api/mcp/tools/{name}/call` | Invoke an MCP tool |
 | `POST /api/flows/{name}/ephemeral/extend?seconds=` | Extend ephemeral TTL |
 | `POST /api/flows/{name}/promote-to-gitops` | Promote ephemeral flow to GitOps |
+| `GET /api/flows/{name}/logs` | Fetch worker pod logs (console Logs tab) |
 
 ### Build Console Plugin
 
@@ -334,6 +338,15 @@ npm install
 npm run build
 ```
 
+Or build the container image (nginx on port 9443):
+
+```bash
+docker build -f console-plugin/Dockerfile \
+  -t quay.io/maximilianopizarro/integration-console-plugin:dev console-plugin
+```
+
+The plugin proxies API calls through `/api/proxy/plugin/integration-console-plugin/backend` (telemetry, lifecycle, logs).
+
 ### Build Container Image
 
 ```bash
@@ -342,12 +355,24 @@ docker build -f src/main/docker/Dockerfile.jvm \
   -t quay.io/maximilianopizarro/openshift-integration-operator:dev .
 ```
 
+## Deploy to a Cluster
+
+For development clusters with OpenShift binary builds:
+
+```bash
+mvn -B package -DskipTests
+./scripts/deploy-cluster.sh
+```
+
+This builds operator + console plugin ImageStreams, runs Helm upgrade, and prints ephemeral smoke-test commands.
+
+For Quay.io images, use Helm with `operator.image.tag` and `consolePlugin.image.tag` as shown in the [Helm README](helm/openshift-integration-operator/README.md).
+
 ## CI/CD Overview
 
 | Workflow | Trigger | Actions |
 |----------|---------|---------|
 | **Build and push to Quay.io** | Push to `main`, tags `v*`, manual dispatch | Maven test, push operator + console plugin images to Quay.io, package Helm chart to `docs/` |
-| **Deploy to OpenShift** | After successful build, manual dispatch | `oc login`, Helm upgrade, verify rollout, create sample IntegrationFlow |
 
 Images are published to:
 

@@ -15,20 +15,24 @@ public class DefaultGitOpsService implements GitOpsService {
     @Inject
     GitProviderFactory factory;
 
+    @Inject
+    io.platform.service.git.GitUrlResolver gitUrlResolver;
+
     @ConfigProperty(name = "git.provider", defaultValue = "auto")
     String gitProvider;
 
     @Override
     public GitPushResult pushScaffold(String gitRepository, String branch,
                                        ScaffoldingService.ScaffoldResult scaffoldResult) {
-        LOG.infof("Pushing scaffold to %s branch=%s provider=%s", gitRepository, branch, gitProvider);
+        String resolvedRepo = gitUrlResolver.resolve(gitRepository);
+        LOG.infof("Pushing scaffold to %s branch=%s provider=%s", resolvedRepo, branch, gitProvider);
 
         try {
-            String[] ownerRepo = extractOwnerAndRepo(gitRepository);
+            String[] ownerRepo = extractOwnerAndRepo(resolvedRepo);
             String owner = ownerRepo[0];
             String repoName = ownerRepo[1];
 
-            GitProvider provider = factory.getProvider(gitRepository, gitProvider);
+            GitProvider provider = factory.getProvider(resolvedRepo, gitProvider);
             provider.ensureRepoExists(owner, repoName);
 
             String workflowPath = scaffoldResult.projectStructureSummary().contains("CAMEL")

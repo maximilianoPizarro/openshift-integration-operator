@@ -8,7 +8,7 @@ import {
   TextInput,
 } from '@patternfly/react-core';
 
-const PROXY_BASE = '/api/proxy/plugin/openshift-integration-operator/backend';
+import { PROXY_BASE } from '../../constants';
 
 function getCsrfToken(): string {
   const match = document.cookie.match(/csrf-token=([^;]+)/);

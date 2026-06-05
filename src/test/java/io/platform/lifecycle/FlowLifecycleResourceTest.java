@@ -28,6 +28,23 @@ class FlowLifecycleResourceTest {
     }
 
     @Test
+    void getLogsReturnsNotFoundForMissingFlow() {
+        given()
+            .when().get("/api/flows/nonexistent-flow-xyz/logs")
+            .then()
+            .statusCode(404);
+    }
+
+    @Test
+    void getConfigReturnsPlatformSettings() {
+        given()
+            .when().get("/api/config")
+            .then()
+            .statusCode(200)
+            .body("platformNamespace", notNullValue());
+    }
+
+    @Test
     void promoteToGitOpsRequiresRepository() {
         given()
             .contentType("application/json")

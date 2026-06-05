@@ -72,6 +72,13 @@
               "default": "integration-operator-sa"
             }
           }
+        },
+        "proxyPort": {
+          "type": "integer",
+          "description": "HTTPS port for OpenShift console plugin backend proxy",
+          "minimum": 1024,
+          "maximum": 65535,
+          "default": 8443
         }
       }
     },
@@ -232,6 +239,16 @@
           "description": "Deploy the Kaoto visual designer alongside the operator",
           "default": true
         },
+        "instanceUrl": {
+          "type": "string",
+          "description": "Full Kaoto URL override (empty = auto-detect from route host)",
+          "default": ""
+        },
+        "routeHost": {
+          "type": "string",
+          "description": "Kaoto route hostname prefix (default kaoto-{namespace})",
+          "default": ""
+        },
         "image": {
           "type": "object",
           "properties": {
@@ -264,6 +281,18 @@
             }
           }
         }
+      }
+    },
+    "sonataflow": {
+      "type": "object",
+      "description": "SonataFlow / Serverless Logic integration (non-blocking when disabled)",
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "namespace": { "type": "string", "default": "kogito-bpm" },
+        "crNamePrefix": { "type": "string", "default": "iflow-" },
+        "apiVersion": { "type": "string", "default": "sonataflow.org/v1alpha08" },
+        "consoleUrl": { "type": "string", "default": "" },
+        "consoleRouteHost": { "type": "string", "default": "sonataflow-management-console-kogito-bpm" }
       }
     },
     "consolePlugin": {

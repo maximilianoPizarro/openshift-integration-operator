@@ -439,6 +439,7 @@ curl -s -u "user1:password" \
               <li>Navigate to <strong>OpenShift Console &rarr; Integration Platform &rarr; Integration Flows</strong></li>
               <li>Verify <code>smoke-test</code> appears in the list</li>
               <li>Click on <code>smoke-test</code> &rarr; <strong>Visual Flow</strong> tab shows the route</li>
+              <li>Switch to <strong>Logs</strong> tab &rarr; worker pod logs stream via proxy (<code>integration-console-plugin/backend</code>)</li>
               <li>Switch to <strong>Kaoto Designer</strong> tab &rarr; Kaoto loads</li>
             </ul>
           </li>
@@ -601,13 +602,17 @@ curl -X POST "https://&lt;operator&gt;/api/flows/ephemeral-camel-demo/promote-to
 
         <div class="troubleshoot-item">
           <h4>1. Console plugin not loading / React error</h4>
-          <p><strong>Check:</strong> Verify the ConsolePlugin resource exists and is properly configured.</p>
-          <pre><code>oc get consoleplugin integration-console-plugin -o yaml</code></pre>
-          <p><strong>Check:</strong> Ensure all JS chunk files are present in the ConfigMap.</p>
-          <pre><code>oc get cm integration-plugin-content -n openshift-integration \
-  -o jsonpath='{.data}' \
-  | python3 -c "import sys,json; [print(k) for k in json.loads(sys.stdin.read())]"</code></pre>
-          <p><strong>Fix:</strong> Rebuild the plugin and recreate the ConfigMap with all <code>dist/*.js</code> files.</p>
+          <p><strong>Check:</strong> Verify the ConsolePlugin resource and Deployment are running (plugin is served from a container, not a ConfigMap).</p>
+          <pre><code>oc get consoleplugin integration-console-plugin -o yaml
+oc get deploy integration-console-plugin -n openshift-integration
+oc get pods -n openshift-integration -l app=integration-console-plugin</code></pre>
+          <p><strong>Check:</strong> Plugin manifest is served over HTTPS on port 9443:</p>
+          <pre><code>oc exec deploy/integration-console-plugin -n openshift-integration -- \
+  curl -sk https://localhost:9443/plugin-manifest.json</code></pre>
+          <p><strong>Fix:</strong> Rebuild the plugin image and rollout the Deployment:</p>
+          <pre><code>docker build -f console-plugin/Dockerfile -t &lt;registry&gt;/integration-console-plugin:latest console-plugin
+oc rollout restart deploy/integration-console-plugin -n openshift-integration</code></pre>
+          <p><strong>Proxy:</strong> API calls use <code>/api/proxy/plugin/integration-console-plugin/backend</code>. Ensure the ConsolePlugin <code>spec.proxy</code> alias is <code>backend</code> and plugin name is <code>integration-console-plugin</code>.</p>
         </div>
 
         <div class="troubleshoot-item">
@@ -625,6 +630,7 @@ curl -X POST "https://&lt;operator&gt;/api/flows/ephemeral-camel-demo/promote-to
           <p><strong>Verify credentials:</strong></p>
           <pre><code>oc get deploy openshift-integration-operator -n openshift-integration \
   -o jsonpath='{.spec.template.spec.containers[0].env}'</code></pre>
+          <p><strong>Placeholder URLs:</strong> Example CRs use <code>gitea.example.com</code> — the operator rewrites these to configured provider URLs via <code>GitUrlResolver</code>. Set <code>git.url</code> (or legacy <code>gitea.url</code>) in Helm values to match your cluster Git server.</p>
           <p><strong>Common cause:</strong> TLS certificate issues — the operator uses trust-all for dev environments.</p>
         </div>
 
@@ -643,6 +649,8 @@ curl -X POST "https://&lt;operator&gt;/api/flows/ephemeral-camel-demo/promote-to
           <p><strong>Check PipelineRun status:</strong></p>
           <pre><code>oc get pipelineruns -n openshift-integration
 oc describe pipelinerun &lt;name&gt; -n openshift-integration</code></pre>
+          <p><strong>Clean up failed builds:</strong></p>
+          <pre><code>./scripts/cleanup-failed-builds.sh openshift-integration</code></pre>
           <p><strong>Common causes:</strong></p>
           <ul>
             <li><code>CouldntGetPipeline</code> — Pipeline <code>integration-flow-build</code> not found. Re-deploy with Helm or apply manually.</li>

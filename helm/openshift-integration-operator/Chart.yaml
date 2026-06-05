@@ -96,7 +96,17 @@ annotations:
     - kind: added
       description: Camel BOM dependency management in scaffolded worker pom.xml
     - kind: added
-      description: 8 production-ready example IntegrationFlows
+      description: 9 production-ready example IntegrationFlows including ephemeral Quick Try
+    - kind: added
+      description: Ephemeral Quick Try mode — deploy without Git, TTL extend, promote to GitOps
+    - kind: added
+      description: Console plugin served from Deployment on port 9443 with backend proxy integration-console-plugin
+    - kind: added
+      description: Flow Logs tab — live worker pod logs via operator REST API
+    - kind: fixed
+      description: Operator HTTPS on port 8443 with serving cert for console plugin backend proxy (fixes 502 on logs/telemetry/lifecycle)
+    - kind: added
+      description: GitUrlResolver rewrites placeholder git hosts to configured provider URLs
     - kind: added
       description: MCP Bridge for AI tool discovery and invocation
     - kind: added

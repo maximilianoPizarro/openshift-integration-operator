@@ -14,6 +14,7 @@ operator:
   serviceAccount:
     create: true
     name: integration-operator-sa
+  proxyPort: 8443
 
 workers:
   enabled: true
@@ -61,6 +62,8 @@ argocd:
 
 kaoto:
   enabled: true
+  instanceUrl: ""
+  routeHost: ""
   image:
     repository: quay.io/kaotoio/kaoto-app
     tag: main
@@ -79,6 +82,14 @@ consolePlugin:
     repository: quay.io/maximilianopizarro/integration-console-plugin
     tag: v0.2.0
   replicas: 1
+
+sonataflow:
+  enabled: true
+  namespace: kogito-bpm
+  crNamePrefix: iflow-
+  apiVersion: sonataflow.org/v1alpha08
+  consoleUrl: ""
+  consoleRouteHost: sonataflow-management-console-kogito-bpm
 
 mcp:
   allowedServerUrls: []

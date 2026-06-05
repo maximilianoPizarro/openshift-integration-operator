@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-const PROXY_BASE = '/api/proxy/plugin/openshift-integration-operator/backend';
+import { PROXY_BASE } from '../constants';
 
 interface NodeMetrics {
   nodeId: string;
