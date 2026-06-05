@@ -49,10 +49,36 @@ data:
         {
           "type": "console.navigation/href",
           "properties": {
+            "id": "flow-overview",
+            "name": "Overview",
+            "href": "/integration-overview",
+            "section": "integration-platform"
+          }
+        },
+        {
+          "type": "console.navigation/href",
+          "properties": {
             "id": "integration-flows",
             "name": "Integration Flows",
             "href": "/integration-flows",
             "section": "integration-platform"
+          }
+        },
+        {
+          "type": "console.navigation/href",
+          "properties": {
+            "id": "platform-status",
+            "name": "Platform Status",
+            "href": "/integration-status",
+            "section": "integration-platform"
+          }
+        },
+        {
+          "type": "console.page/route",
+          "properties": {
+            "exact": true,
+            "path": "/integration-overview",
+            "component": { "$codeRef": "flowOverviewPage.default" }
           }
         },
         {
@@ -61,6 +87,14 @@ data:
             "exact": true,
             "path": "/integration-flows",
             "component": { "$codeRef": "integrationFlowPage.default" }
+          }
+        },
+        {
+          "type": "console.page/route",
+          "properties": {
+            "exact": true,
+            "path": "/integration-status",
+            "component": { "$codeRef": "platformStatusPage.default" }
           }
         }
       ],
@@ -71,67 +105,306 @@ data:
   plugin-entry.js: |
     (function() {
       var React;
+      var NS = "openshift-integration";
+      var API = "/api/kubernetes/apis/platform.io/v1alpha1/namespaces/" + NS + "/integrationflows";
+      var CORE = "/api/kubernetes/api/v1/namespaces/" + NS;
+      var APPS = "/api/kubernetes/apis/apps/v1/namespaces/" + NS;
+      var TEKTON = "/api/kubernetes/apis/tekton.dev/v1/namespaces/" + NS;
+      var ARGO = "/api/kubernetes/apis/argoproj.io/v1alpha1/namespaces/openshift-gitops";
+
+      var h = function() { return React.createElement.apply(React, arguments); };
+
+      var TYPE_MAP = {
+        CAMEL_ROUTE: { label: "Camel Route", bg: "#f0ab00", fg: "#1b1d21" },
+        CAMEL_KAMELET: { label: "Kamelet", bg: "#8476d1", fg: "#fff" },
+        CAMEL_PIPE: { label: "Pipe", bg: "#2b9af3", fg: "#fff" },
+        CAMEL_TEST: { label: "Test", bg: "#3e8635", fg: "#fff" },
+        SONATAFLOW: { label: "SonataFlow", bg: "#009596", fg: "#fff" }
+      };
+
+      var PHASE_COLORS = {
+        Running: "#3e8635", Building: "#f0ab00", Deploying: "#0066cc",
+        Scaffolding: "#8476d1", Paused: "#f0ab00", Error: "#c9190b",
+        Stopped: "#6a6e73", Pending: "#6a6e73"
+      };
+
+      function timeAgo(ts) {
+        var sec = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+        if (sec < 60) return sec + "s";
+        var min = Math.floor(sec / 60);
+        if (min < 60) return min + "m";
+        var hr = Math.floor(min / 60);
+        if (hr < 24) return hr + "h";
+        return Math.floor(hr / 24) + "d";
+      }
+
+      function useFetch(url) {
+        var state = React.useState({ data: null, loading: true });
+        var data = state[0].data, loading = state[0].loading, setState = state[1];
+        React.useEffect(function() {
+          var cancelled = false;
+          function doFetch() {
+            fetch(url).then(function(r) { return r.ok ? r.json() : null; })
+              .then(function(d) { if (!cancelled) setState({ data: d, loading: false }); })
+              .catch(function() { if (!cancelled) setState({ data: null, loading: false }); });
+          }
+          doFetch();
+          var interval = setInterval(doFetch, 8000);
+          return function() { cancelled = true; clearInterval(interval); };
+        }, [url]);
+        return { data: data, loading: loading };
+      }
+
+      function Badge(text, bg, fg) {
+        return h("span", { style: { fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "3px", backgroundColor: bg, color: fg, textTransform: "uppercase" } }, text);
+      }
+
+      function StatusDot(color) {
+        return h("span", { style: { display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, marginRight: "6px" } });
+      }
+
+      var th = { padding: "8px 12px", textAlign: "left", fontSize: "11px", fontWeight: 600, color: "#8a8d90", textTransform: "uppercase" };
+      var td = { padding: "10px 12px", fontSize: "13px", verticalAlign: "middle" };
+      var link = { color: "#2b9af3", textDecoration: "none" };
+      var card = { padding: "16px", borderRadius: "8px", border: "1px solid #3c3f42", backgroundColor: "#151515" };
 
       var moduleMap = {
         "./integrationFlowPage": function() {
           return {
             default: function IntegrationFlowPage() {
-              return React.createElement("div", {
-                style: {
-                  padding: "32px",
-                  fontFamily: "RedHatText, Overpass, overpass, helvetica, arial, sans-serif"
-                }
-              },
-                React.createElement("h1", {
-                  style: { fontSize: "24px", fontWeight: 400, marginBottom: "16px" }
-                }, "Integration Flows"),
-                React.createElement("div", {
-                  style: {
-                    background: "#fff",
-                    border: "1px solid #d2d2d2",
-                    borderRadius: "3px",
-                    padding: "24px"
-                  }
-                },
-                  React.createElement("p", {
-                    style: { marginBottom: "16px", color: "#6a6e73" }
-                  }, "Manage your Apache Camel and SonataFlow integration workflows."),
-                  React.createElement("div", {
-                    style: {
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                      gap: "16px"
-                    }
-                  },
-                    React.createElement("div", {
-                      style: {
-                        border: "1px solid #d2d2d2",
-                        borderRadius: "3px",
-                        padding: "16px"
-                      }
-                    },
-                      React.createElement("h3", {
-                        style: { fontSize: "16px", marginBottom: "8px" }
-                      }, "Apache Camel"),
-                      React.createElement("p", {
-                        style: { color: "#6a6e73", fontSize: "14px" }
-                      }, "Enterprise integration patterns for routing and mediation.")
-                    ),
-                    React.createElement("div", {
-                      style: {
-                        border: "1px solid #d2d2d2",
-                        borderRadius: "3px",
-                        padding: "16px"
-                      }
-                    },
-                      React.createElement("h3", {
-                        style: { fontSize: "16px", marginBottom: "8px" }
-                      }, "SonataFlow"),
-                      React.createElement("p", {
-                        style: { color: "#6a6e73", fontSize: "14px" }
-                      }, "CNCF Serverless Workflow orchestration engine.")
-                    )
+              var result = useFetch(API);
+              var flows = (result.data && result.data.items) || [];
+              var searchState = React.useState("");
+              var search = searchState[0], setSearch = searchState[1];
+              var typeFilter = React.useState("");
+              var fType = typeFilter[0], setFType = typeFilter[1];
+              var phaseFilter = React.useState("");
+              var fPhase = phaseFilter[0], setFPhase = phaseFilter[1];
+
+              var filtered = flows.filter(function(f) {
+                var name = f.metadata.name || "";
+                var repo = f.spec.gitRepository || "";
+                var msg = (f.status && f.status.message) || "";
+                var q = search.toLowerCase();
+                var matchSearch = !q || name.toLowerCase().indexOf(q) >= 0 || repo.toLowerCase().indexOf(q) >= 0 || msg.toLowerCase().indexOf(q) >= 0;
+                var iType = f.spec.integrationType || (f.spec.engine === "CAMEL" ? "CAMEL_ROUTE" : "SONATAFLOW");
+                var matchType = !fType || iType === fType;
+                var matchPhase = !fPhase || (f.status && f.status.phase) === fPhase;
+                return matchSearch && matchType && matchPhase;
+              });
+
+              return h("div", { className: "co-m-pane__body", style: { padding: "20px 24px" } },
+                h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" } },
+                  h("div", null,
+                    h("h1", { className: "co-m-pane__heading", style: { margin: 0, fontSize: "20px" } }, "Integration Flows"),
+                    h("span", { className: "co-help-text", style: { fontSize: "12px" } }, flows.length + " Flows in " + NS)
+                  ),
+                  h("a", { href: "/integration-flows/new", className: "pf-c-button pf-m-primary pf-m-small" }, "Create Flow")
+                ),
+                h("div", { style: { display: "flex", gap: "8px", alignItems: "center", marginBottom: "12px", flexWrap: "wrap" } },
+                  h("input", { className: "pf-c-form-control", placeholder: "Search flows...", value: search, onChange: function(e) { setSearch(e.target.value); }, style: { flex: "1 1 200px", maxWidth: "320px", fontSize: "13px" } }),
+                  h("select", { className: "pf-c-form-control", style: { width: "140px", fontSize: "13px" }, value: fType, onChange: function(e) { setFType(e.target.value); } },
+                    h("option", { value: "" }, "All Types"),
+                    h("option", { value: "CAMEL_ROUTE" }, "Camel Route"),
+                    h("option", { value: "CAMEL_KAMELET" }, "Kamelet"),
+                    h("option", { value: "CAMEL_PIPE" }, "Pipe"),
+                    h("option", { value: "SONATAFLOW" }, "SonataFlow")
+                  ),
+                  h("select", { className: "pf-c-form-control", style: { width: "130px", fontSize: "13px" }, value: fPhase, onChange: function(e) { setFPhase(e.target.value); } },
+                    h("option", { value: "" }, "All Phases"),
+                    h("option", { value: "Running" }, "Running"),
+                    h("option", { value: "Building" }, "Building"),
+                    h("option", { value: "Error" }, "Error"),
+                    h("option", { value: "Paused" }, "Paused")
+                  ),
+                  h("span", { style: { marginLeft: "auto", fontSize: "12px", color: "#6a6e73" } }, filtered.length + " results")
+                ),
+                result.loading
+                  ? h("p", { className: "co-help-text" }, "Loading flows...")
+                  : filtered.length === 0
+                    ? h("div", { style: { textAlign: "center", padding: "40px" } }, h("p", { className: "co-help-text" }, "No flows match your criteria"))
+                    : h("table", { style: { width: "100%", borderCollapse: "collapse" } },
+                        h("thead", null, h("tr", { style: { borderBottom: "2px solid #3c3f42" } },
+                          h("th", { style: th }, "Name"),
+                          h("th", { style: th }, "Engine"),
+                          h("th", { style: th }, "Phase"),
+                          h("th", { style: th }, "Repository"),
+                          h("th", { style: th }, "Resources"),
+                          h("th", { style: th }, "Age"),
+                          h("th", { style: Object.assign({}, th, { textAlign: "right" }) }, "Actions")
+                        )),
+                        h("tbody", null, filtered.map(function(f) {
+                          var name = f.metadata.name;
+                          var iType = f.spec.integrationType || (f.spec.engine === "CAMEL" ? "CAMEL_ROUTE" : "SONATAFLOW");
+                          var typeInfo = TYPE_MAP[iType] || TYPE_MAP.CAMEL_ROUTE;
+                          var phase = (f.status && f.status.phase) || "Pending";
+                          var pColor = PHASE_COLORS[phase] || "#6a6e73";
+                          var asName = f.status && f.status.applicationSetName;
+                          return h("tr", { key: name, style: { borderBottom: "1px solid #3c3f42" } },
+                            h("td", { style: td }, h("a", { href: "/integration-flows/" + name, style: Object.assign({}, link, { fontWeight: 500 }) }, name)),
+                            h("td", { style: td }, Badge(typeInfo.label, typeInfo.bg, typeInfo.fg)),
+                            h("td", { style: td }, StatusDot(pColor), h("span", { style: { color: pColor, fontWeight: 500, fontSize: "12px" } }, phase)),
+                            h("td", { style: td }, h("a", { href: f.spec.gitRepository, target: "_blank", style: Object.assign({}, link, { fontSize: "12px" }) }, (f.spec.gitRepository || "").replace(/^https?:\/\//, "").substring(0, 35))),
+                            h("td", { style: td },
+                              h("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } },
+                                h("a", { href: "/k8s/ns/" + NS + "/pods?labelSelector=platform.io%2Fflow-name%3D" + name, style: Object.assign({}, link, { fontSize: "11px" }) }, "Pods"),
+                                h("a", { href: "/k8s/ns/" + NS + "/tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D" + name, style: Object.assign({}, link, { fontSize: "11px" }) }, "Builds"),
+                                asName ? h("a", { href: "/k8s/ns/openshift-gitops/argoproj.io~v1alpha1~ApplicationSet/" + asName, style: Object.assign({}, link, { fontSize: "11px" }) }, "ArgoCD") : null
+                              )
+                            ),
+                            h("td", { style: Object.assign({}, td, { fontSize: "12px", color: "#6a6e73" }) }, timeAgo(f.metadata.creationTimestamp)),
+                            h("td", { style: Object.assign({}, td, { textAlign: "right" }) }, h("a", { href: "/integration-flows/" + name, style: Object.assign({}, link, { fontSize: "12px" }) }, "Edit"))
+                          );
+                        }))
+                      )
+              );
+            }
+          };
+        },
+        "./flowOverviewPage": function() {
+          return {
+            default: function FlowOverviewPage() {
+              var result = useFetch(API);
+              var flows = (result.data && result.data.items) || [];
+              var runCount = flows.filter(function(f) { return f.status && f.status.phase === "Running"; }).length;
+              var errCount = flows.filter(function(f) { return f.status && f.status.phase === "Error"; }).length;
+
+              var typeCounts = {};
+              flows.forEach(function(f) {
+                var t = f.spec.integrationType || (f.spec.engine === "CAMEL" ? "CAMEL_ROUTE" : "SONATAFLOW");
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
+              });
+
+              return h("div", { className: "co-m-pane__body", style: { padding: "20px 24px" } },
+                h("h1", { className: "co-m-pane__heading", style: { margin: 0, fontSize: "20px", marginBottom: "16px" } }, "Flow Overview"),
+                h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px", marginBottom: "24px" } },
+                  h("div", { style: Object.assign({}, card, { borderLeft: "3px solid #2b9af3" }) },
+                    h("div", { style: { fontSize: "32px", fontWeight: 700, color: "#2b9af3" } }, flows.length),
+                    h("div", { style: { fontSize: "12px", color: "#6a6e73" } }, "Total Flows")
+                  ),
+                  h("div", { style: Object.assign({}, card, { borderLeft: "3px solid #3e8635" }) },
+                    h("div", { style: { fontSize: "32px", fontWeight: 700, color: "#3e8635" } }, runCount),
+                    h("div", { style: { fontSize: "12px", color: "#6a6e73" } }, "Running")
+                  ),
+                  h("div", { style: Object.assign({}, card, { borderLeft: "3px solid " + (errCount > 0 ? "#c9190b" : "#3e8635") }) },
+                    h("div", { style: { fontSize: "32px", fontWeight: 700, color: errCount > 0 ? "#c9190b" : "#3e8635" } }, errCount),
+                    h("div", { style: { fontSize: "12px", color: "#6a6e73" } }, "Errors")
                   )
+                ),
+                h("div", { style: card },
+                  h("h3", { style: { fontSize: "14px", fontWeight: 600, marginBottom: "12px" } }, "Flows by Type"),
+                  Object.keys(TYPE_MAP).map(function(k) {
+                    var count = typeCounts[k] || 0;
+                    var pct = flows.length > 0 ? (count / flows.length) * 100 : 0;
+                    return h("div", { key: k, style: { marginBottom: "8px" } },
+                      h("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "4px" } },
+                        h("span", { style: { color: TYPE_MAP[k].bg } }, TYPE_MAP[k].label),
+                        h("span", { style: { color: "#6a6e73" } }, count)
+                      ),
+                      h("div", { style: { height: "6px", borderRadius: "3px", backgroundColor: "#1b1d21" } },
+                        h("div", { style: { height: "100%", borderRadius: "3px", backgroundColor: TYPE_MAP[k].bg, width: pct + "%", transition: "width 0.5s" } })
+                      )
+                    );
+                  }),
+                  h("h3", { style: { fontSize: "14px", fontWeight: 600, margin: "20px 0 12px" } }, "Recently Created"),
+                  flows.slice().sort(function(a, b) { return new Date(b.metadata.creationTimestamp) - new Date(a.metadata.creationTimestamp); }).slice(0, 5).map(function(f) {
+                    return h("div", { key: f.metadata.name, style: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #3c3f42" } },
+                      h("a", { href: "/integration-flows/" + f.metadata.name, style: Object.assign({}, link, { fontSize: "13px" }) }, f.metadata.name),
+                      h("span", { style: { fontSize: "11px", color: "#6a6e73" } }, timeAgo(f.metadata.creationTimestamp))
+                    );
+                  })
+                )
+              );
+            }
+          };
+        },
+        "./platformStatusPage": function() {
+          return {
+            default: function PlatformStatusPage() {
+              var checksState = React.useState([]);
+              var checks = checksState[0], setChecks = checksState[1];
+              var podsState = React.useState([]);
+              var pods = podsState[0], setPods = podsState[1];
+              var loadingState = React.useState(true);
+              var loading = loadingState[0], setLoading = loadingState[1];
+
+              React.useEffect(function() {
+                function checkAll() {
+                  var results = [];
+                  var endpoints = [
+                    { name: "Integration Operator", url: APPS + "/deployments/openshift-integration-operator", desc: "Quarkus operator reconciling CRs", lnk: "/k8s/ns/" + NS + "/deployments/openshift-integration-operator" },
+                    { name: "Console Plugin", url: APPS + "/deployments/integration-console-plugin", desc: "UI serving this interface", lnk: "/k8s/ns/" + NS + "/deployments/integration-console-plugin" },
+                    { name: "Kaoto Designer", url: APPS + "/deployments/kaoto", desc: "Visual Camel editor", lnk: "/k8s/ns/" + NS + "/deployments/kaoto" },
+                    { name: "OTel Collector", url: APPS + "/deployments/integration-otel-collector", desc: "Telemetry aggregation", lnk: "/k8s/ns/" + NS + "/deployments/integration-otel-collector" }
+                  ];
+                  Promise.all(endpoints.map(function(ep) {
+                    return fetch(ep.url).then(function(r) { return r.ok ? r.json() : null; }).then(function(dep) {
+                      var ready = dep ? (dep.status && dep.status.readyReplicas || 0) : 0;
+                      var desired = dep ? (dep.spec && dep.spec.replicas || 1) : 1;
+                      results.push({ name: ep.name, desc: ep.desc, status: ready >= desired ? "healthy" : ready > 0 ? "degraded" : "error", detail: ready + "/" + desired + " ready", link: ep.lnk });
+                    }).catch(function() { results.push({ name: ep.name, desc: ep.desc, status: "error", detail: "Unreachable", link: ep.lnk }); });
+                  })).then(function() {
+                    setChecks(results);
+                    return fetch(CORE + "/pods");
+                  }).then(function(r) { return r.ok ? r.json() : { items: [] }; }).then(function(d) {
+                    setPods((d.items || []).map(function(p) {
+                      var cs = (p.status && p.status.containerStatuses) || [];
+                      return { name: p.metadata.name, phase: (p.status && p.status.phase) || "Unknown", ready: cs.every(function(c) { return c.ready; }), restarts: cs.reduce(function(s, c) { return s + (c.restartCount || 0); }, 0), age: timeAgo(p.metadata.creationTimestamp), component: (p.metadata.labels && (p.metadata.labels["app.kubernetes.io/name"] || p.metadata.labels["app"] || p.metadata.labels["platform.io/component"])) || "unknown" };
+                    }));
+                    setLoading(false);
+                  }).catch(function() { setLoading(false); });
+                }
+                checkAll();
+                var interval = setInterval(checkAll, 15000);
+                return function() { clearInterval(interval); };
+              }, []);
+
+              var sIcon = { healthy: { i: "\u2713", c: "#3e8635" }, degraded: { i: "\u26A0", c: "#f0ab00" }, error: { i: "\u2716", c: "#c9190b" } };
+              var healthy = checks.filter(function(c) { return c.status === "healthy"; }).length;
+
+              return h("div", { className: "co-m-pane__body", style: { padding: "20px 24px" } },
+                h("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "20px" } },
+                  h("div", null,
+                    h("h1", { className: "co-m-pane__heading", style: { margin: 0, fontSize: "20px" } }, "Platform Status"),
+                    h("span", { className: "co-help-text", style: { fontSize: "12px" } }, healthy + "/" + checks.length + " services healthy")
+                  ),
+                  h("button", { className: "pf-c-button pf-m-secondary pf-m-small", onClick: function() { window.location.reload(); } }, "\u21BB Refresh")
+                ),
+                h("h2", { style: { fontSize: "16px", fontWeight: 600, marginBottom: "12px" } }, "External Services"),
+                loading && checks.length === 0
+                  ? h("p", { className: "co-help-text" }, "Checking services...")
+                  : h("div", { style: { display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" } },
+                      checks.map(function(svc) {
+                        var si = sIcon[svc.status] || sIcon.error;
+                        return h("div", { key: svc.name, style: Object.assign({}, card, { display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px" }) },
+                          h("span", { style: { fontSize: "18px", color: si.c, width: "24px", textAlign: "center" } }, si.i),
+                          h("div", { style: { flex: 1 } },
+                            h("div", { style: { fontWeight: 600, fontSize: "13px" } }, svc.name),
+                            h("div", { style: { fontSize: "11px", color: "#6a6e73" } }, svc.desc)
+                          ),
+                          h("div", { style: { textAlign: "right" } },
+                            h("span", { style: { fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "3px", color: si.c, backgroundColor: si.c + "22" } }, svc.status.toUpperCase()),
+                            h("div", { style: { fontSize: "11px", color: "#6a6e73", marginTop: "2px" } }, svc.detail)
+                          ),
+                          svc.link ? h("a", { href: svc.link, style: Object.assign({}, link, { fontSize: "12px" }) }, "\u2197") : null
+                        );
+                      })
+                    ),
+                h("h2", { style: { fontSize: "16px", fontWeight: 600, marginBottom: "12px" } }, "Platform Pods (" + pods.length + ")"),
+                h("table", { style: { width: "100%", borderCollapse: "collapse" } },
+                  h("thead", null, h("tr", { style: { borderBottom: "2px solid #3c3f42" } },
+                    h("th", { style: th }, "Pod"), h("th", { style: th }, "Component"), h("th", { style: th }, "Status"), h("th", { style: th }, "Restarts"), h("th", { style: th }, "Age")
+                  )),
+                  h("tbody", null, pods.map(function(p) {
+                    var pc = p.phase === "Running" && p.ready ? "#3e8635" : p.phase === "Running" ? "#f0ab00" : "#c9190b";
+                    return h("tr", { key: p.name, style: { borderBottom: "1px solid #3c3f42" } },
+                      h("td", { style: td }, h("a", { href: "/k8s/ns/" + NS + "/pods/" + p.name, style: link }, p.name)),
+                      h("td", { style: Object.assign({}, td, { color: "#6a6e73" }) }, p.component),
+                      h("td", { style: td }, h("span", { style: { color: pc, fontWeight: 500 } }, (p.ready ? "\u2713 " : "\u25CB ") + p.phase)),
+                      h("td", { style: Object.assign({}, td, { color: p.restarts > 0 ? "#f0ab00" : "#6a6e73" }) }, p.restarts),
+                      h("td", { style: Object.assign({}, td, { color: "#6a6e73" }) }, p.age)
+                    );
+                  }))
                 )
               );
             }

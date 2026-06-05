@@ -9,10 +9,38 @@
   {
     "type": "console.navigation/href",
     "properties": {
+      "id": "flow-overview",
+      "name": "Overview",
+      "href": "/integration-overview",
+      "section": "integration-platform"
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
       "id": "integration-flows",
       "name": "Integration Flows",
       "href": "/integration-flows",
       "section": "integration-platform"
+    }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "id": "platform-status",
+      "name": "Platform Status",
+      "href": "/integration-status",
+      "section": "integration-platform"
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/integration-overview",
+      "component": {
+        "$codeRef": "flowOverviewPage.FlowOverviewPage"
+      }
     }
   },
   {
@@ -32,6 +60,16 @@
       "path": "/integration-flows/:name",
       "component": {
         "$codeRef": "flowDesignerPage.FlowDesignerPage"
+      }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/integration-status",
+      "component": {
+        "$codeRef": "platformStatusPage.PlatformStatusPage"
       }
     }
   }

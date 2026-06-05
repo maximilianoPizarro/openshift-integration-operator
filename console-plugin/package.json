@@ -14,7 +14,9 @@
     "description": "Real-Time Integration & Orchestration Platform - Apache Camel + SonataFlow with Kaoto designer",
     "exposedModules": {
       "integrationFlowPage": "./src/components/IntegrationFlowPage",
-      "flowDesignerPage": "./src/components/FlowDesignerPage"
+      "flowDesignerPage": "./src/components/FlowDesignerPage",
+      "platformStatusPage": "./src/components/PlatformStatusPage",
+      "flowOverviewPage": "./src/components/FlowOverviewPage"
     },
     "dependencies": {
       "@console/pluginAPI": "*"
