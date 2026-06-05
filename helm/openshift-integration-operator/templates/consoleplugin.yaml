@@ -31,6 +31,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     app: integration-console-plugin
+    app.openshift.io/runtime: golang
     {{- include "operator.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.consolePlugin.replicas }}

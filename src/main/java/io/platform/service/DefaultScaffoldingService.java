@@ -200,11 +200,23 @@ public class DefaultScaffoldingService implements ScaffoldingService {
         return """
                 package io.platform.integration;
 
+                import io.opentelemetry.api.trace.Span;
                 import jakarta.enterprise.context.ApplicationScoped;
+                import org.apache.camel.Exchange;
+                import org.apache.camel.spi.CamelEvent;
 
-                /** Placeholder for future Camel OpenTelemetry span customization. */
+                /**
+                 * Enriches OpenTelemetry spans with Kaoto design metadata so traces
+                 * can be correlated back to the visual nodes in the designer.
+                 */
                 @ApplicationScoped
                 public class KaotoOtelDecorator {
+
+                    public void enrich(Exchange exchange) {
+                        Span span = Span.current();
+                        span.setAttribute("kaoto.node.id", exchange.getFromRouteId());
+                        span.setAttribute("kaoto.flow.name", exchange.getContext().getName());
+                    }
                 }
                 """;
     }
