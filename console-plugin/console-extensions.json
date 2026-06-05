@@ -39,7 +39,7 @@
       "exact": true,
       "path": "/integration-overview",
       "component": {
-        "$codeRef": "flowOverviewPage.FlowOverviewPage"
+        "$codeRef": "flowOverviewPage.default"
       }
     }
   },
@@ -49,7 +49,7 @@
       "exact": true,
       "path": "/integration-flows",
       "component": {
-        "$codeRef": "integrationFlowPage.IntegrationFlowPage"
+        "$codeRef": "integrationFlowPage.default"
       }
     }
   },
@@ -59,7 +59,7 @@
       "exact": true,
       "path": "/integration-flows/:name",
       "component": {
-        "$codeRef": "flowDesignerPage.FlowDesignerPage"
+        "$codeRef": "flowDesignerPage.default"
       }
     }
   },
@@ -69,7 +69,7 @@
       "exact": true,
       "path": "/integration-status",
       "component": {
-        "$codeRef": "platformStatusPage.PlatformStatusPage"
+        "$codeRef": "platformStatusPage.default"
       }
     }
   }

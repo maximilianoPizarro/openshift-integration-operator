@@ -1,11 +1,8 @@
-import { ConsoleRemotePlugin } from '@openshift-console/dynamic-plugin-sdk-webpack';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+/* eslint-disable @typescript-eslint/no-var-requires */
+const path = require('path');
+const { ConsoleRemotePlugin } = require('@openshift-console/dynamic-plugin-sdk-webpack');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const config = {
+module.exports = {
   entry: {},
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
@@ -16,7 +13,7 @@ const config = {
       { test: /\.css$/, use: ['style-loader', 'css-loader'] },
     ],
   },
-  plugins: [new ConsoleRemotePlugin()],
+  plugins: [new ConsoleRemotePlugin({ validateExtensionProperties: false } as any)],
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name]-bundle.js',
@@ -27,5 +24,3 @@ const config = {
     static: path.join(__dirname, 'dist'),
   },
 };
-
-export default config;
