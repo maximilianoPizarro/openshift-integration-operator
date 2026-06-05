@@ -161,6 +161,33 @@ jobs:
           push: true
           tags: ${{ steps.plugin-tags.outputs.tags }}
 
+  build-camel-worker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.QUAY_REGISTRY }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Camel YAML worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./workers/camel-yaml-worker
+          file: ./workers/camel-yaml-worker/Dockerfile.jvm
+          push: true
+          tags: |
+            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/camel-yaml-worker:v0.2.0
+            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/camel-yaml-worker:latest
+
   build-native:
     runs-on: ubuntu-latest
     needs: test

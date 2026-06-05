@@ -1,0 +1,21 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: camel-yaml-worker
+  namespace: openshift-integration
+  labels:
+    app: camel-yaml-worker
+spec:
+  failedBuildsHistoryLimit: 3
+  successfulBuildsHistoryLimit: 3
+  output:
+    to:
+      kind: ImageStreamTag
+      name: camel-yaml-worker:v0.2.0
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile.jvm
+  triggers: []
