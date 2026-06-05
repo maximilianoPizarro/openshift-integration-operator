@@ -7,8 +7,10 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
+import java.util.Optional;
 
 @Path("/api/mcp")
 @Produces(MediaType.APPLICATION_JSON)
@@ -20,6 +22,19 @@ public class MCPResource {
 
     @Inject
     KubernetesClient kubeClient;
+
+    @ConfigProperty(name = "mcp.allowed-server-urls", defaultValue = "")
+    Optional<List<String>> allowedUrls;
+
+    private void validateServerUrl(String serverUrl) {
+        if (allowedUrls.isPresent() && !allowedUrls.get().isEmpty()) {
+            boolean allowed = allowedUrls.get().stream()
+                    .anyMatch(prefix -> serverUrl != null && serverUrl.startsWith(prefix));
+            if (!allowed) {
+                throw new WebApplicationException("Server URL not in allowlist", 403);
+            }
+        }
+    }
 
     private void validateToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -42,6 +57,7 @@ public class MCPResource {
     public List<MCPToolDefinition> listTools(@HeaderParam("Authorization") String authHeader,
                                              @QueryParam("serverUrl") String serverUrl) {
         validateToken(authHeader);
+        validateServerUrl(serverUrl);
         return mcpBridgeService.listTools(serverUrl);
     }
 
@@ -52,6 +68,7 @@ public class MCPResource {
                              @QueryParam("serverUrl") String serverUrl,
                              JsonNode arguments) {
         validateToken(authHeader);
+        validateServerUrl(serverUrl);
         return mcpBridgeService.callTool(serverUrl, toolName, arguments);
     }
 }

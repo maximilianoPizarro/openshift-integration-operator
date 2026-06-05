@@ -1,0 +1,31 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: etl-pipe
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_PIPE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/etl-pipe
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    apiVersion: camel.apache.org/v1
+    kind: Pipe
+    metadata:
+      name: etl-pipe
+    spec:
+      source:
+        ref:
+          kind: Kamelet
+          apiVersion: camel.apache.org/v1
+          name: timer-source
+        properties:
+          message: "Pipe event"
+      sink:
+        ref:
+          kind: Kamelet
+          apiVersion: camel.apache.org/v1
+          name: log-sink

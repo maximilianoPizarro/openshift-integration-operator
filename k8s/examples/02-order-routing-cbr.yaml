@@ -1,0 +1,39 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: order-routing-cbr
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/order-routing-cbr
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: order-routing-cbr
+        from:
+          uri: "platform-http:/api/orders"
+          steps:
+            - log:
+                message: "Received order: ${body}"
+            - unmarshal:
+                json: {}
+            - choice:
+                when:
+                  - simple: "${body[priority]} == 'high'"
+                    steps:
+                      - log:
+                          message: "CRITICAL: order = fast-track"
+                      - setHeader:
+                          name: CamelKafkaTopic
+                          simple: "orders-priority"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "Standard order processing"
+                    - setHeader:
+                        name: CamelKafkaTopic
+                        simple: "orders-standard"

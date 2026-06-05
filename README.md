@@ -199,8 +199,51 @@ metadata:
   namespace: openshift-integration
 spec:
   integrationType: SONATAFLOW
+  engine: SONATAFLOW
   gitRepository: https://gitea.example.com/user1/file-processor-workflow
   branch: main
+  kaotoDesign: |
+    id: file-processor-workflow
+    version: "1.0"
+    specVersion: "0.8"
+    name: File Processor Workflow
+    start: InitState
+    states:
+      - name: InitState
+        type: operation
+        actions:
+          - functionRef:
+              refName: processAction
+        transition: CheckResult
+      - name: CheckResult
+        type: switch
+        dataConditions:
+          - condition: "${ .result == true }"
+            transition: SuccessState
+        defaultCondition:
+          transition: ErrorState
+      - name: SuccessState
+        type: operation
+        actions:
+          - functionRef:
+              refName: notifySuccess
+        end: true
+      - name: ErrorState
+        type: operation
+        actions:
+          - functionRef:
+              refName: handleError
+        end: true
+    functions:
+      - name: processAction
+        type: expression
+        operation: ".result = true"
+      - name: notifySuccess
+        type: expression
+        operation: ".message = \"Success\""
+      - name: handleError
+        type: expression
+        operation: ".message = \"Error handled\""
 EOF
 ```
 

@@ -1,0 +1,29 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: parallel-enrichment
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/parallel-enrichment
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: parallel-enrichment
+        from:
+          uri: "platform-http:/api/enrich"
+          steps:
+            - log:
+                message: "Enriching: ${body}"
+            - multicast:
+                parallelProcessing: true
+                steps:
+                  - to: "direct:enrich-geo"
+                  - to: "direct:enrich-credit"
+                  - to: "direct:enrich-inventory"
+            - log:
+                message: "Enrichment complete"

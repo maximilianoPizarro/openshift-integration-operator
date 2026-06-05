@@ -1,0 +1,55 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: saga-workflow
+  namespace: openshift-integration
+spec:
+  integrationType: SONATAFLOW
+  engine: SONATAFLOW
+  gitRepository: https://gitea.example.com/user1/saga-workflow
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    id: saga-workflow
+    version: "1.0"
+    specVersion: "0.8"
+    name: Saga Workflow
+    start: InitState
+    states:
+      - name: InitState
+        type: operation
+        actions:
+          - functionRef:
+              refName: processAction
+        transition: CheckResult
+      - name: CheckResult
+        type: switch
+        dataConditions:
+          - condition: "${ .result == true }"
+            transition: SuccessState
+        defaultCondition:
+          transition: ErrorState
+      - name: SuccessState
+        type: operation
+        actions:
+          - functionRef:
+              refName: notifySuccess
+        end: true
+      - name: ErrorState
+        type: operation
+        actions:
+          - functionRef:
+              refName: handleError
+        end: true
+    functions:
+      - name: processAction
+        type: expression
+        operation: ".result = true"
+      - name: notifySuccess
+        type: expression
+        operation: ".message = \"Success\""
+      - name: handleError
+        type: expression
+        operation: ".message = \"Error handled\""

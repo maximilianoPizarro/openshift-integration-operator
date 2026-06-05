@@ -33,6 +33,7 @@ public class IntegrationFlowStatus {
     private String sonataFlowName;
     private String sonataFlowNamespace;
     private String sonataFlowReady;
+    private String lastScaffoldedHash;
 
     public Phase getPhase() {
         return phase;
@@ -160,6 +161,14 @@ public class IntegrationFlowStatus {
 
     public void setSonataFlowReady(String sonataFlowReady) {
         this.sonataFlowReady = sonataFlowReady;
+    }
+
+    public String getLastScaffoldedHash() {
+        return lastScaffoldedHash;
+    }
+
+    public void setLastScaffoldedHash(String lastScaffoldedHash) {
+        this.lastScaffoldedHash = lastScaffoldedHash;
     }
 
     public static class Condition {

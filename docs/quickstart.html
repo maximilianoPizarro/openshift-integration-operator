@@ -387,7 +387,24 @@ spec:
   branch: main
   targeting:
     strategy: explicit
-    clusters: [local]</code></pre>
+    clusters: [local]
+  kaotoDesign: |
+    apiVersion: camel.apache.org/v1
+    kind: Kamelet
+    metadata:
+      name: s3-to-db-kamelet-source
+      labels:
+        camel.apache.org/kamelet.type: source
+    spec:
+      definition:
+        title: S3 to Database Kamelet
+      template:
+        from:
+          uri: "timer:tick?period=5000"
+          steps:
+            - setBody:
+                simple: "Kamelet event at ${date:now}"
+            - to: "log:kamelet-output"</code></pre>
 
         <h3>6. Pipe — ETL Pipeline</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
@@ -402,7 +419,25 @@ spec:
   branch: main
   targeting:
     strategy: explicit
-    clusters: [local]</code></pre>
+    clusters: [local]
+  kaotoDesign: |
+    apiVersion: camel.apache.org/v1
+    kind: Pipe
+    metadata:
+      name: etl-pipe
+    spec:
+      source:
+        ref:
+          kind: Kamelet
+          apiVersion: camel.apache.org/v1
+          name: timer-source
+        properties:
+          message: "Pipe event"
+      sink:
+        ref:
+          kind: Kamelet
+          apiVersion: camel.apache.org/v1
+          name: log-sink</code></pre>
 
         <h3>7. SonataFlow — File Processor Workflow</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
@@ -417,7 +452,49 @@ spec:
   branch: main
   targeting:
     strategy: explicit
-    clusters: [local]</code></pre>
+    clusters: [local]
+  kaotoDesign: |
+    id: file-processor-workflow
+    version: "1.0"
+    specVersion: "0.8"
+    name: File Processor Workflow
+    start: InitState
+    states:
+      - name: InitState
+        type: operation
+        actions:
+          - functionRef:
+              refName: processAction
+        transition: CheckResult
+      - name: CheckResult
+        type: switch
+        dataConditions:
+          - condition: "${ .result == true }"
+            transition: SuccessState
+        defaultCondition:
+          transition: ErrorState
+      - name: SuccessState
+        type: operation
+        actions:
+          - functionRef:
+              refName: notifySuccess
+        end: true
+      - name: ErrorState
+        type: operation
+        actions:
+          - functionRef:
+              refName: handleError
+        end: true
+    functions:
+      - name: processAction
+        type: expression
+        operation: ".result = true"
+      - name: notifySuccess
+        type: expression
+        operation: ".message = \"Success\""
+      - name: handleError
+        type: expression
+        operation: ".message = \"Error handled\""</code></pre>
 
         <h3>8. SonataFlow — Saga Pattern</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
@@ -432,7 +509,49 @@ spec:
   branch: main
   targeting:
     strategy: explicit
-    clusters: [local]</code></pre>
+    clusters: [local]
+  kaotoDesign: |
+    id: saga-workflow
+    version: "1.0"
+    specVersion: "0.8"
+    name: Saga Workflow
+    start: InitState
+    states:
+      - name: InitState
+        type: operation
+        actions:
+          - functionRef:
+              refName: processAction
+        transition: CheckResult
+      - name: CheckResult
+        type: switch
+        dataConditions:
+          - condition: "${ .result == true }"
+            transition: SuccessState
+        defaultCondition:
+          transition: ErrorState
+      - name: SuccessState
+        type: operation
+        actions:
+          - functionRef:
+              refName: notifySuccess
+        end: true
+      - name: ErrorState
+        type: operation
+        actions:
+          - functionRef:
+              refName: handleError
+        end: true
+    functions:
+      - name: processAction
+        type: expression
+        operation: ".result = true"
+      - name: notifySuccess
+        type: expression
+        operation: ".message = \"Success\""
+      - name: handleError
+        type: expression
+        operation: ".message = \"Error handled\""</code></pre>
 
         <p>Apply any example with:</p>
         <pre><code>oc apply -f integrationflow.yaml

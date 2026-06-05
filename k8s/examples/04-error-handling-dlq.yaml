@@ -1,0 +1,36 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: error-handling-dlq
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/error-handling-dlq
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: error-handling-dlq
+        from:
+          uri: "platform-http:/api/process"
+          steps:
+            - doTry:
+                steps:
+                  - log:
+                      message: "Processing: ${body}"
+                  - to:
+                      uri: "direct:risky-operation"
+                doCatch:
+                  - exception: [java.lang.Exception]
+                    steps:
+                      - log:
+                          message: "Error! Sending to DLQ"
+                      - to:
+                          uri: "kafka:dead-letter-queue?brokers=my-cluster-kafka-bootstrap:9092"
+                doFinally:
+                  steps:
+                    - log:
+                        message: "Processing finished"

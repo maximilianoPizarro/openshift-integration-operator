@@ -1,0 +1,23 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: rest-to-kafka
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/rest-to-kafka
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: rest-to-kafka
+        from:
+          uri: "platform-http:/api/ingest"
+          steps:
+            - log:
+                message: "Received: ${body}"
+            - to:
+                uri: "kafka:integration-events?brokers=my-cluster-kafka-bootstrap:9092"

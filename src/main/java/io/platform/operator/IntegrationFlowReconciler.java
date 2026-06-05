@@ -53,6 +53,19 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             resource.setStatus(status);
         }
 
+        // Idempotency guard: skip re-scaffolding if the design hasn't changed
+        String currentDesignHash = computeDesignHash(spec.getKaotoDesign());
+        if (!currentDesignHash.isEmpty()
+                && currentDesignHash.equals(status.getLastScaffoldedHash())
+                && status.getPhase() != null
+                && (status.getPhase() == IntegrationFlowStatus.Phase.Running
+                    || status.getPhase() == IntegrationFlowStatus.Phase.Building
+                    || status.getPhase() == IntegrationFlowStatus.Phase.Deploying)) {
+            LOG.debugf("Design hash unchanged for '%s/%s', skipping reconciliation",
+                    resource.getMetadata().getNamespace(), resource.getMetadata().getName());
+            return UpdateControl.noUpdate();
+        }
+
         String flowName = resource.getMetadata().getName();
         String namespace = resource.getMetadata().getNamespace();
         IntegrationType type = spec.getResolvedType();
@@ -117,6 +130,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             }
 
             status.setGitCommitHash(gitResult.commitHash());
+            status.setLastScaffoldedHash(currentDesignHash);
             updateCondition(status, "GitPushed", "True", "PushComplete", gitResult.message());
 
             // Step 3: Trigger Tekton PipelineRun for the build
@@ -433,6 +447,19 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             LOG.errorf(e, "Failed to reconcile SonataFlow CR for flow '%s'", flowName);
             updateCondition(status, "SonataFlowDeployed", "False", "CRFailed",
                     "Failed to create SonataFlow CR: " + e.getMessage());
+        }
+    }
+
+    private String computeDesignHash(String design) {
+        if (design == null || design.isBlank()) return "";
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(design.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
         }
     }
 

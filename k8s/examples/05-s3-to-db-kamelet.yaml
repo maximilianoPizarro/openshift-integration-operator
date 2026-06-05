@@ -1,0 +1,30 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: s3-to-db-kamelet
+  namespace: openshift-integration
+spec:
+  integrationType: CAMEL_KAMELET
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/s3-to-db-kamelet
+  branch: main
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    apiVersion: camel.apache.org/v1
+    kind: Kamelet
+    metadata:
+      name: s3-to-db-kamelet-source
+      labels:
+        camel.apache.org/kamelet.type: source
+    spec:
+      definition:
+        title: S3 to Database Kamelet
+      template:
+        from:
+          uri: "timer:tick?period=5000"
+          steps:
+            - setBody:
+                simple: "Kamelet event at ${date:now}"
+            - to: "log:kamelet-output"
