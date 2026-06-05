@@ -41,8 +41,7 @@ public class CamelRouteEphemeralDeployer {
                     .withLabels(labels)
                 .endMetadata()
                 .withData(Map.of(
-                        "flow.camel.yaml", scaffold.workflowDefinition(),
-                        "application.properties", scaffold.applicationProperties()))
+                        "flow.camel.yaml", scaffold.workflowDefinition()))
                 .build();
         kubernetesClient.configMaps().inNamespace(namespace).resource(configMap).createOrReplace();
 
@@ -64,7 +63,7 @@ public class CamelRouteEphemeralDeployer {
                                     .addNewPort().withContainerPort(8080).endPort()
                                     .addNewEnv()
                                         .withName("QUARKUS_CAMEL_MAIN_ROUTES_INCLUDE_PATTERN")
-                                        .withValue("file:/deployments/config/*")
+                                        .withValue("file:/deployments/config/flow.camel.yaml")
                                     .endEnv()
                                     .addNewVolumeMount()
                                         .withName("sources")
