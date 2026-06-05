@@ -106,7 +106,7 @@ data:
       "loadScripts": ["plugin-entry.js"]
     }
   plugin-entry.js: |
-    (function() {
+    loadPluginEntry("integration-console-plugin@0.2.0", function() {
       var React;
       var NS = "openshift-integration";
       var API = "/api/kubernetes/apis/platform.io/v1alpha1/namespaces/" + NS + "/integrationflows";
@@ -435,7 +435,7 @@ data:
           return Promise.reject(new Error("Module " + module + " not found in integration-console-plugin"));
         }
       };
-    })();
+    });
 ---
 apiVersion: v1
 kind: Service
