@@ -51,19 +51,31 @@ public class EphemeralWorkerImageResolver {
             defaultValue = "quay.io/maximilianopizarro/camel-test-runner:v0.3.0")
     String testImage;
 
+    private static final Set<String> CORE_COMPONENTS = Set.of(
+            "timer", "log", "direct", "seda", "bean", "yaml-dsl", "mock",
+            "quartz", "cron", "exec", "controlbus", "scheduler");
+
     private static final Map<String, Set<String>> DOMAIN_COMPONENTS = Map.of(
-            "core", Set.of("timer", "log", "direct", "seda", "bean", "yaml-dsl", "mock"),
-            "messaging", Set.of("kafka", "amqp", "jms", "activemq", "paho-mqtt5", "mqtt",
-                    "nats", "pulsar", "stomp", "aws2-sqs", "aws2-sns", "azure-servicebus",
-                    "google-pubsub", "spring-rabbitmq", "disruptor", "knative"),
-            "http", Set.of("platform-http", "http", "rest", "vertx-http", "netty-http",
-                    "graphql", "grpc", "cxf", "websocket", "vertx-websocket", "coap"),
-            "data", Set.of("sql", "jdbc", "jpa", "mongodb", "cassandraql", "couchdb",
-                    "infinispan", "redis", "spring-redis", "elasticsearch", "solr", "minio", "file", "ftp", "sftp"),
-            "cloud", Set.of("aws2-s3", "aws2-sqs", "aws2-sns", "aws2-ddb", "aws2-lambda",
-                    "azure-storage-blob", "azure-cosmosdb", "google-storage", "google-bigquery", "ibm-cos"),
-            "ai", Set.of("langchain4j", "djl", "aws-bedrock")
+            "core", CORE_COMPONENTS,
+            "messaging", union(CORE_COMPONENTS, Set.of("kafka", "amqp", "jms", "activemq",
+                    "paho-mqtt5", "mqtt", "nats", "pulsar", "stomp", "aws2-sqs", "aws2-sns",
+                    "azure-servicebus", "google-pubsub", "spring-rabbitmq", "disruptor", "knative", "sjms2")),
+            "http", union(CORE_COMPONENTS, Set.of("platform-http", "http", "rest", "rest-openapi",
+                    "vertx-http", "netty-http", "graphql", "grpc", "websocket", "vertx-websocket", "coap")),
+            "data", union(CORE_COMPONENTS, Set.of("sql", "jdbc", "mongodb", "cassandraql", "couchdb",
+                    "redis", "spring-redis", "elasticsearch", "solr", "minio", "file", "ftp")),
+            "cloud", union(CORE_COMPONENTS, Set.of("aws2-s3", "aws2-sqs", "aws2-sns", "aws2-ddb",
+                    "aws2-lambda", "aws2-kinesis", "aws2-ses", "aws-bedrock",
+                    "azure-storage-blob", "azure-cosmosdb", "azure-eventhubs",
+                    "google-storage", "google-bigquery", "google-pubsub", "ibm-cos")),
+            "ai", union(CORE_COMPONENTS, Set.of("langchain4j", "langchain4j-chat", "djl", "aws-bedrock"))
     );
+
+    private static Set<String> union(Set<String> a, Set<String> b) {
+        var result = new java.util.HashSet<>(a);
+        result.addAll(b);
+        return Set.copyOf(result);
+    }
 
     public String resolveWorkerImage(Set<String> components, IntegrationType type) {
         if (type == IntegrationType.CAMEL_TEST) {
