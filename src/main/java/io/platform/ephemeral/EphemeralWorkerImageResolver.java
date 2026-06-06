@@ -9,13 +9,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Selects the smallest ephemeral worker image that covers all Camel components in a design.
+ * Resolves the ephemeral worker image. By default uses the full worker image with
+ * the broadest Camel component coverage; tier selection is available when disabled.
  */
 @ApplicationScoped
 public class EphemeralWorkerImageResolver {
 
+    @ConfigProperty(name = "ephemeral.prefer-full-worker", defaultValue = "true")
+    boolean preferFullWorker;
+
     @ConfigProperty(name = "ephemeral.camel-worker-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-worker-core:v0.3.0")
+            defaultValue = "quay.io/maximilianopizarro/camel-worker-full:v0.3.0")
     String coreImage;
 
     @ConfigProperty(name = "ephemeral.camel-worker-messaging-image",
@@ -63,6 +67,9 @@ public class EphemeralWorkerImageResolver {
     public String resolveWorkerImage(Set<String> components, IntegrationType type) {
         if (type == IntegrationType.CAMEL_TEST) {
             return testImage;
+        }
+        if (preferFullWorker) {
+            return fullImage;
         }
 
         List<WorkerTier> tiers = List.of(

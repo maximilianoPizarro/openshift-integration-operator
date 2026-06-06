@@ -120,7 +120,8 @@ ephemeral:
   enabled: true
   defaultTtlSeconds: 3600
   maxTtlSeconds: 86400
-  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.3.0
+  preferFullWorker: true
+  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-full:v0.3.0
   camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.3.0
   camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.3.0
   camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.3.0

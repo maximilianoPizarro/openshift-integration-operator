@@ -55,7 +55,7 @@ ephemeral:
     full: quay.io/maximilianopizarro/camel-worker-full:v0.3.0
 ```
 
-The operator parses `kaotoDesign` URIs via `CamelComponentDetector` and picks the smallest worker image that covers all components (fallback: `full`).
+By default (`preferFullWorker: true`) all ephemeral Camel routes use `camel-worker-full`. Set `preferFullWorker: false` to enable tier selection (core → messaging → http → data → cloud → ai → full).
 
 ## REST API
 
