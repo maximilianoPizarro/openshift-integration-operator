@@ -40,6 +40,7 @@ public class CamelRouteEphemeralDeployer {
                 ? scaffold.detectedComponents()
                 : componentDetector.detectComponents(scaffold.workflowDefinition());
         String workerImage = imageResolver.resolveWorkerImage(components, integrationType);
+        LOG.infof("Ephemeral worker for %s: image=%s components=%s", flowName, workerImage, components);
         String cmName = "iflow-" + flowName + "-sources";
         String deployName = "iflow-" + flowName + "-worker";
         String svcName = "iflow-" + flowName;

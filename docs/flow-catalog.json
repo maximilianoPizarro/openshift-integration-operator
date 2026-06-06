@@ -1540,7 +1540,7 @@
         "name": "publicapi-bitcoin-price-poll",
         "type": "CAMEL_ROUTE",
         "components": "timer, http, unmarshal, log",
-        "description": "Polls CoinDesk every 30s and logs the current Exchange rate in USD",
+        "description": "Polls CoinDesk every 30s and logs the current Exchange rate in USD — results in worker pod logs (Flow Logs tab), not HTTP response.",
         "pattern": "Simple Poll + Log",
         "kaotoDesign": "- route:\n    id: publicapi-bitcoin-price-poll\n    from:\n      uri: \"timer:bitcoin\"\n      parameters:\n        period: \"30000\"\n      steps:\n        - to:\n            uri: \"https://open.er-api.com/v6/latest/USD\"\n        - unmarshal:\n            json: {}\n        - setProperty:\n            name: btcPrice\n            jsonpath:\n              expression: \"$.rates.EUR\"\n        - setProperty:\n            name: btcCurrency\n            jsonpath:\n              expression: \"$.base\"\n        - log:\n            message: \"Exchange rate: ${exchangeProperty.btcPrice} ${exchangeProperty.btcCurrency}\""
       },
@@ -1548,7 +1548,7 @@
         "name": "publicapi-spacex-latest-launch",
         "type": "CAMEL_ROUTE",
         "components": "timer, http, unmarshal, log",
-        "description": "Fetches the latest SpaceX launch and logs mission name, date, and success status",
+        "description": "Fetches the latest SpaceX launch and logs mission name, date, and success status — results in worker pod logs (Flow Logs tab), not HTTP response.",
         "pattern": "Simple Poll + Log",
         "kaotoDesign": "- route:\n    id: publicapi-spacex-latest-launch\n    from:\n      uri: \"timer:spacex\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https://api.spacexdata.com/v5/launches/latest\"\n        - unmarshal:\n            json: {}\n        - setProperty:\n            name: missionName\n            jsonpath:\n              expression: \"$.name\"\n        - setProperty:\n            name: launchDate\n            jsonpath:\n              expression: \"$.date_utc\"\n        - setProperty:\n            name: launchSuccess\n            jsonpath:\n              expression: \"$.success\"\n        - log:\n            message: \"SpaceX latest: ${exchangeProperty.missionName} on ${exchangeProperty.launchDate} — success: ${exchangeProperty.launchSuccess}\""
       },
@@ -1556,7 +1556,7 @@
         "name": "publicapi-cat-fact",
         "type": "CAMEL_ROUTE",
         "components": "timer, http, unmarshal, log",
-        "description": "Fetches a random cat fact every 20s and logs it",
+        "description": "Fetches a random cat fact every 20s and logs it — results in worker pod logs (Flow Logs tab), not HTTP response.",
         "pattern": "Simple Poll + Log",
         "kaotoDesign": "- route:\n    id: publicapi-cat-fact\n    from:\n      uri: \"timer:catfact\"\n      parameters:\n        period: \"20000\"\n      steps:\n        - to:\n            uri: \"https://catfact.ninja/fact\"\n        - unmarshal:\n            json: {}\n        - setProperty:\n            name: fact\n            jsonpath:\n              expression: \"$.fact\"\n        - log:\n            message: \"Cat Fact: ${exchangeProperty.fact}\""
       },
@@ -1564,7 +1564,7 @@
         "name": "publicapi-random-joke",
         "type": "CAMEL_ROUTE",
         "components": "timer, http, unmarshal, log",
-        "description": "Fetches a random joke and logs the setup and punchline",
+        "description": "Fetches a random joke and logs the setup and punchline — results in worker pod logs (Flow Logs tab), not HTTP response.",
         "pattern": "Simple Poll + Log",
         "kaotoDesign": "- route:\n    id: publicapi-random-joke\n    from:\n      uri: \"timer:joke\"\n      parameters:\n        period: \"25000\"\n      steps:\n        - to:\n            uri: \"https://official-joke-api.appspot.com/random_joke\"\n        - unmarshal:\n            json: {}\n        - setProperty:\n            name: jokeSetup\n            jsonpath:\n              expression: \"$.setup\"\n        - setProperty:\n            name: jokePunchline\n            jsonpath:\n              expression: \"$.punchline\"\n        - log:\n            message: \"Joke — ${exchangeProperty.jokeSetup} ... ${exchangeProperty.jokePunchline}\""
       },
@@ -1572,7 +1572,7 @@
         "name": "publicapi-americas-countries-split",
         "type": "CAMEL_ROUTE",
         "components": "timer, http, unmarshal, split, log",
-        "description": "Fetches all countries in the Americas and splits the array to log each country name and capital",
+        "description": "Fetches all countries in the Americas and splits the array to log each country name and capital — results in worker pod logs (Flow Logs tab), not HTTP response.",
         "pattern": "Poll + Split Array",
         "kaotoDesign": "- route:\n    id: publicapi-americas-countries-split\n    from:\n      uri: \"timer:countries\"\n      parameters:\n        period: \"120000\"\n      steps:\n        - to:\n            uri: \"https://restcountries.com/v3.1/region/americas\"\n        - unmarshal:\n            json: {}\n        - split:\n            jsonpath: \"$[*]\"\n            steps:\n              - setProperty:\n                  name: countryName\n                  jsonpath:\n                    expression: \"$.name.common\"\n              - setProperty:\n                  name: capital\n                  jsonpath:\n                    expression: \"$.capital[0]\"\n              - log:\n                  message: \"Country: ${exchangeProperty.countryName}, Capital: ${exchangeProperty.capital}\""
       },
@@ -1580,7 +1580,7 @@
         "name": "publicapi-jsonplaceholder-users-split",
         "type": "CAMEL_ROUTE",
         "components": "timer, http, unmarshal, split, log",
-        "description": "Fetches all JSONPlaceholder users and splits the array to log each user's name and email",
+        "description": "Fetches all JSONPlaceholder users and splits the array to log each user's name and email — results in worker pod logs (Flow Logs tab), not HTTP response.",
         "pattern": "Poll + Split Array",
         "kaotoDesign": "- route:\n    id: publicapi-jsonplaceholder-users-split\n    from:\n      uri: \"timer:users\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https://jsonplaceholder.typicode.com/users\"\n        - unmarshal:\n            json: {}\n        - split:\n            jsonpath: \"$[*]\"\n            steps:\n              - setProperty:\n                  name: userName\n                  jsonpath:\n                    expression: \"$.name\"\n              - setProperty:\n                  name: userEmail\n                  jsonpath:\n                    expression: \"$.email\"\n              - log:\n                  message: \"User: ${exchangeProperty.userName} <${exchangeProperty.userEmail}>\""
       },
@@ -1711,6 +1711,30 @@
         "description": "One-shot batch: searches Open Library for 'camel' books and logs each title and author",
         "pattern": "Scheduled Batch",
         "kaotoDesign": "- route:\n    id: publicapi-batch-books-search\n    from:\n      uri: \"timer:books\"\n      parameters:\n        repeatCount: \"1\"\n      steps:\n        - to:\n            uri: \"https://openlibrary.org/search.json?q=camel&limit=5\"\n        - unmarshal:\n            json: {}\n        - split:\n            jsonpath: \"$.docs[*]\"\n            steps:\n              - setProperty:\n                  name: bookTitle\n                  jsonpath:\n                    expression: \"$.title\"\n              - setProperty:\n                  name: bookAuthor\n                  jsonpath:\n                    expression: \"$.author_name[0]\"\n              - setProperty:\n                  name: bookYear\n                  jsonpath:\n                    expression: \"$.first_publish_year\"\n              - log:\n                  message: \"Book: \\\"${exchangeProperty.bookTitle}\\\" by ${exchangeProperty.bookAuthor} (${exchangeProperty.bookYear})\""
+      },
+      {
+        "name": "publicapi-http-cat-fact",
+        "type": "CAMEL_ROUTE",
+        "components": "platform-http, http, jackson, jsonpath",
+        "description": "HTTP GET /api/cat-fact — calls catfact.ninja and returns JSON (test via curl on worker route)",
+        "pattern": "HTTP Invoke + JSON Response",
+        "kaotoDesign": "- route:\n    id: publicapi-http-cat-fact\n    from:\n      uri: \"platform-http:/api/cat-fact\"\n      parameters:\n        httpMethodRestrict: GET\n      steps:\n        - setHeader:\n            name: CamelHttpMethod\n            constant: GET\n        - to:\n            uri: \"https://catfact.ninja/fact\"\n        - unmarshal:\n            json: {}\n        - marshal:\n            json: {}\n        - setHeader:\n            name: Content-Type\n            constant: \"application/json\""
+      },
+      {
+        "name": "publicapi-http-exchange-rate",
+        "type": "CAMEL_ROUTE",
+        "components": "platform-http, http, jackson, jsonpath",
+        "description": "HTTP GET /api/exchange-rate — returns USD/EUR/GBP rates as JSON from open.er-api.com",
+        "pattern": "HTTP Invoke + JSON Response",
+        "kaotoDesign": "- route:\n    id: publicapi-http-exchange-rate\n    from:\n      uri: \"platform-http:/api/exchange-rate\"\n      parameters:\n        httpMethodRestrict: GET\n      steps:\n        - to:\n            uri: \"https://open.er-api.com/v6/latest/USD\"\n        - unmarshal:\n            json: {}\n        - marshal:\n            json: {}\n        - setHeader:\n            name: Content-Type\n            constant: \"application/json\""
+      },
+      {
+        "name": "publicapi-http-spacex-latest",
+        "type": "CAMEL_ROUTE",
+        "components": "platform-http, http, jackson, jsonpath",
+        "description": "HTTP GET /api/spacex/latest — returns latest SpaceX launch as JSON",
+        "pattern": "HTTP Invoke + JSON Response",
+        "kaotoDesign": "- route:\n    id: publicapi-http-spacex-latest\n    from:\n      uri: \"platform-http:/api/spacex/latest\"\n      parameters:\n        httpMethodRestrict: GET\n      steps:\n        - to:\n            uri: \"https://api.spacexdata.com/v5/launches/latest\"\n        - unmarshal:\n            json: {}\n        - marshal:\n            json: {}\n        - setHeader:\n            name: Content-Type\n            constant: \"application/json\""
       }
     ]
   }

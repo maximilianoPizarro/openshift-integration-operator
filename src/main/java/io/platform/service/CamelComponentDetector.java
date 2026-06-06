@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 public class CamelComponentDetector {
 
     private static final Pattern URI_SCHEME = Pattern.compile(
-            "(?:uri|endpoint)\\s*[:=]\\s*[\"']?([a-zA-Z][a-zA-Z0-9+._/-]*):",
+            "(?:uri|endpoint)\\s*[:=]\\s*[\"']?([a-zA-Z][a-zA-Z0-9+._-]*):",
             Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 
     public Set<String> detectComponents(String kaotoDesign) {
@@ -33,11 +33,26 @@ public class CamelComponentDetector {
             }
         }
 
+        detectDataFormats(kaotoDesign, components);
+
         if (components.isEmpty()) {
             components.add("timer");
             components.add("log");
         }
         return components;
+    }
+
+    private void detectDataFormats(String kaotoDesign, Set<String> components) {
+        String lower = kaotoDesign.toLowerCase();
+        if (lower.contains("jsonpath:")) {
+            components.add("jsonpath");
+        }
+        if (lower.contains("unmarshal:") && lower.contains("json")) {
+            components.add("jackson");
+        }
+        if (lower.contains("marshal:") && lower.contains("json")) {
+            components.add("jackson");
+        }
     }
 
     private boolean isInternalScheme(String scheme) {
@@ -46,6 +61,7 @@ public class CamelComponentDetector {
 
     private String normalizeScheme(String scheme) {
         return switch (scheme) {
+            case "https" -> "http";
             case "platform-http", "rest", "netty-http", "vertx-http", "servlet" -> "platform-http";
             case "aws2-s3", "aws2-sqs", "aws2-sns", "aws2-ddb" -> scheme;
             default -> scheme;

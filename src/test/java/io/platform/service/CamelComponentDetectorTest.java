@@ -29,4 +29,27 @@ class CamelComponentDetectorTest {
         assertTrue(components.contains("timer"));
         assertTrue(components.contains("log"));
     }
+
+    @Test
+    void detectsHttpsAsHttpAndJsonpath() {
+        String design = """
+                - route:
+                    from:
+                      uri: "timer:tick"
+                    steps:
+                      - to:
+                          uri: "https://api.example.com/data"
+                      - unmarshal:
+                          json: {}
+                      - setProperty:
+                          name: value
+                          jsonpath:
+                            expression: "$.id"
+                """;
+        var components = detector.detectComponents(design);
+        assertTrue(components.contains("http"));
+        assertFalse(components.contains("https"));
+        assertTrue(components.contains("jsonpath"));
+        assertTrue(components.contains("jackson"));
+    }
 }
