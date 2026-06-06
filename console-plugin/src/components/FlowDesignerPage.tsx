@@ -165,6 +165,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const [stateChanging, setStateChanging] = React.useState(false);
   const [dependencies, setDependencies] = React.useState<DependentFlow[]>([]);
   const [copiedDesign, setCopiedDesign] = React.useState(false);
+  const [copiedFull, setCopiedFull] = React.useState(false);
   const [showExtendModal, setShowExtendModal] = React.useState(false);
   const [showPromoteModal, setShowPromoteModal] = React.useState(false);
 
@@ -298,6 +299,15 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
     navigator.clipboard.writeText(design).then(() => {
       setCopiedDesign(true);
       setTimeout(() => setCopiedDesign(false), 2000);
+    });
+  };
+
+  const copyFullYamlToClipboard = () => {
+    if (!flow) return;
+    const fullYaml = `apiVersion: platform.io/v1alpha1\nkind: IntegrationFlow\nmetadata:\n  name: ${flow.metadata.name}\n  namespace: ${flow.metadata.namespace}\nspec:\n  engine: ${flow.spec.engine || 'CAMEL'}\n  integrationType: ${flow.spec.integrationType || 'CAMEL_ROUTE'}\n${flow.spec.deploymentMode ? '  deploymentMode: ' + flow.spec.deploymentMode + '\n' : ''}${flow.spec.gitRepository ? '  gitRepository: ' + flow.spec.gitRepository + '\n' : ''}${flow.spec.branch ? '  branch: ' + flow.spec.branch + '\n' : ''}  kaotoDesign: |\n${design.split('\n').map(l => '    ' + l).join('\n')}\n`;
+    navigator.clipboard.writeText(fullYaml).then(() => {
+      setCopiedFull(true);
+      setTimeout(() => setCopiedFull(false), 2000);
     });
   };
 
@@ -580,9 +590,20 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             )}
 
             <Tab eventKey="design" title={<TabTitleText>YAML Editor</TabTitleText>}>
+              <div style={{ display: 'flex', gap: '8px', padding: '8px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', alignItems: 'center' }}>
+                <Button variant="secondary" onClick={copyDesignToClipboard} style={{ fontSize: '11px' }}>
+                  {copiedDesign ? '\u2713 Copied!' : '\u2398 Copy kaotoDesign'}
+                </Button>
+                <Button variant="secondary" onClick={copyFullYamlToClipboard} style={{ fontSize: '11px' }}>
+                  {copiedFull ? '\u2713 Copied!' : '\u2398 Copy Full CR YAML'}
+                </Button>
+                <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginLeft: 'auto' }}>
+                  {design.split('\n').length} lines
+                </span>
+              </div>
               <textarea ref={editorRef} value={design} onChange={(e) => setDesign(e.target.value)} spellCheck={false}
                 style={{
-                  width: '100%', height: 'calc(100vh - 260px)', padding: '16px',
+                  width: '100%', height: 'calc(100vh - 300px)', padding: '16px',
                   fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
                   fontSize: '13px', lineHeight: 1.6, border: 'none', resize: 'none', outline: 'none',
                   backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
