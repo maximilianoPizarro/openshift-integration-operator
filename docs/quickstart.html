@@ -204,10 +204,11 @@
           <div class="prereq-item"><strong>OpenShift 4.14+</strong> Cluster with cluster-admin or sufficient RBAC</div>
           <div class="prereq-item"><strong>Helm 3</strong> Package manager for operator installation</div>
           <div class="prereq-item"><strong>oc CLI</strong> OpenShift command-line tool, logged in</div>
-          <div class="prereq-item"><strong>Gitea</strong> Git server for scaffolded worker source</div>
-          <div class="prereq-item"><strong>ArgoCD</strong> GitOps controller (e.g. OpenShift GitOps)</div>
-          <div class="prereq-item"><strong>Tekton Pipelines</strong> CI pipeline for container builds</div>
+          <div class="prereq-item"><strong>Gitea</strong> Git server (GitOps mode only)</div>
+          <div class="prereq-item"><strong>ArgoCD</strong> GitOps controller (GitOps mode only)</div>
+          <div class="prereq-item"><strong>Tekton Pipelines</strong> CI pipeline for container builds (GitOps mode only)</div>
         </div>
+        <p>For <strong>Quick Try (ephemeral)</strong> flows, only the operator and <code>kaotoDesign</code> in the CR are required — no Git, Tekton, or ArgoCD.</p>
       </section>
 
       <section class="step" id="step-1">
@@ -225,14 +226,50 @@ helm repo update</code></pre>
         <pre><code>helm install integration-operator \
   integration-platform/openshift-integration-operator \
   --namespace openshift-integration \
-  --create-namespace</code></pre>
+  --create-namespace \
+  --set gitea.password='your-gitea-password' \
+  --set tekton.approvalEnabled=false</code></pre>
         <p>Optional: override image tag or worker scaling limits:</p>
         <pre><code>helm install integration-operator \
   integration-platform/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.2.0 \
+  --set operator.image.tag=v0.3.0 \
+  --set gitea.password='your-gitea-password' \
+  --set tekton.approvalEnabled=false \
   --set workers.maxReplicas=20</code></pre>
+        <p>For development clusters, build the operator locally and use the Quay CI image for the console plugin. Pin the operator deployment by image digest after <code>oc start-build</code> — <code>:latest</code> is not repulled on existing nodes.</p>
+      </section>
+
+      <section class="step" id="camel-k-bootstrap">
+        <h2><span class="step-num">2b</span> Bootstrap Camel K (Pipe &amp; Kamelet)</h2>
+        <p>Required once per namespace before deploying Pipe or Kamelet examples (<code>etl-pipe</code>, <code>s3-to-db-kamelet</code>):</p>
+        <pre><code>oc apply -f k8s/bootstrap/camel-k-platform.yaml
+
+TOKEN=$(oc whoami -t)
+oc create secret docker-registry camel-k-registry-auth \
+  -n openshift-integration \
+  --docker-server=image-registry.openshift-image-registry.svc:5000 \
+  --docker-username=$(oc whoami) \
+  --docker-password="$TOKEN" \
+  --dry-run=client -o yaml | oc apply -f -
+
+oc patch integrationplatform camel-k -n openshift-integration --type=merge \
+  -p '{"spec":{"build":{"registry":{"secret":"camel-k-registry-auth"}}}}'</code></pre>
+      </section>
+
+      <section class="step" id="gitops-examples">
+        <h2><span class="step-num">2c</span> Deploy 8 GitOps Catalog Examples</h2>
+        <p>Pre-built examples in <code>k8s/examples/</code> exercise the full pipeline (Gitea &rarr; Tekton &rarr; Argo CD). Apply sequentially (~12s between flows to avoid Gitea contention):</p>
+        <pre><code>for yaml in 01-rest-to-kafka 02-order-routing-cbr 03-parallel-enrichment \
+  04-error-handling-dlq 05-s3-to-db-kamelet 06-etl-pipe \
+  07-file-processor-workflow 08-saga-workflow; do
+  oc apply -f "k8s/examples/${yaml}.yaml"
+  sleep 12
+done
+
+oc get integrationflow -n openshift-integration</code></pre>
+        <p>Expected result: all eight flows reach <code>Running</code> phase. Camel routes deploy worker pods; Pipe/Kamelet create Camel K resources; SonataFlow workflows deploy to <code>kogito-bpm</code>.</p>
       </section>
 
       <section class="step" id="step-3">
@@ -451,7 +488,7 @@ spec:
                   - to:
                       uri: "sql:INSERT INTO target_table(data, etl_time) VALUES (:#data, NOW())?dataSource=targetDS"</code></pre>
 
-        <h3>7. Camel Route — File Processor with CBR</h3>
+        <h3>7. SonataFlow — File Processor Workflow</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
@@ -459,42 +496,57 @@ metadata:
   namespace: openshift-integration
 spec:
   deploymentMode: GITOPS
-  integrationType: CAMEL_ROUTE
-  engine: CAMEL
+  integrationType: SONATAFLOW
+  engine: SONATAFLOW
   gitRepository: https://gitea.example.com/user1/file-processor-workflow
   branch: main
   targeting:
     strategy: explicit
     clusters: [local]
   kaotoDesign: |
-    - route:
-        id: file-processor-workflow
-        from:
-          uri: "file:/data/inbox"
-          parameters:
-            delete: true
-            recursive: true
-          steps:
-            - log:
-                message: "Processing file: ${header.CamelFileName}"
-            - choice:
-                when:
-                  - simple: "${header.CamelFileName} ends with '.csv'"
-                    steps:
-                      - unmarshal:
-                          csv: {}
-                      - to:
-                          uri: "sql:INSERT INTO csv_data(row) VALUES (:#row)"
-                  - simple: "${header.CamelFileName} ends with '.xml'"
-                    steps:
-                      - to:
-                          uri: "xslt:transform.xsl"
-                otherwise:
-                  steps:
-                    - to:
-                        uri: "file:/data/unprocessed"</code></pre>
+    id: file-processor-workflow
+    version: "1.0"
+    specVersion: "0.8"
+    name: File Processor Workflow
+    start: InitState
+    states:
+      - name: InitState
+        type: operation
+        actions:
+          - functionRef:
+              refName: processAction
+        transition: CheckResult
+      - name: CheckResult
+        type: switch
+        dataConditions:
+          - condition: "${ .result == true }"
+            transition: SuccessState
+        defaultCondition:
+          transition: ErrorState
+      - name: SuccessState
+        type: operation
+        actions:
+          - functionRef:
+              refName: notifySuccess
+        end: true
+      - name: ErrorState
+        type: operation
+        actions:
+          - functionRef:
+              refName: handleError
+        end: true
+    functions:
+      - name: processAction
+        type: expression
+        operation: ".result = true"
+      - name: notifySuccess
+        type: expression
+        operation: ".message = \"Success\""
+      - name: handleError
+        type: expression
+        operation: ".message = \"Error handled\""</code></pre>
 
-        <h3>8. Camel Route — Saga Pattern</h3>
+        <h3>8. SonataFlow — Saga Workflow</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
@@ -502,30 +554,55 @@ metadata:
   namespace: openshift-integration
 spec:
   deploymentMode: GITOPS
-  integrationType: CAMEL_ROUTE
-  engine: CAMEL
+  integrationType: SONATAFLOW
+  engine: SONATAFLOW
   gitRepository: https://gitea.example.com/user1/saga-workflow
   branch: main
   targeting:
     strategy: explicit
     clusters: [local]
   kaotoDesign: |
-    - route:
-        id: saga-workflow
-        from:
-          uri: "platform-http:/api/saga/start"
-          steps:
-            - saga:
-                propagation: REQUIRED
-                steps:
-                  - to:
-                      uri: "direct:reserve-inventory"
-                  - to:
-                      uri: "direct:process-payment"
-                  - to:
-                      uri: "direct:confirm-order"
-            - log:
-                message: "Saga completed: ${header.sagaId}"</code></pre>
+    id: saga-workflow
+    version: "1.0"
+    specVersion: "0.8"
+    name: Saga Workflow
+    start: InitState
+    states:
+      - name: InitState
+        type: operation
+        actions:
+          - functionRef:
+              refName: processAction
+        transition: CheckResult
+      - name: CheckResult
+        type: switch
+        dataConditions:
+          - condition: "${ .result == true }"
+            transition: SuccessState
+        defaultCondition:
+          transition: ErrorState
+      - name: SuccessState
+        type: operation
+        actions:
+          - functionRef:
+              refName: notifySuccess
+        end: true
+      - name: ErrorState
+        type: operation
+        actions:
+          - functionRef:
+              refName: handleError
+        end: true
+    functions:
+      - name: processAction
+        type: expression
+        operation: ".result = true"
+      - name: notifySuccess
+        type: expression
+        operation: ".message = \"Success\""
+      - name: handleError
+        type: expression
+        operation: ".message = \"Error handled\""</code></pre>
 
         <h3>9. Ephemeral Quick Try — Camel Route (no Git)</h3>
         <p>Use <code>deploymentMode: EPHEMERAL</code> to run a flow immediately without a Git repository, Tekton, or ArgoCD. Resources are cleaned up when the TTL expires or the CR is deleted.</p>
@@ -631,6 +708,7 @@ oc get pods -n openshift-integration -l app.kubernetes.io/component=console-plug
 
         <h3>List Page Features</h3>
         <ul style="margin-left: 1.25rem; color: var(--text-muted);">
+          <li><strong>Browse Templates</strong> — Pick from 200+ ready flows in the create form (backed by <code>flow-catalog.json</code>)</li>
           <li><strong>Search</strong> — Filter by name, repository URL, or status message</li>
           <li><strong>Filters</strong> — Filter by integration type (CAMEL_ROUTE, CAMEL_KAMELET, etc.) and phase (Running, Building, Error)</li>
           <li><strong>Summary badges</strong> — Click on Running/Building/Error counts to quick-filter</li>
