@@ -1,80 +1,76 @@
 const fs = require('fs');
-const html = fs.readFileSync('docs/ready-flows.html', 'utf8');
-const scriptStart = html.indexOf('<script>') + 8;
-const scriptEnd = html.indexOf('</script>');
-const script = html.substring(scriptStart, scriptEnd);
+const path = require('path');
 
-// 1. Check JS compiles
+const catalogPath = path.join(__dirname, '..', 'docs', 'flow-catalog.json');
+const htmlPath = path.join(__dirname, '..', 'docs', 'ready-flows.html');
+
+let FLOWS;
 try {
-  new Function(script);
-  console.log('[OK] JavaScript compiles without errors');
-} catch(e) {
-  console.log('[FAIL] JS compile error:', e.message);
+  FLOWS = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+  console.log('[OK] flow-catalog.json parses as valid JSON');
+} catch (e) {
+  console.log('[FAIL] JSON parse error:', e.message);
   process.exit(1);
 }
 
-// 2. Check FLOWS data loads
-const lines = script.split('\n');
-const closingIdx = lines.findIndex((l, i) => i > 0 && l.trim() === '];');
-let flowsCode = lines.slice(0, closingIdx + 1).join('\n').replace('const FLOWS', 'var FLOWS');
-const vm = require('vm');
-const ctx = {};
-vm.createContext(ctx);
-vm.runInContext(flowsCode, ctx);
-
-if (!ctx.FLOWS) {
-  console.log('[FAIL] FLOWS array not defined');
+if (!Array.isArray(FLOWS)) {
+  console.log('[FAIL] flow-catalog.json root must be an array');
   process.exit(1);
 }
 
 let total = 0;
-ctx.FLOWS.forEach(c => { total += c.flows.length; });
-console.log(`[OK] ${ctx.FLOWS.length} categories, ${total} flows total`);
-ctx.FLOWS.forEach(c => console.log(`     ${c.id}: ${c.flows.length} flows`));
+FLOWS.forEach(c => { total += c.flows.length; });
+console.log(`[OK] ${FLOWS.length} categories, ${total} flows total`);
+FLOWS.forEach(c => console.log(`     ${c.id}: ${c.flows.length} flows`));
 
-// 3. Check for dead APIs
+// Check ready-flows.html loads catalog via fetch (no inline FLOWS array)
+const html = fs.readFileSync(htmlPath, 'utf8');
+if (html.includes('const FLOWS = [')) {
+  console.log('[FAIL] ready-flows.html still contains inline FLOWS array');
+  process.exit(1);
+}
+if (!html.includes("fetch(\"flow-catalog.json\")") && !html.includes("fetch('flow-catalog.json')")) {
+  console.log('[FAIL] ready-flows.html does not fetch flow-catalog.json');
+  process.exit(1);
+}
+console.log('[OK] ready-flows.html fetches flow-catalog.json');
+
+// Check for dead APIs in catalog
+const catalogText = fs.readFileSync(catalogPath, 'utf8');
 const deadAPIs = ['coindesk.com', 'numbersapi.com', 'bpi.USD'];
 deadAPIs.forEach(api => {
-  if (html.includes(api)) console.log(`[WARN] Dead API reference: ${api}`);
+  if (catalogText.includes(api)) console.log(`[WARN] Dead API reference: ${api}`);
 });
 
-// 4. Check unescaped ${} in kaotoDesign template literals
-let unescaped = 0;
-const re = /kaotoDesign: `([^`]*)`/gs;
-let m;
-while ((m = re.exec(script)) !== null) {
-  const content = m[1];
-  for (let i = 0; i < content.length - 1; i++) {
-    if (content[i] === '$' && content[i+1] === '{') {
-      if (i === 0 || content[i-1] !== '\\') {
-        unescaped++;
-      }
-    }
-  }
-}
-if (unescaped > 0) {
-  console.log(`[FAIL] ${unescaped} unescaped \${} in kaotoDesign (will break in browser)`);
-  process.exit(1);
-} else {
-  console.log('[OK] All Camel expressions properly escaped in template literals');
-}
-
-// 5. Check all flows have required fields
+// Check all flows have required fields
 let missing = [];
-ctx.FLOWS.forEach(cat => {
-  cat.flows.forEach(flow => {
+FLOWS.forEach(cat => {
+  if (!cat.id) missing.push('category missing id');
+  if (!cat.title) missing.push(`${cat.id || '?'}: category missing title`);
+  if (!Array.isArray(cat.flows)) missing.push(`${cat.id}: flows must be array`);
+  (cat.flows || []).forEach(flow => {
     if (!flow.name) missing.push(`${cat.id}: flow missing name`);
     if (!flow.kaotoDesign) missing.push(`${cat.id}/${flow.name}: missing kaotoDesign`);
     if (!flow.components) missing.push(`${cat.id}/${flow.name}: missing components`);
     if (!flow.description) missing.push(`${cat.id}/${flow.name}: missing description`);
+    if (!flow.type) missing.push(`${cat.id}/${flow.name}: missing type`);
+    if (!flow.pattern) missing.push(`${cat.id}/${flow.name}: missing pattern`);
   });
 });
 if (missing.length > 0) {
-  console.log(`[FAIL] ${missing.length} flows with missing fields:`);
+  console.log(`[FAIL] ${missing.length} issues:`);
   missing.slice(0, 10).forEach(m => console.log('  ', m));
   process.exit(1);
-} else {
-  console.log('[OK] All flows have required fields (name, kaotoDesign, components, description)');
 }
+console.log('[OK] All flows have required fields (name, kaotoDesign, components, description, type, pattern)');
+
+// Check kaotoDesign contains Camel expressions (unescaped ${} is correct in JSON)
+let hasExpressions = 0;
+FLOWS.forEach(cat => {
+  cat.flows.forEach(flow => {
+    if (flow.kaotoDesign && flow.kaotoDesign.includes('${')) hasExpressions++;
+  });
+});
+console.log(`[OK] ${hasExpressions} flows contain Camel \${} expressions (stored as plain text in JSON)`);
 
 console.log('\n=== VALIDATION PASSED ===');

@@ -30,6 +30,7 @@ import EphemeralModeToggle from './ephemeral/EphemeralModeToggle';
 import EphemeralBadge from './ephemeral/EphemeralBadge';
 import ConfirmDeleteModal from './modals/ConfirmDeleteModal';
 import ConfirmLifecycleModal from './modals/ConfirmLifecycleModal';
+import TemplateCatalogModal, { TemplateSelection } from './modals/TemplateCatalogModal';
 import { API_BASE as K8S_FLOW_API, NAMESPACE, PROXY_BASE } from '../constants';
 import { buildPodLinks } from '../utils/podLinks';
 
@@ -188,6 +189,9 @@ const IntegrationFlowPage: React.FC = () => {
   const [openKebab, setOpenKebab] = React.useState<string | null>(null);
   const [ephemeralMode, setEphemeralMode] = React.useState(true);
   const [ttlSeconds, setTtlSeconds] = React.useState(3600);
+  const [showTemplateModal, setShowTemplateModal] = React.useState(false);
+  const [templateDesign, setTemplateDesign] = React.useState('');
+  const [templateLoaded, setTemplateLoaded] = React.useState('');
 
   const [search, setSearch] = React.useState('');
   const [filterType, setFilterType] = React.useState('');
@@ -242,6 +246,19 @@ const IntegrationFlowPage: React.FC = () => {
 
   React.useEffect(() => { setPage(1); }, [search, filterType, filterPhase]);
 
+  const handleTemplateSelect = (selection: TemplateSelection) => {
+    setNewName(`${selection.templateName}-1`);
+    setNewEngine(selection.type);
+    setTemplateDesign(selection.kaotoDesign);
+    setTemplateLoaded(selection.templateName);
+    setShowCreate(true);
+  };
+
+  const clearTemplate = () => {
+    setTemplateDesign('');
+    setTemplateLoaded('');
+  };
+
   const handleCreate = async () => {
     const flowName = newName.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-|-$/g, '');
     if (!flowName) return;
@@ -250,7 +267,7 @@ const IntegrationFlowPage: React.FC = () => {
       const spec: Record<string, unknown> = {
           integrationType: newEngine,
           engine: newEngine.startsWith('CAMEL') ? 'CAMEL' : 'SONATAFLOW',
-          kaotoDesign: defaultDesign[newEngine] || '',
+          kaotoDesign: templateDesign || defaultDesign[newEngine] || '',
           targeting: { strategy: 'explicit', clusters: ['local'] },
         };
       if (ephemeralMode) {
@@ -277,6 +294,7 @@ const IntegrationFlowPage: React.FC = () => {
       }
       setShowCreate(false);
       setNewName('');
+      clearTemplate();
       await fetchFlows();
     } catch (e: any) {
       alert(`Error: ${e.message}`);
@@ -345,7 +363,17 @@ const IntegrationFlowPage: React.FC = () => {
             {flows.length} flow{flows.length !== 1 ? 's' : ''} in {NAMESPACE}
           </span>
         </div>
-        <Button variant={showCreate ? 'secondary' : 'primary'} onClick={() => setShowCreate(!showCreate)}>
+        <Button
+          variant={showCreate ? 'secondary' : 'primary'}
+          onClick={() => {
+            if (showCreate) {
+              setShowCreate(false);
+              clearTemplate();
+            } else {
+              setShowCreate(true);
+            }
+          }}
+        >
           {showCreate ? 'Cancel' : '+ Create Flow'}
         </Button>
       </div>
@@ -406,13 +434,30 @@ const IntegrationFlowPage: React.FC = () => {
         loading={actionLoading}
       />
 
+      <TemplateCatalogModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onSelect={handleTemplateSelect}
+      />
+
       {showCreate && (
         <div style={{ padding: '14px', borderRadius: '6px', marginBottom: '14px', border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', background: 'var(--pf-global--BackgroundColor--200, #f0f0f0)' }}>
+          {templateLoaded && (
+            <Alert
+              variant="info"
+              isInline
+              title={`Template loaded: ${templateLoaded}`}
+              style={{ marginBottom: '12px' }}
+              actionClose={<Button variant="plain" onClick={clearTemplate} aria-label="Clear template">Clear template</Button>}
+            >
+              Customize the route below to fit your use case, then click Create. The flow will be fully independent after creation.
+            </Alert>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <TextInput
               value={newName}
               onChange={(_event, value) => setNewName(value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              onKeyDown={(e) => e.key === 'Enter' && !templateLoaded && handleCreate()}
               placeholder="flow-name"
               aria-label="Flow name"
               style={{ width: '220px' }}
@@ -430,7 +475,35 @@ const IntegrationFlowPage: React.FC = () => {
             <Button variant="primary" onClick={handleCreate} isDisabled={creating}>
               {creating ? 'Creating...' : 'Create'}
             </Button>
+            <Button variant="secondary" onClick={() => setShowTemplateModal(true)}>
+              Use Template...
+            </Button>
           </div>
+          {templateDesign && (
+            <div style={{ marginTop: '12px' }}>
+              <label htmlFor="template-design-editor" style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+                kaotoDesign — edit before creating
+              </label>
+              <textarea
+                id="template-design-editor"
+                value={templateDesign}
+                onChange={(e) => setTemplateDesign(e.target.value)}
+                rows={14}
+                spellCheck={false}
+                style={{
+                  width: '100%',
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  padding: '10px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)',
+                  background: 'var(--pf-global--BackgroundColor--100, #fff)',
+                  resize: 'vertical',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          )}
           <div style={{ marginTop: '12px' }}>
             <EphemeralModeToggle
               ephemeral={ephemeralMode}
