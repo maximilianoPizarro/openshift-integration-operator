@@ -67,7 +67,8 @@ spec:
               value: {{ .Values.ephemeral.defaultTtlSeconds | quote }}
             - name: EPHEMERAL_MAX_TTL_SECONDS
               value: {{ .Values.ephemeral.maxTtlSeconds | quote }}
-            - name: EPHEMERAL_PREFER_FULL_WORKER
+            # Quarkus maps hyphens in property segments via double underscores (prefer-full-worker).
+            - name: EPHEMERAL_PREFER__FULL__WORKER
               value: {{ .Values.ephemeral.preferFullWorker | default true | quote }}
             - name: SCAFFOLDS_SOURCE
               value: {{ .Values.scaffolds.source | default "embedded" | quote }}

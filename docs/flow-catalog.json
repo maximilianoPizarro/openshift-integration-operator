@@ -1542,7 +1542,7 @@
         "components": "timer, http, unmarshal, log",
         "description": "Polls CoinDesk every 30s and logs the current Exchange rate in USD — results in worker pod logs (Flow Logs tab), not HTTP response.",
         "pattern": "Simple Poll + Log",
-        "kaotoDesign": "- route:\n    id: publicapi-bitcoin-price-poll\n    from:\n      uri: \"timer:bitcoin\"\n      parameters:\n        period: \"30000\"\n      steps:\n        - to:\n            uri: \"https://open.er-api.com/v6/latest/USD\"\n        - unmarshal:\n            json: {}\n        - setProperty:\n            name: btcPrice\n            jsonpath:\n              expression: \"$.rates.EUR\"\n        - setProperty:\n            name: btcCurrency\n            jsonpath:\n              expression: \"$.base\"\n        - log:\n            message: \"Exchange rate: ${exchangeProperty.btcPrice} ${exchangeProperty.btcCurrency}\""
+        "kaotoDesign": "- route:\n    id: publicapi-bitcoin-price-poll\n    from:\n      uri: \"timer:bitcoin\"\n      parameters:\n        period: \"30000\"\n      steps:\n        - to:\n            uri: \"https://open.er-api.com/v6/latest/USD\"\n        - unmarshal:\n            json: {}\n        - setProperty:\n            name: btcPrice\n            jsonpath:\n              expression: \"$.rates.EUR\"\n        - setProperty:\n            name: btcCurrency\n            jsonpath:\n              expression: \"$.base_code\"\n        - log:\n            message: \"Exchange rate: ${exchangeProperty.btcPrice} ${exchangeProperty.btcCurrency}\""
       },
       {
         "name": "publicapi-spacex-latest-launch",

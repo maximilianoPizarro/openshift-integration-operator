@@ -1,0 +1,33 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: publicapi-bitcoin-price-poll-test
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: publicapi-bitcoin-price-poll-test
+        from:
+          uri: "timer:bitcoin"
+          parameters:
+            period: "30000"
+          steps:
+            - to:
+                uri: "https://open.er-api.com/v6/latest/USD"
+            - unmarshal:
+                json: {}
+            - setProperty:
+                name: btcPrice
+                jsonpath:
+                  expression: "$.rates.EUR"
+            - setProperty:
+                name: btcCurrency
+                jsonpath:
+                  expression: "$.base_code"
+            - log:
+                message: "Exchange rate: ${exchangeProperty.btcPrice} ${exchangeProperty.btcCurrency}"
