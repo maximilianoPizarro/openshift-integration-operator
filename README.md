@@ -23,7 +23,7 @@
   <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a> ·
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/architecture.html">Architecture</a> ·
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html">Quick Start</a> ·
-  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html">Ready Flows (182)</a> ·
+  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html">Ready Flows (200+)</a> ·
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/examples-catalog.html">Examples (255)</a>
 </p>
 
@@ -289,7 +289,7 @@ oc get integrationflow ephemeral-camel-demo -w
 
 The platform ships **21 pre-built examples** in `k8s/examples/` covering Camel Routes, Kamelets, Pipes, SonataFlow, and ephemeral Quick Try with real public API calls. Browse online:
 
-- **[Ready Flows (182)](https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html)** — Complete IntegrationFlow CRs with full Camel route logic, organized by pattern (AI/LLM, Saga, Circuit Breaker, Decision, Event-Driven, API Gateway, ETL, IoT, Orchestration, Hybrid Cloud, Public APIs, Enterprise Automation)
+- **[Ready Flows (200+)](https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html)** — Complete IntegrationFlow CRs with full Camel route logic, organized by pattern (AI/LLM, Saga, Circuit Breaker, Decision, Event-Driven, API Gateway, ETL, IoT, Orchestration, Hybrid Cloud & Multi-Cloud SaaS for ROSA/ARO/GCP, Public APIs, Enterprise Automation)
 - **[Examples Catalog (255)](https://maximilianopizarro.github.io/openshift-integration-operator/examples-catalog.html)** — Component-focused examples spanning 15 categories and 310 Apache Camel Quarkus components
 - **[Quick Start Guide](https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html)** — Install + 10 examples including multi-cluster selector
 

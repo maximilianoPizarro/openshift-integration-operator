@@ -1,0 +1,170 @@
+[
+  {
+    "name": "hybrid-rosa-sqs-order-processor",
+    "type": "CAMEL_ROUTE",
+    "components": "aws2-sqs, jackson, log, platform-http",
+    "description": "ROSA worker consumes order events from AWS SQS and exposes processed status via HTTP on OpenShift",
+    "pattern": "ROSA + AWS SQS Consumer",
+    "kaotoDesign": "- route:\n    id: hybrid-rosa-sqs-order-processor\n    from:\n      uri: \"aws2-sqs:rosa-orders-queue\"\n      parameters:\n        region: us-east-1\n        waitTimeSeconds: 20\n        visibilityTimeout: 60\n      steps:\n        - unmarshal:\n            json:\n              library: jackson\n        - setProperty:\n            name: orderId\n            jsonpath: \"$.orderId\"\n        - setProperty:\n            name: customerId\n            jsonpath: \"$.customerId\"\n        - log:\n            message: \"ROSA processing order ${exchangeProperty.orderId} for customer ${exchangeProperty.customerId}\"\n        - setBody:\n            simple: '{\"orderId\":\"${exchangeProperty.orderId}\",\"status\":\"PROCESSED\",\"platform\":\"ROSA\",\"region\":\"us-east-1\"}'\n        - marshal:\n            json:\n              library: jackson\n- route:\n    id: rosa-order-status-api\n    from:\n      uri: \"platform-http:/api/orders/health\"\n      parameters:\n        httpMethodRestrict: GET\n      steps:\n        - setBody:\n            constant: '{\"status\":\"ready\",\"platform\":\"ROSA\",\"sqsQueue\":\"rosa-orders-queue\"}'"
+  },
+  {
+    "name": "hybrid-rosa-s3-document-api",
+    "type": "CAMEL_ROUTE",
+    "components": "platform-http, aws2-s3, jackson",
+    "description": "REST API on ROSA that stores and retrieves documents in Amazon S3 using IRSA workload identity",
+    "pattern": "ROSA + AWS S3 API Gateway",
+    "kaotoDesign": "- route:\n    id: hybrid-rosa-s3-document-api\n    from:\n      uri: \"platform-http:/documents/{action}\"\n      parameters:\n        httpMethodRestrict: POST,GET\n      steps:\n        - setProperty:\n            name: action\n            simple: \"${header.action}\"\n        - setProperty:\n            name: docId\n            simple: \"${header.X-Document-Id}\"\n        - choice:\n            when:\n              - simple: \"${exchangeProperty.action} == 'upload'\"\n                steps:\n                  - setHeader:\n                      name: CamelAwsS3Key\n                      simple: \"documents/${exchangeProperty.docId}.json\"\n                  - to:\n                      uri: \"aws2-s3:rosa-documents-bucket\"\n                      parameters:\n                        region: us-east-1\n                  - setBody:\n                      simple: '{\"stored\":true,\"bucket\":\"rosa-documents-bucket\",\"key\":\"documents/${exchangeProperty.docId}.json\",\"platform\":\"ROSA\"}'\n              - simple: \"${exchangeProperty.action} == 'download'\"\n                steps:\n                  - toD:\n                      uri: \"aws2-s3:rosa-documents-bucket?region=us-east-1&operation=getObject&key=documents/${exchangeProperty.docId}.json\"\n            otherwise:\n              steps:\n                - setHeader:\n                    name: CamelHttpResponseCode\n                    constant: \"400\"\n                - setBody:\n                    constant: '{\"error\":\"Use action=upload or download with X-Document-Id header\"}'\n        - log:\n            message: \"S3 document ${exchangeProperty.action} on ROSA for ${exchangeProperty.docId}\""
+  },
+  {
+    "name": "hybrid-rosa-sns-alert-fanout",
+    "type": "CAMEL_ROUTE",
+    "components": "kafka, aws2-sns, jackson",
+    "description": "OpenShift on AWS fans out operational alerts from Kafka to Amazon SNS topics by severity",
+    "pattern": "ROSA + AWS SNS Fan-Out",
+    "kaotoDesign": "- route:\n    id: hybrid-rosa-sns-alert-fanout\n    from:\n      uri: \"kafka:platform-alerts\"\n      parameters:\n        brokers: \"my-cluster-kafka-bootstrap:9092\"\n        groupId: rosa-sns-fanout\n      steps:\n        - unmarshal:\n            json:\n              library: jackson\n        - setProperty:\n            name: severity\n            jsonpath: \"$.severity\"\n        - setProperty:\n            name: alertMessage\n            jsonpath: \"$.message\"\n        - choice:\n            when:\n              - simple: \"${exchangeProperty.severity} == 'CRITICAL'\"\n                steps:\n                  - setHeader:\n                      name: CamelAwsSnsSubject\n                      constant: \"CRITICAL Alert - ROSA\"\n                  - to:\n                      uri: \"aws2-sns:critical-alerts-topic\"\n                      parameters:\n                        region: us-east-1\n              - simple: \"${exchangeProperty.severity} == 'WARNING'\"\n                steps:\n                  - setHeader:\n                      name: CamelAwsSnsSubject\n                      constant: \"Warning - ROSA\"\n                  - to:\n                      uri: \"aws2-sns:warning-alerts-topic\"\n                      parameters:\n                        region: us-east-1\n            otherwise:\n              steps:\n                - to:\n                    uri: \"aws2-sns:info-alerts-topic\"\n                    parameters:\n                      region: us-east-1\n        - log:\n            message: \"Alert ${exchangeProperty.severity} published to SNS from ROSA\""
+  },
+  {
+    "name": "hybrid-rosa-dynamodb-session-cache",
+    "type": "CAMEL_ROUTE",
+    "components": "platform-http, aws2-ddb, jackson",
+    "description": "Session cache API on ROSA backed by Amazon DynamoDB for stateless OpenShift pods",
+    "pattern": "ROSA + AWS DynamoDB Cache",
+    "kaotoDesign": "- route:\n    id: hybrid-rosa-dynamodb-session-cache\n    from:\n      uri: \"platform-http:/session/{sessionId}\"\n      parameters:\n        httpMethodRestrict: GET,PUT\n      steps:\n        - setProperty:\n            name: sessionId\n            simple: \"${header.sessionId}\"\n        - choice:\n            when:\n              - simple: \"${header.CamelHttpMethod} == 'PUT'\"\n                steps:\n                  - marshal:\n                      json:\n                        library: jackson\n                  - setHeader:\n                      name: CamelAwsDdbTableName\n                      constant: \"rosa-sessions\"\n                  - to:\n                      uri: \"aws2-ddb:rosa-sessions\"\n                      parameters:\n                        region: us-east-1\n                        operation: PutItem\n                  - setBody:\n                      simple: '{\"saved\":true,\"sessionId\":\"${exchangeProperty.sessionId}\",\"platform\":\"ROSA\"}'\n              - simple: \"${header.CamelHttpMethod} == 'GET'\"\n                steps:\n                  - setHeader:\n                      name: CamelAwsDdbTableName\n                      constant: \"rosa-sessions\"\n                  - toD:\n                      uri: \"aws2-ddb:rosa-sessions?region=us-east-1&operation=GetItem&key=${exchangeProperty.sessionId}\"\n        - log:\n            message: \"DynamoDB session ${exchangeProperty.sessionId} on ROSA\""
+  },
+  {
+    "name": "hybrid-rosa-lambda-async-worker",
+    "type": "CAMEL_ROUTE",
+    "components": "platform-http, aws2-lambda, jackson",
+    "description": "ROSA route offloads heavy compute to AWS Lambda while keeping orchestration on OpenShift",
+    "pattern": "ROSA + AWS Lambda Offload",
+    "kaotoDesign": "- route:\n    id: hybrid-rosa-lambda-async-worker\n    from:\n      uri: \"platform-http:/compute/offload\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - setProperty:\n            name: payload\n            simple: \"${body}\"\n        - marshal:\n            json:\n              library: jackson\n        - setHeader:\n            name: CamelAwsLambdaFunctionName\n            constant: \"rosa-heavy-compute\"\n        - to:\n            uri: \"aws2-lambda:rosa-heavy-compute\"\n            parameters:\n              region: us-east-1\n              operation: invoke\n        - unmarshal:\n            json:\n              library: jackson\n        - setBody:\n            simple: '{\"result\":${body},\"orchestrator\":\"ROSA\",\"compute\":\"AWS Lambda\"}'\n        - log:\n            message: \"Lambda offload completed from ROSA OpenShift\""
+  },
+  {
+    "name": "hybrid-rosa-kinesis-telemetry-ingest",
+    "type": "CAMEL_ROUTE",
+    "components": "kafka, aws2-kinesis, jackson",
+    "description": "Stream IoT telemetry from ROSA into Amazon Kinesis Data Streams for real-time analytics",
+    "pattern": "ROSA + AWS Kinesis Streaming",
+    "kaotoDesign": "- route:\n    id: hybrid-rosa-kinesis-telemetry-ingest\n    from:\n      uri: \"kafka:device-telemetry\"\n      parameters:\n        brokers: \"my-cluster-kafka-bootstrap:9092\"\n        groupId: rosa-kinesis-writer\n      steps:\n        - setProperty:\n            name: deviceId\n            jsonpath: \"$.deviceId\"\n        - marshal:\n            json:\n              library: jackson\n        - setHeader:\n            name: CamelAwsKinesisPartitionKey\n            simple: \"${exchangeProperty.deviceId}\"\n        - to:\n            uri: \"aws2-kinesis:rosa-telemetry-stream\"\n            parameters:\n              region: us-east-1\n              operation: putRecord\n        - log:\n            message: \"Telemetry from device ${exchangeProperty.deviceId} sent to Kinesis via ROSA\""
+  },
+  {
+    "name": "hybrid-rosa-bedrock-ai-assist",
+    "type": "CAMEL_ROUTE",
+    "components": "platform-http, aws-bedrock, jackson",
+    "description": "AI assistant endpoint on ROSA using Amazon Bedrock for inference within the AWS network",
+    "pattern": "ROSA + AWS Bedrock AI",
+    "kaotoDesign": "- route:\n    id: hybrid-rosa-bedrock-ai-assist\n    from:\n      uri: \"platform-http:/ai/assist\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - setProperty:\n            name: userPrompt\n            simple: \"${body}\"\n        - setBody:\n            simple: '{\"prompt\":\"${exchangeProperty.userPrompt}\",\"max_tokens\":1024}'\n        - to:\n            uri: \"aws-bedrock:anthropic.claude-3-sonnet\"\n            parameters:\n              region: us-east-1\n              operation: invokeModel\n        - unmarshal:\n            json:\n              library: jackson\n        - setBody:\n            simple: '{\"response\":${body},\"platform\":\"ROSA\",\"inference\":\"AWS Bedrock\"}'\n        - log:\n            message: \"Bedrock AI response served from ROSA OpenShift\""
+  },
+  {
+    "name": "hybrid-aro-blob-document-store",
+    "type": "CAMEL_ROUTE",
+    "components": "platform-http, azure-storage-blob, jackson",
+    "description": "Document store API on ARO using Azure Blob Storage with managed identity authentication",
+    "pattern": "ARO + Azure Blob Storage",
+    "kaotoDesign": "- route:\n    id: hybrid-aro-blob-document-store\n    from:\n      uri: \"platform-http:/aro/documents\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - setProperty:\n            name: docName\n            simple: \"${header.X-Document-Name}\"\n        - setHeader:\n            name: CamelAzureStorageBlobBlobName\n            simple: \"documents/${exchangeProperty.docName}\"\n        - to:\n            uri: \"azure-storage-blob:arodocuments/docs-container\"\n            parameters:\n              operation: uploadBlockBlob\n        - setBody:\n            simple: '{\"stored\":true,\"container\":\"docs-container\",\"blob\":\"documents/${exchangeProperty.docName}\",\"platform\":\"ARO\"}'\n        - log:\n            message: \"Document stored in Azure Blob from ARO: ${exchangeProperty.docName}\""
+  },
+  {
+    "name": "hybrid-aro-servicebus-orders",
+    "type": "CAMEL_ROUTE",
+    "components": "azure-servicebus, jackson, log, direct",
+    "description": "ARO order processing pipeline consuming from Azure Service Bus queue with dead-letter handling",
+    "pattern": "ARO + Azure Service Bus",
+    "kaotoDesign": "- route:\n    id: hybrid-aro-servicebus-orders\n    from:\n      uri: \"azure-servicebus:aro-orders-queue\"\n      parameters:\n        subscriptionType: queue\n      steps:\n        - unmarshal:\n            json:\n              library: jackson\n        - setProperty:\n            name: orderId\n            jsonpath: \"$.orderId\"\n        - doTry:\n            steps:\n              - log:\n                  message: \"ARO processing order ${exchangeProperty.orderId} from Service Bus\"\n              - to:\n                  uri: \"direct:validate-order\"\n              - setBody:\n                  simple: '{\"orderId\":\"${exchangeProperty.orderId}\",\"status\":\"CONFIRMED\",\"platform\":\"ARO\"}'\n            doCatch:\n              - exception:\n                  - \"java.lang.Exception\"\n                steps:\n                  - log:\n                      message: \"Order ${exchangeProperty.orderId} failed - sending to DLQ\"\n                      loggingLevel: ERROR\n                  - to:\n                      uri: \"azure-servicebus:aro-orders-dlq\"\n- route:\n    id: validate-order\n    from:\n      uri: \"direct:validate-order\"\n      steps:\n        - log:\n            message: \"Validating order on ARO OpenShift\""
+  },
+  {
+    "name": "hybrid-aro-eventhubs-telemetry",
+    "type": "CAMEL_ROUTE",
+    "components": "azure-eventhubs, jackson, kafka",
+    "description": "Bridge Kafka telemetry from ARO pods into Azure Event Hubs for Azure Monitor integration",
+    "pattern": "ARO + Azure Event Hubs",
+    "kaotoDesign": "- route:\n    id: hybrid-aro-eventhubs-telemetry\n    from:\n      uri: \"kafka:aro-telemetry\"\n      parameters:\n        brokers: \"my-cluster-kafka-bootstrap:9092\"\n        groupId: aro-eventhubs-bridge\n      steps:\n        - marshal:\n            json:\n              library: jackson\n        - setHeader:\n            name: CamelAzureEventHubsPartitionKey\n            simple: \"${header.deviceId}\"\n        - to:\n            uri: \"azure-eventhubs:aro-telemetry-hub\"\n            parameters:\n              operation: sendEvents\n        - log:\n            message: \"Telemetry forwarded to Azure Event Hubs from ARO\""
+  },
+  {
+    "name": "hybrid-aro-cosmosdb-customer-sync",
+    "type": "CAMEL_ROUTE",
+    "components": "timer, azure-cosmosdb, jackson, http",
+    "description": "Sync customer profiles from ARO API into Azure Cosmos DB for global low-latency reads",
+    "pattern": "ARO + Azure Cosmos DB",
+    "kaotoDesign": "- route:\n    id: hybrid-aro-cosmosdb-customer-sync\n    from:\n      uri: \"timer:cosmos-sync\"\n      parameters:\n        period: 120000\n      steps:\n        - setHeader:\n            name: CamelHttpMethod\n            constant: GET\n        - to:\n            uri: \"http:customer-api.openshift-integration.svc:8080/api/customers?limit=50\"\n        - unmarshal:\n            json:\n              library: jackson\n        - split:\n            expression:\n              jsonpath: \"$[*]\"\n            steps:\n              - setProperty:\n                  name: customerId\n                  jsonpath: \"$.id\"\n              - marshal:\n                  json:\n                    library: jackson\n              - to:\n                  uri: \"azure-cosmosdb:customers\"\n                  parameters:\n                    database: integration\n                    container: profiles\n                    operation: upsertItem\n              - log:\n                  message: \"Customer ${exchangeProperty.customerId} synced to Cosmos DB from ARO\""
+  },
+  {
+    "name": "hybrid-aro-keyvault-secrets-loader",
+    "type": "CAMEL_ROUTE",
+    "components": "timer, azure-key-vault, direct",
+    "description": "ARO startup route loads secrets from Azure Key Vault into OpenShift without hardcoding credentials",
+    "pattern": "ARO + Azure Key Vault",
+    "kaotoDesign": "- route:\n    id: hybrid-aro-keyvault-secrets-loader\n    from:\n      uri: \"timer:refresh-secrets\"\n      parameters:\n        period: 300000\n      steps:\n        - to:\n            uri: \"azure-key-vault:database-connection-string\"\n            parameters:\n              vaultName: aro-integration-kv\n              operation: getSecret\n        - setProperty:\n            name: dbConnection\n            simple: \"${body}\"\n        - to:\n            uri: \"azure-key-vault:api-key-external-service\"\n            parameters:\n              vaultName: aro-integration-kv\n              operation: getSecret\n        - setProperty:\n            name: apiKey\n            simple: \"${body}\"\n        - log:\n            message: \"Secrets refreshed from Azure Key Vault on ARO (values not logged)\"\n        - setBody:\n            constant: '{\"secretsRefreshed\":true,\"platform\":\"ARO\",\"source\":\"Azure Key Vault\"}'"
+  },
+  {
+    "name": "hybrid-aro-blob-to-servicebus",
+    "type": "CAMEL_ROUTE",
+    "components": "azure-storage-blob, azure-servicebus, jackson",
+    "description": "ARO pipeline: new blobs in Azure Storage trigger Service Bus notifications for downstream processing",
+    "pattern": "ARO + Blob-to-ServiceBus Event",
+    "kaotoDesign": "- route:\n    id: hybrid-aro-blob-to-servicebus\n    from:\n      uri: \"azure-storage-blob:aroevents/incoming-container\"\n      parameters:\n        operation: listBlobFlatSegment\n        delay: 30000\n      steps:\n        - split:\n            expression:\n              simple: \"${body}\"\n            steps:\n              - setProperty:\n                  name: blobName\n                  simple: \"${body.name}\"\n              - setBody:\n                  simple: '{\"event\":\"BlobCreated\",\"blob\":\"${exchangeProperty.blobName}\",\"platform\":\"ARO\",\"timestamp\":\"${date:now:yyyy-MM-dd HH:mm:ss}\"}'\n              - marshal:\n                  json:\n                    library: jackson\n              - to:\n                  uri: \"azure-servicebus:blob-events-topic\"\n                  parameters:\n                    subscriptionType: topic\n              - log:\n                  message: \"Blob event ${exchangeProperty.blobName} published to Service Bus from ARO\""
+  },
+  {
+    "name": "hybrid-aro-storage-queue-tasks",
+    "type": "CAMEL_ROUTE",
+    "components": "azure-storage-queue, jackson, log",
+    "description": "Background task worker on ARO consuming from Azure Storage Queue for async job processing",
+    "pattern": "ARO + Azure Storage Queue",
+    "kaotoDesign": "- route:\n    id: hybrid-aro-storage-queue-tasks\n    from:\n      uri: \"azure-storage-queue:aro-background-tasks\"\n      parameters:\n        visibilityTimeout: 30\n      steps:\n        - unmarshal:\n            json:\n              library: jackson\n        - setProperty:\n            name: taskId\n            jsonpath: \"$.taskId\"\n        - setProperty:\n            name: taskType\n            jsonpath: \"$.type\"\n        - log:\n            message: \"ARO processing background task ${exchangeProperty.taskId} type=${exchangeProperty.taskType}\"\n        - choice:\n            when:\n              - simple: \"${exchangeProperty.taskType} == 'REPORT'\"\n                steps:\n                  - log:\n                      message: \"Generating report on ARO for task ${exchangeProperty.taskId}\"\n              - simple: \"${exchangeProperty.taskType} == 'CLEANUP'\"\n                steps:\n                  - log:\n                      message: \"Running cleanup on ARO for task ${exchangeProperty.taskId}\"\n            otherwise:\n              steps:\n                - log:\n                    message: \"Generic task handler on ARO\"\n        - setBody:\n            simple: '{\"taskId\":\"${exchangeProperty.taskId}\",\"status\":\"DONE\",\"platform\":\"ARO\"}'"
+  },
+  {
+    "name": "hybrid-gcp-pubsub-events",
+    "type": "CAMEL_ROUTE",
+    "components": "google-pubsub, jackson, log",
+    "description": "Event consumer on OpenShift GCP subscribing to Cloud Pub/Sub for cross-service notifications",
+    "pattern": "OpenShift GCP + Cloud Pub/Sub",
+    "kaotoDesign": "- route:\n    id: hybrid-gcp-pubsub-events\n    from:\n      uri: \"google-pubsub:gcp-integration-project:order-events-sub\"\n      steps:\n        - unmarshal:\n            json:\n              library: jackson\n        - setProperty:\n            name: eventType\n            jsonpath: \"$.type\"\n        - setProperty:\n            name: eventId\n            jsonpath: \"$.id\"\n        - log:\n            message: \"GCP Pub/Sub event ${exchangeProperty.eventType} id=${exchangeProperty.eventId} on OpenShift\"\n        - choice:\n            when:\n              - simple: \"${exchangeProperty.eventType} == 'ORDER_PLACED'\"\n                steps:\n                  - log:\n                      message: \"Processing order placement from Pub/Sub\"\n              - simple: \"${exchangeProperty.eventType} == 'PAYMENT_CONFIRMED'\"\n                steps:\n                  - log:\n                      message: \"Payment confirmed - triggering fulfillment\"\n            otherwise:\n              steps:\n                - log:\n                    message: \"Unhandled event type ${exchangeProperty.eventType}\""
+  },
+  {
+    "name": "hybrid-gcp-storage-archive",
+    "type": "CAMEL_ROUTE",
+    "components": "platform-http, google-storage, jackson",
+    "description": "Archive API on OpenShift GCP writing audit logs to Google Cloud Storage buckets",
+    "pattern": "OpenShift GCP + Cloud Storage",
+    "kaotoDesign": "- route:\n    id: hybrid-gcp-storage-archive\n    from:\n      uri: \"platform-http:/gcp/archive\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - setProperty:\n            name: auditId\n            simple: \"${header.X-Audit-Id}\"\n        - marshal:\n            json:\n              library: jackson\n        - setHeader:\n            name: CamelGoogleStorageObjectName\n            simple: \"audit/${date:now:yyyy/MM/dd}/${exchangeProperty.auditId}.json\"\n        - to:\n            uri: \"google-storage:gcp-audit-bucket\"\n            parameters:\n              operation: createObject\n        - setBody:\n            simple: '{\"archived\":true,\"bucket\":\"gcp-audit-bucket\",\"platform\":\"OpenShift-GCP\"}'\n        - log:\n            message: \"Audit ${exchangeProperty.auditId} archived to GCS\""
+  },
+  {
+    "name": "hybrid-gcp-bigquery-analytics",
+    "type": "CAMEL_ROUTE",
+    "components": "kafka, google-bigquery, jackson",
+    "description": "Stream business events from OpenShift on GCP into BigQuery for analytics and dashboards",
+    "pattern": "OpenShift GCP + BigQuery Streaming",
+    "kaotoDesign": "- route:\n    id: hybrid-gcp-bigquery-analytics\n    from:\n      uri: \"kafka:business-events\"\n      parameters:\n        brokers: \"my-cluster-kafka-bootstrap:9092\"\n        groupId: gcp-bigquery-writer\n      steps:\n        - unmarshal:\n            json:\n              library: jackson\n        - setProperty:\n            name: eventName\n            jsonpath: \"$.event\"\n        - marshal:\n            json:\n              library: jackson\n        - to:\n            uri: \"google-bigquery:gcp-integration-project:analytics\"\n            parameters:\n              datasetId: integration_events\n              tableId: event_stream\n              operation: insertTableData\n        - log:\n            message: \"Event ${exchangeProperty.eventName} streamed to BigQuery from OpenShift GCP\""
+  },
+  {
+    "name": "hybrid-gcp-pubsub-kafka-bridge",
+    "type": "CAMEL_ROUTE",
+    "components": "google-pubsub, kafka, jackson",
+    "description": "Bidirectional bridge between Cloud Pub/Sub and Kafka on OpenShift running on Google Cloud",
+    "pattern": "OpenShift GCP + Pub/Sub-Kafka Bridge",
+    "kaotoDesign": "- route:\n    id: hybrid-gcp-pubsub-to-kafka\n    from:\n      uri: \"google-pubsub:gcp-integration-project:external-events-sub\"\n      steps:\n        - marshal:\n            json:\n              library: jackson\n        - to:\n            uri: \"kafka:internal-events\"\n            parameters:\n              brokers: \"my-cluster-kafka-bootstrap:9092\"\n        - log:\n            message: \"Pub/Sub message bridged to Kafka on OpenShift GCP\"\n- route:\n    id: hybrid-gcp-kafka-to-pubsub\n    from:\n      uri: \"kafka:outbound-gcp\"\n      parameters:\n        brokers: \"my-cluster-kafka-bootstrap:9092\"\n        groupId: gcp-pubsub-publisher\n      steps:\n        - to:\n            uri: \"google-pubsub:gcp-integration-project:outbound-events\"\n        - log:\n            message: \"Kafka message published to Cloud Pub/Sub from OpenShift GCP\""
+  },
+  {
+    "name": "hybrid-gcp-storage-trigger-pipeline",
+    "type": "CAMEL_ROUTE",
+    "components": "timer, google-storage, google-pubsub, jackson",
+    "description": "GCS object polling on OpenShift GCP triggers Pub/Sub notifications for ETL pipelines",
+    "pattern": "OpenShift GCP + GCS Event Pipeline",
+    "kaotoDesign": "- route:\n    id: hybrid-gcp-storage-trigger-pipeline\n    from:\n      uri: \"timer:gcs-poll\"\n      parameters:\n        period: 60000\n      steps:\n        - to:\n            uri: \"google-storage:gcp-ingest-bucket\"\n            parameters:\n              operation: listObjects\n              prefix: \"incoming/\"\n        - split:\n            expression:\n              simple: \"${body}\"\n            steps:\n              - setProperty:\n                  name: objectName\n                  simple: \"${body.name}\"\n              - setBody:\n                  simple: '{\"event\":\"ObjectFinalized\",\"object\":\"${exchangeProperty.objectName}\",\"platform\":\"OpenShift-GCP\"}'\n              - marshal:\n                  json:\n                    library: jackson\n              - to:\n                  uri: \"google-pubsub:gcp-integration-project:etl-triggers\"\n              - log:\n                  message: \"GCS object ${exchangeProperty.objectName} triggered ETL via Pub/Sub\""
+  },
+  {
+    "name": "hybrid-gcp-pubsub-slack-notify",
+    "type": "CAMEL_ROUTE",
+    "components": "google-pubsub, http, jackson",
+    "description": "Operational alerts from Pub/Sub on OpenShift GCP forwarded to Slack webhook for on-call teams",
+    "pattern": "OpenShift GCP + Pub/Sub Alert Router",
+    "kaotoDesign": "- route:\n    id: hybrid-gcp-pubsub-slack-notify\n    from:\n      uri: \"google-pubsub:gcp-integration-project:ops-alerts-sub\"\n      steps:\n        - unmarshal:\n            json:\n              library: jackson\n        - setProperty:\n            name: alertLevel\n            jsonpath: \"$.level\"\n        - setProperty:\n            name: alertMsg\n            jsonpath: \"$.message\"\n        - setBody:\n            simple: '{\"text\":\"[${exchangeProperty.alertLevel}] OpenShift-GCP: ${exchangeProperty.alertMsg}\"}'\n        - setHeader:\n            name: CamelHttpMethod\n            constant: POST\n        - setHeader:\n            name: Content-Type\n            constant: \"application/json\"\n        - to:\n            uri: \"https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK\"\n        - log:\n            message: \"Alert ${exchangeProperty.alertLevel} forwarded to Slack from OpenShift GCP\""
+  },
+  {
+    "name": "hybrid-gcp-multi-region-failover",
+    "type": "CAMEL_ROUTE",
+    "components": "platform-http, google-storage, google-pubsub, direct",
+    "description": "Multi-region failover on OpenShift GCP: primary GCS with Pub/Sub failover to secondary region",
+    "pattern": "OpenShift GCP + Multi-Region Failover",
+    "kaotoDesign": "- route:\n    id: hybrid-gcp-multi-region-failover\n    from:\n      uri: \"platform-http:/gcp/store\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - setProperty:\n            name: objectName\n            simple: \"${header.X-Object-Name}\"\n        - setProperty:\n            name: content\n            simple: \"${body}\"\n        - doTry:\n            steps:\n              - setHeader:\n                  name: CamelGoogleStorageObjectName\n                  simple: \"data/${exchangeProperty.objectName}\"\n              - setBody:\n                  simple: \"${exchangeProperty.content}\"\n              - to:\n                  uri: \"google-storage:gcp-primary-bucket\"\n                  parameters:\n                    operation: createObject\n              - setBody:\n                  simple: '{\"stored\":true,\"region\":\"us-central1\",\"bucket\":\"gcp-primary-bucket\"}'\n              - log:\n                  message: \"Stored in primary GCS region from OpenShift GCP\"\n            doCatch:\n              - exception:\n                  - \"java.lang.Exception\"\n                steps:\n                  - log:\n                      message: \"Primary GCS failed - failing over to secondary region\"\n                      loggingLevel: WARN\n                  - setBody:\n                      simple: '{\"event\":\"FAILOVER\",\"object\":\"${exchangeProperty.objectName}\"}'\n                  - marshal:\n                      json:\n                        library: jackson\n                  - to:\n                      uri: \"google-pubsub:gcp-integration-project:failover-storage\"\n                  - setBody:\n                      simple: '{\"stored\":true,\"region\":\"europe-west1\",\"via\":\"failover-pubsub\"}'"
+  }
+]
