@@ -123,12 +123,15 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         String namespace = resource.getMetadata().getNamespace();
         IntegrationType type = spec.getResolvedType();
 
-        // Handle deletion cleanup for ephemeral flows
-        if (resource.getMetadata().getDeletionTimestamp() != null
-                && spec.getDeploymentMode() == DeploymentMode.EPHEMERAL) {
-            ephemeralCleanupService.cleanup(flowName, namespace);
-            removeFinalizer(resource, EphemeralResourceLabels.FINALIZER);
-            return UpdateControl.patchResource(resource);
+        // Handle deletion: always clean up ephemeral resources if finalizer is present
+        if (resource.getMetadata().getDeletionTimestamp() != null) {
+            var finalizers = resource.getMetadata().getFinalizers();
+            if (finalizers != null && finalizers.contains(EphemeralResourceLabels.FINALIZER)) {
+                ephemeralCleanupService.cleanup(flowName, namespace);
+                removeFinalizer(resource, EphemeralResourceLabels.FINALIZER);
+                return UpdateControl.patchResource(resource);
+            }
+            return UpdateControl.noUpdate();
         }
 
         if (spec.getDeploymentMode() == DeploymentMode.EPHEMERAL) {
