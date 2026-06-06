@@ -1,0 +1,37 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-jsonplaceholder
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: poll-jsonplaceholder
+        from:
+          uri: "timer:pollPosts"
+          parameters:
+            period: "30000"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - to:
+                uri: "https://jsonplaceholder.typicode.com/posts?_limit=5"
+            - unmarshal:
+                json: {}
+            - split:
+                jsonpath: "$"
+                steps:
+                  - setProperty:
+                      name: postTitle
+                      jsonpath: "$.title"
+                  - setProperty:
+                      name: postId
+                      jsonpath: "$.id"
+                  - log:
+                      message: "Post #${exchangeProperty.postId}: ${exchangeProperty.postTitle}"

@@ -1,0 +1,48 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-github-repos
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: github-trending-repos
+        from:
+          uri: "timer:githubPoll"
+          parameters:
+            period: "120000"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - setHeader:
+                name: Accept
+                constant: "application/vnd.github.v3+json"
+            - to:
+                uri: "https://api.github.com/search/repositories?q=camel+quarkus&sort=stars&per_page=5"
+            - unmarshal:
+                json: {}
+            - setProperty:
+                name: totalCount
+                jsonpath: "$.total_count"
+            - log:
+                message: "Found ${exchangeProperty.totalCount} Camel+Quarkus repos on GitHub"
+            - split:
+                jsonpath: "$.items"
+                steps:
+                  - setProperty:
+                      name: repoName
+                      jsonpath: "$.full_name"
+                  - setProperty:
+                      name: stars
+                      jsonpath: "$.stargazers_count"
+                  - setProperty:
+                      name: description
+                      jsonpath: "$.description"
+                  - log:
+                      message: "Repo: ${exchangeProperty.repoName} (${exchangeProperty.stars} stars) — ${exchangeProperty.description}"

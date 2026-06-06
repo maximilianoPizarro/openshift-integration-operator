@@ -1,0 +1,53 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-countries-cbr
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: countries-content-router
+        from:
+          uri: "timer:countryPoll"
+          parameters:
+            period: "45000"
+            repeatCount: "10"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - to:
+                uri: "https://restcountries.com/v3.1/region/americas?fields=name,population,region,subregion"
+            - unmarshal:
+                json: {}
+            - split:
+                jsonpath: "$"
+                steps:
+                  - setProperty:
+                      name: country
+                      jsonpath: "$.name.common"
+                  - setProperty:
+                      name: population
+                      jsonpath: "$.population"
+                  - setProperty:
+                      name: subregion
+                      jsonpath: "$.subregion"
+                  - choice:
+                      when:
+                        - simple: "${exchangeProperty.population} > 100000000"
+                          steps:
+                            - log:
+                                message: "LARGE country: ${exchangeProperty.country} (${exchangeProperty.population} pop) [${exchangeProperty.subregion}]"
+                        - simple: "${exchangeProperty.population} > 10000000"
+                          steps:
+                            - log:
+                                message: "MEDIUM country: ${exchangeProperty.country} (${exchangeProperty.population} pop)"
+                      otherwise:
+                        steps:
+                          - log:
+                              message: "SMALL country: ${exchangeProperty.country} (${exchangeProperty.population} pop)"

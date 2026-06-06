@@ -1,0 +1,37 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-joke-api
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 1800
+  kaotoDesign: |
+    - route:
+        id: random-jokes
+        from:
+          uri: "timer:jokeTick"
+          parameters:
+            period: "20000"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - to:
+                uri: "https://official-joke-api.appspot.com/random_joke"
+            - unmarshal:
+                json: {}
+            - setProperty:
+                name: setup
+                jsonpath: "$.setup"
+            - setProperty:
+                name: punchline
+                jsonpath: "$.punchline"
+            - setProperty:
+                name: jokeType
+                jsonpath: "$.type"
+            - log:
+                message: "[${exchangeProperty.jokeType}] ${exchangeProperty.setup} ... ${exchangeProperty.punchline}"

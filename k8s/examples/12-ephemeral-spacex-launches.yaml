@@ -1,0 +1,45 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-spacex-launches
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: spacex-latest-launch
+        from:
+          uri: "timer:spacexPoll"
+          parameters:
+            period: "120000"
+          steps:
+            - doTry:
+                steps:
+                  - setHeader:
+                      name: CamelHttpMethod
+                      constant: GET
+                  - to:
+                      uri: "https://api.spacexdata.com/v5/launches/latest"
+                  - unmarshal:
+                      json: {}
+                  - setProperty:
+                      name: missionName
+                      jsonpath: "$.name"
+                  - setProperty:
+                      name: launchSuccess
+                      jsonpath: "$.success"
+                  - setProperty:
+                      name: flightNumber
+                      jsonpath: "$.flight_number"
+                  - log:
+                      message: "SpaceX Flight #${exchangeProperty.flightNumber}: ${exchangeProperty.missionName} — success=${exchangeProperty.launchSuccess}"
+                doCatch:
+                  - exception:
+                      - java.lang.Exception
+                    steps:
+                      - log:
+                          message: "Error fetching SpaceX data: ${exception.message}"
