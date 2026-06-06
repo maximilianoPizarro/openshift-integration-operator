@@ -4,8 +4,8 @@ metadata:
   name: saga-workflow
   namespace: openshift-integration
 spec:
-  integrationType: SONATAFLOW
-  engine: SONATAFLOW
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
   gitRepository: https://gitea.example.com/user1/saga-workflow
   branch: main
   targeting:

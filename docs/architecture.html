@@ -351,19 +351,29 @@
               <td>Git branch to push and build (default: <code>main</code>)</td>
             </tr>
             <tr>
-              <td><code>targeting.strategy</code></td>
-              <td>string</td>
-              <td>Deployment strategy: <code>explicit</code> (named clusters) or <code>all</code></td>
-            </tr>
-            <tr>
-              <td><code>targeting.clusters</code></td>
-              <td>[]string</td>
-              <td>Clusters where ArgoCD should deploy the worker (when strategy is <code>explicit</code>)</td>
+              <td><code>integrationType</code></td>
+              <td>enum</td>
+              <td><code>CAMEL_ROUTE</code>, <code>CAMEL_KAMELET</code>, <code>CAMEL_PIPE</code>, <code>CAMEL_TEST</code>, or <code>SONATAFLOW</code></td>
             </tr>
             <tr>
               <td><code>engine</code></td>
               <td>enum</td>
               <td><code>CAMEL</code> or <code>SONATAFLOW</code></td>
+            </tr>
+            <tr>
+              <td><code>targeting.strategy</code></td>
+              <td>string</td>
+              <td><code>explicit</code> (named clusters), <code>all</code>, or <code>selector</code> (label match)</td>
+            </tr>
+            <tr>
+              <td><code>targeting.clusters</code></td>
+              <td>[]string</td>
+              <td>Target clusters when strategy is <code>explicit</code></td>
+            </tr>
+            <tr>
+              <td><code>targeting.clusterSelector.matchLabels</code></td>
+              <td>map</td>
+              <td>Label selector for dynamic cluster matching (when strategy is <code>selector</code>)</td>
             </tr>
             <tr>
               <td><code>kaotoDesign</code></td>
@@ -412,6 +422,11 @@
               <td><code>argoApplicationName</code></td>
               <td>string</td>
               <td>ArgoCD Application name (e.g. <code>iflow-&lt;name&gt;</code>)</td>
+            </tr>
+            <tr>
+              <td><code>lastScaffoldedHash</code></td>
+              <td>string</td>
+              <td>SHA-256 of the last scaffolded kaotoDesign — prevents redundant builds when unchanged</td>
             </tr>
             <tr>
               <td><code>message</code></td>

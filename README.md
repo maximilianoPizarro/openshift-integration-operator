@@ -144,6 +144,7 @@ metadata:
   name: rest-to-kafka
   namespace: openshift-integration
 spec:
+  deploymentMode: GITOPS
   integrationType: CAMEL_ROUTE
   engine: CAMEL
   gitRepository: https://gitea.example.com/user1/rest-to-kafka
@@ -175,6 +176,7 @@ metadata:
   name: order-routing-cbr
   namespace: openshift-integration
 spec:
+  deploymentMode: GITOPS
   integrationType: CAMEL_ROUTE
   engine: CAMEL
   gitRepository: https://gitea.example.com/user1/order-routing-cbr
@@ -214,6 +216,7 @@ metadata:
   name: file-processor-workflow
   namespace: openshift-integration
 spec:
+  deploymentMode: GITOPS
   integrationType: SONATAFLOW
   engine: SONATAFLOW
   gitRepository: https://gitea.example.com/user1/file-processor-workflow

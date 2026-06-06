@@ -246,6 +246,7 @@ metadata:
   name: rest-to-kafka
   namespace: openshift-integration
 spec:
+  deploymentMode: GITOPS
   integrationType: CAMEL_ROUTE
   engine: CAMEL
   gitRepository: https://gitea.example.com/user1/rest-to-kafka
@@ -271,6 +272,7 @@ metadata:
   name: order-routing-cbr
   namespace: openshift-integration
 spec:
+  deploymentMode: GITOPS
   integrationType: CAMEL_ROUTE
   engine: CAMEL
   gitRepository: https://gitea.example.com/user1/order-routing-cbr
@@ -312,6 +314,7 @@ metadata:
   name: parallel-enrichment
   namespace: openshift-integration
 spec:
+  deploymentMode: GITOPS
   integrationType: CAMEL_ROUTE
   engine: CAMEL
   gitRepository: https://gitea.example.com/user1/parallel-enrichment
@@ -343,6 +346,7 @@ metadata:
   name: error-handling-dlq
   namespace: openshift-integration
 spec:
+  deploymentMode: GITOPS
   integrationType: CAMEL_ROUTE
   engine: CAMEL
   gitRepository: https://gitea.example.com/user1/error-handling-dlq
@@ -381,6 +385,7 @@ metadata:
   name: s3-to-db-kamelet
   namespace: openshift-integration
 spec:
+  deploymentMode: GITOPS
   integrationType: CAMEL_KAMELET
   engine: CAMEL
   gitRepository: https://gitea.example.com/user1/s3-to-db-kamelet
@@ -418,6 +423,7 @@ metadata:
   name: etl-pipe
   namespace: openshift-integration
 spec:
+  deploymentMode: GITOPS
   integrationType: CAMEL_PIPE
   engine: CAMEL
   gitRepository: https://gitea.example.com/user1/etl-pipe
@@ -445,15 +451,16 @@ spec:
                   - to:
                       uri: "sql:INSERT INTO target_table(data, etl_time) VALUES (:#data, NOW())?dataSource=targetDS"</code></pre>
 
-        <h3>7. SonataFlow — File Processor Workflow</h3>
+        <h3>7. Camel Route — File Processor with CBR</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
   name: file-processor-workflow
   namespace: openshift-integration
 spec:
-  integrationType: SONATAFLOW
-  engine: SONATAFLOW
+  deploymentMode: GITOPS
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
   gitRepository: https://gitea.example.com/user1/file-processor-workflow
   branch: main
   targeting:
@@ -487,15 +494,16 @@ spec:
                     - to:
                         uri: "file:/data/unprocessed"</code></pre>
 
-        <h3>8. SonataFlow — Saga Pattern</h3>
+        <h3>8. Camel Route — Saga Pattern</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
   name: saga-workflow
   namespace: openshift-integration
 spec:
-  integrationType: SONATAFLOW
-  engine: SONATAFLOW
+  deploymentMode: GITOPS
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
   gitRepository: https://gitea.example.com/user1/saga-workflow
   branch: main
   targeting:
@@ -544,6 +552,38 @@ spec:
             - log:
                 message: "Hello from ephemeral Quick Try mode"</code></pre>
         <p>Or use the OpenShift Console <strong>Integration Flows</strong> page with the <strong>Quick Try</strong> toggle enabled when creating a flow.</p>
+
+        <p><h3>Promote Ephemeral to GitOps</h3>
+        <p>When an ephemeral flow is running, click <strong>Promote to GitOps</strong> in the console plugin (or call the REST API). The operator creates a Git repository, pushes the scaffolded source, and converts the CR to <code>deploymentMode: GITOPS</code> — triggering Tekton build and ArgoCD sync automatically.</p>
+        <pre><code># REST API equivalent
+curl -X POST "https://&lt;operator&gt;/api/flows/ephemeral-camel-demo/promote-to-gitops"   -H "Content-Type: application/json"   -d '{"gitRepository":"https://gitea.example.com/user1/my-flow","branch":"main"}'</code></pre>
+
+        <h3>10. Multi-cluster with Label Selector</h3>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: multicluster-flow
+  namespace: openshift-integration
+spec:
+  deploymentMode: GITOPS
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  gitRepository: https://gitea.example.com/user1/multicluster-flow
+  branch: main
+  targeting:
+    strategy: selector
+    clusterSelector:
+      matchLabels:
+        env: production
+        region: us-east
+  kaotoDesign: |
+    - route:
+        id: multicluster-flow
+        from:
+          uri: "timer:tick?period=30000"
+          steps:
+            - log:
+                message: "Running on production clusters in us-east"</code></pre>
 
         <p>Apply any example with:</p>
         <pre><code>oc apply -f integrationflow.yaml
