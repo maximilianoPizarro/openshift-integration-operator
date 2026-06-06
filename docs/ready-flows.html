@@ -185,8 +185,8 @@
     <h1>Ready-to-Use Integration Flows</h1>
     <p>Complete IntegrationFlow CRs with real Camel route logic — copy, apply, run</p>
     <div class="badge-row">
-      <span class="badge" id="totalBadge">120+ Flows</span>
-      <span class="badge">10 Pattern Categories</span>
+      <span class="badge" id="totalBadge">140+ Flows</span>
+      <span class="badge">13 Pattern Categories</span>
       <span class="badge">deploymentMode: EPHEMERAL</span>
       <span class="badge">Camel 4.18 / Quarkus 3.36</span>
     </div>
@@ -213,6 +213,7 @@
     <button class="filter-btn" data-cat="hybrid">Hybrid Cloud</button>
     <button class="filter-btn" data-cat="realworld">Real-World APIs</button>
     <button class="filter-btn" data-cat="enterprise">Enterprise</button>
+    <button class="filter-btn" data-cat="publicapi">Public APIs</button>
     <span class="count-label" id="countLabel">Showing 0 of 0</span>
   </div>
 
@@ -8801,6 +8802,751 @@ const FLOWS = [
                   - log:
                       message: "Report generation failed: \${exception.message}"
                       loggingLevel: ERROR`
+      }
+    ]
+  },
+  {
+    id: "publicapi", icon: "🌍", title: "Public API Quickstart (No Auth)",
+    flows: [
+      {
+        name: "publicapi-bitcoin-price-poll",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Polls CoinDesk every 30s and logs the current Bitcoin price in USD",
+        pattern: "Simple Poll + Log",
+        kaotoDesign: `- route:
+    id: publicapi-bitcoin-price-poll
+    from:
+      uri: "timer:bitcoin"
+      parameters:
+        period: "30000"
+      steps:
+        - to:
+            uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: btcPrice
+            jsonpath:
+              expression: "$.bpi.USD.rate"
+        - setProperty:
+            name: btcCurrency
+            jsonpath:
+              expression: "$.bpi.USD.code"
+        - log:
+            message: "Bitcoin price: \${exchangeProperty.btcPrice} \${exchangeProperty.btcCurrency}"`
+      },
+      {
+        name: "publicapi-spacex-latest-launch",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Fetches the latest SpaceX launch and logs mission name, date, and success status",
+        pattern: "Simple Poll + Log",
+        kaotoDesign: `- route:
+    id: publicapi-spacex-latest-launch
+    from:
+      uri: "timer:spacex"
+      parameters:
+        period: "60000"
+      steps:
+        - to:
+            uri: "https://api.spacexdata.com/v5/launches/latest"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: missionName
+            jsonpath:
+              expression: "$.name"
+        - setProperty:
+            name: launchDate
+            jsonpath:
+              expression: "$.date_utc"
+        - setProperty:
+            name: launchSuccess
+            jsonpath:
+              expression: "$.success"
+        - log:
+            message: "SpaceX latest: \${exchangeProperty.missionName} on \${exchangeProperty.launchDate} — success: \${exchangeProperty.launchSuccess}"`
+      },
+      {
+        name: "publicapi-cat-fact",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Fetches a random cat fact every 20s and logs it",
+        pattern: "Simple Poll + Log",
+        kaotoDesign: `- route:
+    id: publicapi-cat-fact
+    from:
+      uri: "timer:catfact"
+      parameters:
+        period: "20000"
+      steps:
+        - to:
+            uri: "https://catfact.ninja/fact"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: fact
+            jsonpath:
+              expression: "$.fact"
+        - log:
+            message: "Cat Fact: \${exchangeProperty.fact}"`
+      },
+      {
+        name: "publicapi-random-joke",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Fetches a random joke and logs the setup and punchline",
+        pattern: "Simple Poll + Log",
+        kaotoDesign: `- route:
+    id: publicapi-random-joke
+    from:
+      uri: "timer:joke"
+      parameters:
+        period: "25000"
+      steps:
+        - to:
+            uri: "https://official-joke-api.appspot.com/random_joke"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: jokeSetup
+            jsonpath:
+              expression: "$.setup"
+        - setProperty:
+            name: jokePunchline
+            jsonpath:
+              expression: "$.punchline"
+        - log:
+            message: "Joke — \${exchangeProperty.jokeSetup} ... \${exchangeProperty.jokePunchline}"`
+      },
+      {
+        name: "publicapi-americas-countries-split",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, split, log",
+        description: "Fetches all countries in the Americas and splits the array to log each country name and capital",
+        pattern: "Poll + Split Array",
+        kaotoDesign: `- route:
+    id: publicapi-americas-countries-split
+    from:
+      uri: "timer:countries"
+      parameters:
+        period: "120000"
+      steps:
+        - to:
+            uri: "https://restcountries.com/v3.1/region/americas"
+        - unmarshal:
+            json: {}
+        - split:
+            jsonpath: "$[*]"
+            steps:
+              - setProperty:
+                  name: countryName
+                  jsonpath:
+                    expression: "$.name.common"
+              - setProperty:
+                  name: capital
+                  jsonpath:
+                    expression: "$.capital[0]"
+              - log:
+                  message: "Country: \${exchangeProperty.countryName}, Capital: \${exchangeProperty.capital}"`
+      },
+      {
+        name: "publicapi-jsonplaceholder-users-split",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, split, log",
+        description: "Fetches all JSONPlaceholder users and splits the array to log each user's name and email",
+        pattern: "Poll + Split Array",
+        kaotoDesign: `- route:
+    id: publicapi-jsonplaceholder-users-split
+    from:
+      uri: "timer:users"
+      parameters:
+        period: "60000"
+      steps:
+        - to:
+            uri: "https://jsonplaceholder.typicode.com/users"
+        - unmarshal:
+            json: {}
+        - split:
+            jsonpath: "$[*]"
+            steps:
+              - setProperty:
+                  name: userName
+                  jsonpath:
+                    expression: "$.name"
+              - setProperty:
+                  name: userEmail
+                  jsonpath:
+                    expression: "$.email"
+              - log:
+                  message: "User: \${exchangeProperty.userName} <\${exchangeProperty.userEmail}>"`
+      },
+      {
+        name: "publicapi-posts-todos-cbr",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, split, choice, log",
+        description: "Fetches JSONPlaceholder todos and routes completed vs pending tasks to different log outputs",
+        pattern: "Content-Based Routing",
+        kaotoDesign: `- route:
+    id: publicapi-posts-todos-cbr
+    from:
+      uri: "timer:todos"
+      parameters:
+        period: "60000"
+      steps:
+        - to:
+            uri: "https://jsonplaceholder.typicode.com/todos?_limit=10"
+        - unmarshal:
+            json: {}
+        - split:
+            jsonpath: "$[*]"
+            steps:
+              - setProperty:
+                  name: todoTitle
+                  jsonpath:
+                    expression: "$.title"
+              - setProperty:
+                  name: todoCompleted
+                  jsonpath:
+                    expression: "$.completed"
+              - choice:
+                  when:
+                    - jsonpath:
+                        expression: "$[?(@.completed == true)]"
+                      steps:
+                        - log:
+                            message: "DONE: \${exchangeProperty.todoTitle}"
+                  otherwise:
+                    steps:
+                      - log:
+                          message: "PENDING: \${exchangeProperty.todoTitle}"`
+      },
+      {
+        name: "publicapi-pokemon-type-router",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, choice, log",
+        description: "Fetches Pokemon data and routes by type — fire, water, or other",
+        pattern: "Content-Based Routing",
+        kaotoDesign: `- route:
+    id: publicapi-pokemon-type-router
+    from:
+      uri: "timer:pokemon"
+      parameters:
+        period: "45000"
+      steps:
+        - to:
+            uri: "https://pokeapi.co/api/v2/pokemon/1"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: pokemonName
+            jsonpath:
+              expression: "$.name"
+        - setProperty:
+            name: pokemonType
+            jsonpath:
+              expression: "$.types[0].type.name"
+        - setProperty:
+            name: pokemonWeight
+            jsonpath:
+              expression: "$.weight"
+        - choice:
+            when:
+              - simple: "\${exchangeProperty.pokemonType} == 'fire'"
+                steps:
+                  - log:
+                      message: "FIRE type: \${exchangeProperty.pokemonName} (weight: \${exchangeProperty.pokemonWeight})"
+              - simple: "\${exchangeProperty.pokemonType} == 'water'"
+                steps:
+                  - log:
+                      message: "WATER type: \${exchangeProperty.pokemonName} (weight: \${exchangeProperty.pokemonWeight})"
+            otherwise:
+              steps:
+                - log:
+                    message: "OTHER type (\${exchangeProperty.pokemonType}): \${exchangeProperty.pokemonName} (weight: \${exchangeProperty.pokemonWeight})"`
+      },
+      {
+        name: "publicapi-bitcoin-vs-ipgeo-compose",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Calls CoinDesk and IP geolocation APIs, then logs a combined summary of Bitcoin price and current location",
+        pattern: "Multi-API Composition",
+        kaotoDesign: `- route:
+    id: publicapi-bitcoin-vs-ipgeo-compose
+    from:
+      uri: "timer:compose"
+      parameters:
+        period: "60000"
+      steps:
+        - to:
+            uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: btcRate
+            jsonpath:
+              expression: "$.bpi.USD.rate"
+        - to:
+            uri: "https://ipapi.co/json/"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: ipCity
+            jsonpath:
+              expression: "$.city"
+        - setProperty:
+            name: ipCountry
+            jsonpath:
+              expression: "$.country_name"
+        - log:
+            message: "From \${exchangeProperty.ipCity}, \${exchangeProperty.ipCountry} — BTC is \${exchangeProperty.btcRate} USD"`
+      },
+      {
+        name: "publicapi-joke-catfact-mashup",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Calls both Joke API and Cat Facts API and logs a combined fun-fact message",
+        pattern: "Multi-API Composition",
+        kaotoDesign: `- route:
+    id: publicapi-joke-catfact-mashup
+    from:
+      uri: "timer:mashup"
+      parameters:
+        period: "30000"
+      steps:
+        - to:
+            uri: "https://official-joke-api.appspot.com/random_joke"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: jokeSetup
+            jsonpath:
+              expression: "$.setup"
+        - setProperty:
+            name: jokePunchline
+            jsonpath:
+              expression: "$.punchline"
+        - to:
+            uri: "https://catfact.ninja/fact"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: catFact
+            jsonpath:
+              expression: "$.fact"
+        - log:
+            message: "Fun break — Joke: \${exchangeProperty.jokeSetup} → \${exchangeProperty.jokePunchline} | Cat Fact: \${exchangeProperty.catFact}"`
+      },
+      {
+        name: "publicapi-dog-image-with-trycatch",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, doTry, log",
+        description: "Fetches a random dog image URL with error handling — logs a fallback message on failure",
+        pattern: "Error Handling (doTry/doCatch)",
+        kaotoDesign: `- route:
+    id: publicapi-dog-image-with-trycatch
+    from:
+      uri: "timer:dog"
+      parameters:
+        period: "30000"
+      steps:
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://dog.ceo/api/breeds/image/random"
+              - unmarshal:
+                  json: {}
+              - setProperty:
+                  name: dogImage
+                  jsonpath:
+                    expression: "$.message"
+              - log:
+                  message: "Random dog image: \${exchangeProperty.dogImage}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Failed to fetch dog image: \${exception.message}"
+                      loggingLevel: WARN`
+      },
+      {
+        name: "publicapi-bored-api-trycatch",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, doTry, log",
+        description: "Suggests a random activity with doTry/doCatch fallback on API errors",
+        pattern: "Error Handling (doTry/doCatch)",
+        kaotoDesign: `- route:
+    id: publicapi-bored-api-trycatch
+    from:
+      uri: "timer:bored"
+      parameters:
+        period: "45000"
+      steps:
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://bored-api.appbrewery.com/random"
+              - unmarshal:
+                  json: {}
+              - setProperty:
+                  name: activity
+                  jsonpath:
+                    expression: "$.activity"
+              - setProperty:
+                  name: activityType
+                  jsonpath:
+                    expression: "$.type"
+              - log:
+                  message: "Bored? Try: \${exchangeProperty.activity} (type: \${exchangeProperty.activityType})"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Bored API unavailable: \${exception.message}"
+                      loggingLevel: WARN`
+      },
+      {
+        name: "publicapi-slow-number-trivia",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, log",
+        description: "Polls Numbers API every 5 minutes for a random trivia fact about a number",
+        pattern: "Throttled Polling",
+        kaotoDesign: `- route:
+    id: publicapi-slow-number-trivia
+    from:
+      uri: "timer:numbertrivia"
+      parameters:
+        period: "300000"
+      steps:
+        - to:
+            uri: "http://numbersapi.com/random/trivia"
+        - log:
+            message: "Number trivia: \${body}"`
+      },
+      {
+        name: "publicapi-hourly-bitcoin-check",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Checks Bitcoin price every 10 minutes with throttled polling cadence",
+        pattern: "Throttled Polling",
+        kaotoDesign: `- route:
+    id: publicapi-hourly-bitcoin-check
+    from:
+      uri: "timer:btccheck"
+      parameters:
+        period: "600000"
+      steps:
+        - to:
+            uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: usdRate
+            jsonpath:
+              expression: "$.bpi.USD.rate"
+        - setProperty:
+            name: eurRate
+            jsonpath:
+              expression: "$.bpi.EUR.rate"
+        - setProperty:
+            name: gbpRate
+            jsonpath:
+              expression: "$.bpi.GBP.rate"
+        - log:
+            message: "BTC check — USD: \${exchangeProperty.usdRate} | EUR: \${exchangeProperty.eurRate} | GBP: \${exchangeProperty.gbpRate}"`
+      },
+      {
+        name: "publicapi-agify-name-enrichment",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Predicts the age for a name via Agify, then enriches with nationality prediction from Nationalize",
+        pattern: "Data Enrichment",
+        kaotoDesign: `- route:
+    id: publicapi-agify-name-enrichment
+    from:
+      uri: "timer:agify"
+      parameters:
+        period: "60000"
+      steps:
+        - to:
+            uri: "https://api.agify.io?name=michael"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: predictedAge
+            jsonpath:
+              expression: "$.age"
+        - setProperty:
+            name: queryName
+            jsonpath:
+              expression: "$.name"
+        - to:
+            uri: "https://api.nationalize.io?name=michael"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: topCountry
+            jsonpath:
+              expression: "$.country[0].country_id"
+        - setProperty:
+            name: topProbability
+            jsonpath:
+              expression: "$.country[0].probability"
+        - log:
+            message: "Name: \${exchangeProperty.queryName} — predicted age: \${exchangeProperty.predictedAge}, top nationality: \${exchangeProperty.topCountry} (prob: \${exchangeProperty.topProbability})"`
+      },
+      {
+        name: "publicapi-pokemon-enriched-profile",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Fetches Pokemon data and enriches it with base stats, abilities, and sprite URL",
+        pattern: "Data Enrichment",
+        kaotoDesign: `- route:
+    id: publicapi-pokemon-enriched-profile
+    from:
+      uri: "timer:pokemon-enrich"
+      parameters:
+        period: "45000"
+      steps:
+        - to:
+            uri: "https://pokeapi.co/api/v2/pokemon/1"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: pokeName
+            jsonpath:
+              expression: "$.name"
+        - setProperty:
+            name: pokeHeight
+            jsonpath:
+              expression: "$.height"
+        - setProperty:
+            name: pokeWeight
+            jsonpath:
+              expression: "$.weight"
+        - setProperty:
+            name: pokeAbility
+            jsonpath:
+              expression: "$.abilities[0].ability.name"
+        - setProperty:
+            name: pokeSprite
+            jsonpath:
+              expression: "$.sprites.front_default"
+        - log:
+            message: "Pokemon profile — \${exchangeProperty.pokeName}: height=\${exchangeProperty.pokeHeight}, weight=\${exchangeProperty.pokeWeight}, ability=\${exchangeProperty.pokeAbility}, sprite=\${exchangeProperty.pokeSprite}"`
+      },
+      {
+        name: "publicapi-post-comments-aggregate",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, split, log",
+        description: "Fetches comments for a JSONPlaceholder post and aggregates them into a summary count",
+        pattern: "Aggregation",
+        kaotoDesign: `- route:
+    id: publicapi-post-comments-aggregate
+    from:
+      uri: "timer:comments-agg"
+      parameters:
+        period: "90000"
+      steps:
+        - to:
+            uri: "https://jsonplaceholder.typicode.com/posts/1/comments"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: totalComments
+            jsonpath:
+              expression: "$.length()"
+        - split:
+            jsonpath: "$[*]"
+            steps:
+              - setProperty:
+                  name: commenterName
+                  jsonpath:
+                    expression: "$.name"
+              - setProperty:
+                  name: commenterEmail
+                  jsonpath:
+                    expression: "$.email"
+              - log:
+                  message: "Comment by \${exchangeProperty.commenterName} (\${exchangeProperty.commenterEmail})"
+        - log:
+            message: "Aggregation complete — total comments on post 1: \${exchangeProperty.totalComments}"`
+      },
+      {
+        name: "publicapi-multi-currency-aggregate",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, log",
+        description: "Aggregates Bitcoin prices across USD, EUR, and GBP from CoinDesk into a single summary log",
+        pattern: "Aggregation",
+        kaotoDesign: `- route:
+    id: publicapi-multi-currency-aggregate
+    from:
+      uri: "timer:multi-currency"
+      parameters:
+        period: "120000"
+      steps:
+        - to:
+            uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: usd
+            jsonpath:
+              expression: "$.bpi.USD.rate_float"
+        - setProperty:
+            name: eur
+            jsonpath:
+              expression: "$.bpi.EUR.rate_float"
+        - setProperty:
+            name: gbp
+            jsonpath:
+              expression: "$.bpi.GBP.rate_float"
+        - setProperty:
+            name: updatedTime
+            jsonpath:
+              expression: "$.time.updated"
+        - log:
+            message: "BTC aggregate — USD: \${exchangeProperty.usd}, EUR: \${exchangeProperty.eur}, GBP: \${exchangeProperty.gbp} (as of \${exchangeProperty.updatedTime})"`
+      },
+      {
+        name: "publicapi-ip-geo-filter",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, filter, log",
+        description: "Fetches IP geolocation data and only logs if the detected country is valid",
+        pattern: "Filter Pattern",
+        kaotoDesign: `- route:
+    id: publicapi-ip-geo-filter
+    from:
+      uri: "timer:ipfilter"
+      parameters:
+        period: "60000"
+      steps:
+        - to:
+            uri: "https://ipapi.co/json/"
+        - unmarshal:
+            json: {}
+        - setProperty:
+            name: detectedCountry
+            jsonpath:
+              expression: "$.country_name"
+        - setProperty:
+            name: detectedCity
+            jsonpath:
+              expression: "$.city"
+        - setProperty:
+            name: detectedTimezone
+            jsonpath:
+              expression: "$.timezone"
+        - filter:
+            jsonpath:
+              expression: "$[?(@.country_code != 'XX')]"
+            steps:
+              - log:
+                  message: "IP located in \${exchangeProperty.detectedCity}, \${exchangeProperty.detectedCountry} (tz: \${exchangeProperty.detectedTimezone})"`
+      },
+      {
+        name: "publicapi-completed-todos-filter",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, split, filter, log",
+        description: "Fetches JSONPlaceholder todos and filters to only log completed tasks",
+        pattern: "Filter Pattern",
+        kaotoDesign: `- route:
+    id: publicapi-completed-todos-filter
+    from:
+      uri: "timer:todofilter"
+      parameters:
+        period: "60000"
+      steps:
+        - to:
+            uri: "https://jsonplaceholder.typicode.com/todos?_limit=20"
+        - unmarshal:
+            json: {}
+        - split:
+            jsonpath: "$[*]"
+            steps:
+              - setProperty:
+                  name: todoId
+                  jsonpath:
+                    expression: "$.id"
+              - setProperty:
+                  name: todoTitle
+                  jsonpath:
+                    expression: "$.title"
+              - filter:
+                  jsonpath:
+                    expression: "$[?(@.completed == true)]"
+                  steps:
+                    - log:
+                        message: "Completed todo #\${exchangeProperty.todoId}: \${exchangeProperty.todoTitle}"`
+      },
+      {
+        name: "publicapi-batch-universities",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, split, log",
+        description: "One-shot batch: fetches Argentine universities, splits the list, and logs each with a repeatCount of 1",
+        pattern: "Scheduled Batch",
+        kaotoDesign: `- route:
+    id: publicapi-batch-universities
+    from:
+      uri: "timer:universities"
+      parameters:
+        repeatCount: "1"
+      steps:
+        - to:
+            uri: "http://universities.hipolabs.com/search?country=argentina"
+        - unmarshal:
+            json: {}
+        - split:
+            jsonpath: "$[*]"
+            steps:
+              - setProperty:
+                  name: uniName
+                  jsonpath:
+                    expression: "$.name"
+              - setProperty:
+                  name: uniDomain
+                  jsonpath:
+                    expression: "$.domains[0]"
+              - log:
+                  message: "University: \${exchangeProperty.uniName} (\${exchangeProperty.uniDomain})"`
+      },
+      {
+        name: "publicapi-batch-books-search",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, unmarshal, split, log",
+        description: "One-shot batch: searches Open Library for 'camel' books and logs each title and author",
+        pattern: "Scheduled Batch",
+        kaotoDesign: `- route:
+    id: publicapi-batch-books-search
+    from:
+      uri: "timer:books"
+      parameters:
+        repeatCount: "1"
+      steps:
+        - to:
+            uri: "https://openlibrary.org/search.json?q=camel&limit=5"
+        - unmarshal:
+            json: {}
+        - split:
+            jsonpath: "$.docs[*]"
+            steps:
+              - setProperty:
+                  name: bookTitle
+                  jsonpath:
+                    expression: "$.title"
+              - setProperty:
+                  name: bookAuthor
+                  jsonpath:
+                    expression: "$.author_name[0]"
+              - setProperty:
+                  name: bookYear
+                  jsonpath:
+                    expression: "$.first_publish_year"
+              - log:
+                  message: "Book: \\"\${exchangeProperty.bookTitle}\\" by \${exchangeProperty.bookAuthor} (\${exchangeProperty.bookYear})"`
       }
     ]
   }
