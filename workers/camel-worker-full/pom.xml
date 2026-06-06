@@ -75,7 +75,6 @@
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-mongodb</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-cassandraql</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-couchdb</artifactId></dependency>
-        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-infinispan</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-spring-redis</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-elasticsearch</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-solr</artifactId></dependency>

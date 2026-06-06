@@ -1,35 +1,129 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="grad-main" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#EE0000"/>
       <stop offset="100%" stop-color="#F4A100"/>
     </linearGradient>
-    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF4444"/>
-      <stop offset="100%" stop-color="#FFB347"/>
+    <linearGradient id="grad-camel" x1="0%" y1="0%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#EE0000"/>
+      <stop offset="70%" stop-color="#F4A100"/>
+    </linearGradient>
+    <linearGradient id="grad-circuit" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#EE0000" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#F4A100" stop-opacity="0.3"/>
     </linearGradient>
   </defs>
-  <!-- Outer ring (integration hub) -->
-  <circle cx="60" cy="60" r="56" stroke="url(#g1)" stroke-width="4" fill="none"/>
-  <!-- Inner connector nodes -->
-  <circle cx="60" cy="16" r="5" fill="url(#g2)"/>
-  <circle cx="98" cy="42" r="5" fill="url(#g2)"/>
-  <circle cx="98" cy="78" r="5" fill="url(#g2)"/>
-  <circle cx="60" cy="104" r="5" fill="url(#g2)"/>
-  <circle cx="22" cy="78" r="5" fill="url(#g2)"/>
-  <circle cx="22" cy="42" r="5" fill="url(#g2)"/>
-  <!-- Connection lines to center -->
-  <line x1="60" y1="21" x2="60" y2="40" stroke="url(#g1)" stroke-width="2" opacity="0.6"/>
-  <line x1="94" y1="44" x2="78" y2="52" stroke="url(#g1)" stroke-width="2" opacity="0.6"/>
-  <line x1="94" y1="76" x2="78" y2="68" stroke="url(#g1)" stroke-width="2" opacity="0.6"/>
-  <line x1="60" y1="99" x2="60" y2="80" stroke="url(#g1)" stroke-width="2" opacity="0.6"/>
-  <line x1="26" y1="76" x2="42" y2="68" stroke="url(#g1)" stroke-width="2" opacity="0.6"/>
-  <line x1="26" y1="44" x2="42" y2="52" stroke="url(#g1)" stroke-width="2" opacity="0.6"/>
-  <!-- Camel silhouette (geometric/minimal) centered -->
-  <path d="M38 68 C38 58 44 50 52 48 L54 42 C54 40 56 39 57 40 L58 44 C60 43 62 43 64 44 L65 40 C66 39 68 40 68 42 L66 48 C74 50 80 58 80 68 L80 72 C80 74 78 75 77 74 L76 68 C76 62 72 56 66 54 L66 72 C66 74 64 75 63 74 L63 56 C62 55 60 55 59 56 L59 74 C59 75 57 75 56 74 L56 54 C50 56 46 62 46 68 L46 74 C46 75 44 75 43 74 L43 68 Z" fill="url(#g1)"/>
-  <!-- Camel head -->
-  <ellipse cx="52" cy="43" rx="4" ry="3.5" fill="url(#g1)"/>
-  <circle cx="50.5" cy="42.5" r="1" fill="white"/>
-  <!-- Camel hump -->
-  <path d="M54 50 C56 44 62 44 66 48 C68 44 72 44 74 48" stroke="url(#g2)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="248" fill="#1A1A1A"/>
+  <circle cx="256" cy="256" r="238" fill="none" stroke="url(#grad-main)" stroke-width="3" opacity="0.4"/>
+
+  <!-- Circuit/connection lines - left side -->
+  <line x1="48" y1="200" x2="130" y2="240" stroke="url(#grad-circuit)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="55" y1="280" x2="140" y2="290" stroke="url(#grad-circuit)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="70" y1="350" x2="155" y2="320" stroke="url(#grad-circuit)" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+  <line x1="60" y1="150" x2="145" y2="195" stroke="url(#grad-circuit)" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Circuit/connection lines - right side -->
+  <line x1="380" y1="220" x2="455" y2="180" stroke="url(#grad-circuit)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="390" y1="260" x2="460" y2="260" stroke="url(#grad-circuit)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="375" y1="300" x2="450" y2="330" stroke="url(#grad-circuit)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="365" y1="340" x2="440" y2="380" stroke="url(#grad-circuit)" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Connection nodes - left -->
+  <circle cx="48" cy="200" r="5" fill="#EE0000" opacity="0.7"/>
+  <circle cx="55" cy="280" r="5" fill="#EE0000" opacity="0.7"/>
+  <circle cx="70" cy="350" r="4" fill="#EE0000" opacity="0.5"/>
+  <circle cx="60" cy="150" r="4" fill="#EE0000" opacity="0.5"/>
+
+  <!-- Connection nodes - right -->
+  <circle cx="455" cy="180" r="5" fill="#F4A100" opacity="0.7"/>
+  <circle cx="460" cy="260" r="5" fill="#F4A100" opacity="0.7"/>
+  <circle cx="450" cy="330" r="5" fill="#F4A100" opacity="0.7"/>
+  <circle cx="440" cy="380" r="4" fill="#F4A100" opacity="0.5"/>
+
+  <!-- Hub connector ring -->
+  <circle cx="256" cy="268" r="145" fill="none" stroke="url(#grad-main)" stroke-width="1.5" opacity="0.2" stroke-dasharray="8 6"/>
+
+  <!-- Stylized geometric camel - walking pose, facing right -->
+  <path d="
+    M 168 280
+    C 168 260, 175 245, 185 235
+    C 192 228, 198 222, 200 212
+    C 202 205, 208 198, 218 195
+    C 225 193, 232 196, 235 202
+    L 238 210
+    C 240 205, 248 195, 258 190
+    C 265 187, 275 185, 282 188
+    C 290 191, 295 198, 295 208
+    C 295 215, 290 222, 285 226
+    L 295 228
+    C 305 225, 318 222, 330 224
+    C 345 227, 355 235, 360 248
+    C 365 260, 362 272, 358 280
+    C 354 290, 348 298, 340 304
+    L 342 320
+    C 344 328, 345 338, 344 348
+    L 344 368
+    L 332 368
+    L 332 348
+    C 332 340, 330 332, 328 325
+    L 320 308
+    C 305 312, 285 314, 268 312
+    L 258 328
+    C 256 338, 255 348, 254 358
+    L 254 368
+    L 242 368
+    L 242 355
+    C 243 345, 244 335, 246 326
+    L 238 312
+    C 225 314, 210 312, 200 308
+    L 195 325
+    C 193 335, 192 345, 192 355
+    L 192 368
+    L 180 368
+    L 180 352
+    C 180 342, 182 332, 184 322
+    L 178 308
+    C 172 300, 168 290, 168 280
+    Z"
+    fill="url(#grad-camel)"/>
+
+  <!-- Camel head detail -->
+  <path d="
+    M 345 235
+    C 352 230, 362 228, 370 230
+    C 378 232, 384 238, 385 245
+    C 386 250, 384 255, 380 258
+    C 375 262, 368 262, 362 260
+    L 358 255
+    C 355 248, 350 242, 345 238
+    Z"
+    fill="url(#grad-camel)"/>
+
+  <!-- Camel eye -->
+  <circle cx="372" cy="242" r="3.5" fill="#1A1A1A"/>
+
+  <!-- Camel ear -->
+  <path d="M 365 228 C 368 222, 374 220, 378 223 C 376 226, 372 229, 368 230 Z" fill="#EE0000" opacity="0.8"/>
+
+  <!-- Motion lines behind camel -->
+  <line x1="135" y1="265" x2="158" y2="265" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="140" y1="278" x2="160" y2="278" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+  <line x1="145" y1="252" x2="162" y2="252" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- Integration arrow flowing through camel -->
+  <path d="M 130 268 L 155 268" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M 390 252 L 420 252 L 414 246 M 420 252 L 414 258" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/>
+
+  <!-- Small connector dots on the camel body -->
+  <circle cx="220" cy="245" r="3" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="260" cy="240" r="3" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="300" cy="248" r="3" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="335" cy="255" r="3" fill="#FFFFFF" opacity="0.6"/>
+
+  <!-- Thin connection lines between body dots -->
+  <line x1="223" y1="245" x2="257" y2="240" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  <line x1="263" y1="240" x2="297" y2="248" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+  <line x1="303" y1="248" x2="332" y2="255" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
 </svg>
