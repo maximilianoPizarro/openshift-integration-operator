@@ -137,6 +137,8 @@ jobs:
           context: .
           file: ./src/main/docker/Dockerfile.jvm
           push: true
+          provenance: false
+          sbom: false
           tags: ${{ steps.jvm-tags.outputs.tags }}
 
   build-console-plugin:
@@ -194,6 +196,8 @@ jobs:
           context: ./console-plugin
           file: ./console-plugin/Dockerfile
           push: true
+          provenance: false
+          sbom: false
           tags: ${{ steps.plugin-tags.outputs.tags }}
 
   build-camel-workers:
@@ -239,6 +243,8 @@ jobs:
           context: ./workers/${{ matrix.worker }}
           file: ./workers/${{ matrix.worker }}/Dockerfile.jvm
           push: true
+          provenance: false
+          sbom: false
           tags: |
             ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:v0.3.0
             ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:latest
@@ -273,6 +279,8 @@ jobs:
           context: .
           file: ./src/main/docker/Dockerfile.native
           push: true
+          provenance: false
+          sbom: false
           tags: |
             ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ env.IMAGE_NAME }}:native-latest
             ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.NATIVE_VERSION_TAG }}
