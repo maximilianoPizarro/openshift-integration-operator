@@ -20,7 +20,7 @@
 
   <rect width="900" height="520" rx="12" fill="#0d1117"/>
   <text x="450" y="35" text-anchor="middle" fill="#e6edf3" font-size="18" font-weight="700">OpenShift Integration Operator  High-Level Architecture</text>
-  <text x="450" y="55" text-anchor="middle" fill="#8b949e" font-size="12">Generated with Nano Banana 2</text>
+  <text x="450" y="55" text-anchor="middle" fill="#8b949e" font-size="12"></text>
 
   <!-- Layer 1: OpenShift Console -->
   <rect x="30" y="70" width="840" height="90" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>

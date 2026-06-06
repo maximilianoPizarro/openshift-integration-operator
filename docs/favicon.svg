@@ -1,15 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#388bfd"/>
-      <stop offset="100%" stop-color="#8957e5"/>
+    <linearGradient id="fg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EE0000"/>
+      <stop offset="100%" stop-color="#F4A100"/>
     </linearGradient>
   </defs>
-  <rect width="32" height="32" rx="6" fill="#0d1117"/>
-  <path d="M8 16 L16 8 L24 16 L16 24Z" fill="none" stroke="url(#g)" stroke-width="2.5" stroke-linejoin="round"/>
-  <circle cx="16" cy="16" r="3" fill="url(#g)"/>
-  <line x1="16" y1="8" x2="16" y2="4" stroke="#388bfd" stroke-width="1.5" stroke-linecap="round"/>
-  <line x1="24" y1="16" x2="28" y2="16" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round"/>
-  <line x1="16" y1="24" x2="16" y2="28" stroke="#8957e5" stroke-width="1.5" stroke-linecap="round"/>
-  <line x1="8" y1="16" x2="4" y2="16" stroke="#388bfd" stroke-width="1.5" stroke-linecap="round"/>
+  <rect width="32" height="32" rx="6" fill="#1A1A1A"/>
+  <!-- Simplified camel silhouette -->
+  <path d="M 7 20 C 7 17, 8 15, 10 14 C 11 13, 12 12, 13 11 C 14 10, 15 10.5, 15 11.5 C 15.5 10.5, 17 10, 18 10.5 C 19 11, 19.5 12, 19 13 L 20 12.5 C 21 12, 22.5 12, 23.5 13 C 24.5 14, 25 15.5, 24.5 17 C 24 18.5, 23 19.5, 22 20.5 L 22.5 23.5 L 21 23.5 L 21 21 L 19 21.5 L 18.5 23.5 L 17 23.5 L 17.5 21.5 L 14 22 L 13.5 23.5 L 12 23.5 L 12.5 21.5 L 10 21 L 9.5 23.5 L 8 23.5 L 8.5 20.5 C 7.5 20, 7 19, 7 18 Z" fill="url(#fg)"/>
+  <!-- Head -->
+  <path d="M 23 14 C 24 13.5, 25.5 13.5, 26 14.5 C 26.3 15.2, 25.8 16, 25 16.5 L 24 16 C 23.5 15.2, 23.2 14.5, 23 14 Z" fill="url(#fg)"/>
+  <!-- Eye -->
+  <circle cx="25" cy="14.8" r="0.8" fill="#1A1A1A"/>
+  <!-- Connection nodes -->
+  <circle cx="5" cy="12" r="1.2" fill="#EE0000" opacity="0.7"/>
+  <circle cx="27" cy="9" r="1.2" fill="#F4A100" opacity="0.7"/>
+  <circle cx="28" cy="21" r="1.2" fill="#F4A100" opacity="0.7"/>
+  <!-- Connection lines -->
+  <line x1="5" y1="12" x2="10" y2="14" stroke="#EE0000" stroke-width="0.7" stroke-linecap="round" opacity="0.5"/>
+  <line x1="25" y1="15" x2="27" y2="9" stroke="#F4A100" stroke-width="0.7" stroke-linecap="round" opacity="0.5"/>
+  <line x1="24" y1="18" x2="28" y2="21" stroke="#F4A100" stroke-width="0.7" stroke-linecap="round" opacity="0.5"/>
 </svg>

@@ -430,7 +430,77 @@ oc get crd integrationflows.platform.io</code></pre>
             </a>
             <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Platform Status — real-time health checks for all external services</figcaption>
           </figure>
+          <figure style="margin: 0;">
+            <a href="images/console-plugin-overview.png" target="_blank">
+              <img src="images/console-plugin-overview.png" alt="Flow Overview dashboard" loading="lazy"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+            </a>
+            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Flow Overview — KPI cards, distribution charts, recent builds</figcaption>
+          </figure>
+          <figure style="margin: 0;">
+            <a href="images/console-plugin-logs.png" target="_blank">
+              <img src="images/console-plugin-logs.png" alt="Flow Logs tab" loading="lazy"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+            </a>
+            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Flow Logs — live worker pod logs streamed via operator API</figcaption>
+          </figure>
+          <figure style="margin: 0;">
+            <a href="images/console-plugin-pause-flow.png" target="_blank">
+              <img src="images/console-plugin-pause-flow.png" alt="Pause/Resume lifecycle controls" loading="lazy"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+            </a>
+            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Lifecycle Controls — pause, resume, stop flows with confirmation modals</figcaption>
+          </figure>
         </div>
+      </div>
+    </section>
+
+    <section id="ephemeral">
+      <div class="container">
+        <h2>Ephemeral Mode &amp; Precompiled Workers</h2>
+        <p class="section-lead">Deploy integration flows instantly — no Git, no CI pipeline. Just paste your Camel YAML and run.</p>
+        <div class="card-grid">
+          <article class="card">
+            <div class="card-icon">⚡</div>
+            <h3>Quick Try Mode</h3>
+            <p>Set <code>deploymentMode: EPHEMERAL</code> in your IntegrationFlow CR and the operator deploys a worker pod immediately. Configurable TTL with auto-cleanup.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">📦</div>
+            <h3>80+ Camel Extensions</h3>
+            <p>The default <code>camel-worker-full</code> image ships with 80+ precompiled Camel Quarkus extensions — no build step required.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">🔀</div>
+            <h3>Promote to GitOps</h3>
+            <p>When your flow is ready, promote it with one click. The operator scaffolds a Git repo, triggers Tekton, and ArgoCD takes over.</p>
+          </article>
+        </div>
+        <h3 style="margin-top: 2rem;">Precompiled Worker Images</h3>
+        <p style="color: var(--text-muted); margin: 0.75rem 0;">All images are published to <a href="https://quay.io/organization/maximilianopizarro">Quay.io</a> and auto-selected based on detected Camel components.</p>
+        <pre><code><span class="comment"># Default (all domains — 80+ extensions)</span>
+quay.io/maximilianopizarro/camel-worker-full:v0.3.0
+
+<span class="comment"># Domain-specific (smaller, faster startup)</span>
+quay.io/maximilianopizarro/camel-worker-core:v0.3.0        <span class="comment"># timer, log, direct, seda, bean</span>
+quay.io/maximilianopizarro/camel-worker-messaging:v0.3.0   <span class="comment"># kafka, amqp, jms, mqtt, nats</span>
+quay.io/maximilianopizarro/camel-worker-http:v0.3.0        <span class="comment"># platform-http, rest, graphql, grpc</span>
+quay.io/maximilianopizarro/camel-worker-data:v0.3.0        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
+quay.io/maximilianopizarro/camel-worker-cloud:v0.3.0       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
+quay.io/maximilianopizarro/camel-worker-ai:v0.3.0          <span class="comment"># langchain4j-chat, djl</span></code></pre>
+        <h3 style="margin-top: 2rem;">Full Worker — Included Extensions</h3>
+        <p style="color: var(--text-muted); margin: 0.75rem 0 1rem;">
+          Core &amp; EIP: timer, log, direct, seda, bean, mock, quartz, cron, exec, controlbus, scheduler<br>
+          Messaging: kafka, amqp, jms, activemq, mqtt5, nats, pulsar, stomp, sjms2, azure-servicebus, google-pubsub, knative<br>
+          HTTP/API: platform-http, http, rest, rest-openapi, vertx-http, netty-http, graphql, grpc, websocket, coap<br>
+          Data: sql, jdbc, mongodb, cassandra, couchdb, infinispan, redis, elasticsearch, solr, minio, file, ftp<br>
+          Cloud: aws2-s3/sqs/sns/ddb/lambda/kinesis/ses/bedrock, azure-blob/cosmos/eventhubs, google-storage/bigquery/pubsub<br>
+          AI/ML: langchain4j-chat, djl<br>
+          SaaS: debezium-mysql/postgres/mongodb, salesforce, slack, telegram, mail, git, github, jira, ssh, hashicorp-vault<br>
+          Healthcare/IoT: fhir, hl7, mllp, snmp<br>
+          Transform: jackson, jsonpath, jaxb, csv, xslt, jolt, jslt, freemarker, mustache, velocity, flatpack, tika<br>
+          Resilience: microprofile-fault-tolerance, microprofile-health, micrometer, opentelemetry
+        </p>
       </div>
     </section>
 

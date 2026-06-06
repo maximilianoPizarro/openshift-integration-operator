@@ -7,7 +7,7 @@
 
   <rect width="900" height="280" rx="12" fill="#0d1117"/>
   <text x="450" y="30" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">Telemetry Pipeline  Real-Time Observability</text>
-  <text x="450" y="48" text-anchor="middle" fill="#8b949e" font-size="11">Generated with Nano Banana 2</text>
+  <text x="450" y="48" text-anchor="middle" fill="#8b949e" font-size="11"></text>
 
   <!-- Worker Pods -->
   <rect x="30" y="80" width="160" height="140" rx="10" fill="#1c2128" stroke="#51cf66" stroke-width="1.5"/>
