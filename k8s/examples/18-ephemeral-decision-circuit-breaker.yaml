@@ -1,0 +1,66 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-decision-cb
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: decision-with-circuit-breaker
+        from:
+          uri: "timer:decisionPoll"
+          parameters:
+            period: "30000"
+          steps:
+            - log:
+                message: "Starting multi-API decision flow"
+            - circuitBreaker:
+                resilience4jConfiguration:
+                  minimumNumberOfCalls: 3
+                  failureRateThreshold: 50
+                  waitDurationInOpenState: 10
+                steps:
+                  - setHeader:
+                      name: CamelHttpMethod
+                      constant: GET
+                  - to:
+                      uri: "https://jsonplaceholder.typicode.com/users/1"
+                  - unmarshal:
+                      json: {}
+                  - setProperty:
+                      name: userName
+                      jsonpath: "$.name"
+                  - setProperty:
+                      name: userCity
+                      jsonpath: "$.address.city"
+                onFallback:
+                  steps:
+                    - setProperty:
+                        name: userName
+                        constant: "Fallback User"
+                    - setProperty:
+                        name: userCity
+                        constant: "Unknown"
+                    - log:
+                        message: "Circuit OPEN — using fallback values"
+            - log:
+                message: "User: ${exchangeProperty.userName} from ${exchangeProperty.userCity}"
+            - choice:
+                when:
+                  - simple: "${exchangeProperty.userCity} == 'Gwenborough'"
+                    steps:
+                      - log:
+                          message: "DECISION: Route to priority queue (known city)"
+                  - simple: "${exchangeProperty.userName} == 'Fallback User'"
+                    steps:
+                      - log:
+                          message: "DECISION: Route to retry queue (circuit open)"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "DECISION: Route to standard processing"

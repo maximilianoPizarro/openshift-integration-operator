@@ -1,0 +1,71 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-api-composition
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: api-composition-enrichment
+        from:
+          uri: "timer:composePoll"
+          parameters:
+            period: "60000"
+          steps:
+            - log:
+                message: "=== API Composition: User + Country + Weather proxy ==="
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - to:
+                uri: "https://randomuser.me/api/?results=1"
+            - unmarshal:
+                json: {}
+            - setProperty:
+                name: firstName
+                jsonpath: "$.results[0].name.first"
+            - setProperty:
+                name: lastName
+                jsonpath: "$.results[0].name.last"
+            - setProperty:
+                name: country
+                jsonpath: "$.results[0].location.country"
+            - setProperty:
+                name: city
+                jsonpath: "$.results[0].location.city"
+            - setProperty:
+                name: email
+                jsonpath: "$.results[0].email"
+            - log:
+                message: "Random user: ${exchangeProperty.firstName} ${exchangeProperty.lastName} from ${exchangeProperty.city}, ${exchangeProperty.country}"
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - to:
+                uri: "https://api.agify.io?name=${exchangeProperty.firstName}"
+            - unmarshal:
+                json: {}
+            - setProperty:
+                name: estimatedAge
+                jsonpath: "$.age"
+            - log:
+                message: "Age estimate for ${exchangeProperty.firstName}: ${exchangeProperty.estimatedAge} years"
+            - choice:
+                when:
+                  - simple: "${exchangeProperty.estimatedAge} > 50"
+                    steps:
+                      - log:
+                          message: "SEGMENT: Senior user — route to premium support"
+                  - simple: "${exchangeProperty.estimatedAge} > 30"
+                    steps:
+                      - log:
+                          message: "SEGMENT: Adult user — route to standard flow"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "SEGMENT: Young user — route to growth campaign"

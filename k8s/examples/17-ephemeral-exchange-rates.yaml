@@ -1,0 +1,55 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-exchange-rates
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: exchange-rate-monitor
+        from:
+          uri: "timer:fxPoll"
+          parameters:
+            period: "60000"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - doTry:
+                steps:
+                  - to:
+                      uri: "https://open.er-api.com/v6/latest/USD"
+                  - unmarshal:
+                      json: {}
+                  - setProperty:
+                      name: eurRate
+                      jsonpath: "$.rates.EUR"
+                  - setProperty:
+                      name: gbpRate
+                      jsonpath: "$.rates.GBP"
+                  - setProperty:
+                      name: arsRate
+                      jsonpath: "$.rates.ARS"
+                  - log:
+                      message: "USD rates — EUR: ${exchangeProperty.eurRate} | GBP: ${exchangeProperty.gbpRate} | ARS: ${exchangeProperty.arsRate}"
+                  - choice:
+                      when:
+                        - simple: "${exchangeProperty.eurRate} < 0.85"
+                          steps:
+                            - log:
+                                message: "ALERT: EUR unusually low at ${exchangeProperty.eurRate}"
+                      otherwise:
+                        steps:
+                          - log:
+                              message: "EUR rate normal"
+                doCatch:
+                  - exception:
+                      - java.lang.Exception
+                    steps:
+                      - log:
+                          message: "Exchange rate API error: ${exception.message}"

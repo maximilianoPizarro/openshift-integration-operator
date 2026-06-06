@@ -1,0 +1,68 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-product-catalog
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: product-catalog-sync
+        from:
+          uri: "timer:productPoll"
+          parameters:
+            period: "45000"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - doTry:
+                steps:
+                  - to:
+                      uri: "https://dummyjson.com/products?limit=5"
+                  - unmarshal:
+                      json: {}
+                  - setProperty:
+                      name: totalProducts
+                      jsonpath: "$.total"
+                  - log:
+                      message: "Product catalog: ${exchangeProperty.totalProducts} total products"
+                  - split:
+                      jsonpath: "$.products"
+                      steps:
+                        - setProperty:
+                            name: productTitle
+                            jsonpath: "$.title"
+                        - setProperty:
+                            name: productPrice
+                            jsonpath: "$.price"
+                        - setProperty:
+                            name: productRating
+                            jsonpath: "$.rating"
+                        - setProperty:
+                            name: productCategory
+                            jsonpath: "$.category"
+                        - choice:
+                            when:
+                              - simple: "${exchangeProperty.productRating} > 4.5"
+                                steps:
+                                  - log:
+                                      message: "TOP RATED: ${exchangeProperty.productTitle} ($${exchangeProperty.productPrice}) rating=${exchangeProperty.productRating}"
+                              - simple: "${exchangeProperty.productPrice} > 50"
+                                steps:
+                                  - log:
+                                      message: "PREMIUM: ${exchangeProperty.productTitle} ($${exchangeProperty.productPrice}) [${exchangeProperty.productCategory}]"
+                            otherwise:
+                              steps:
+                                - log:
+                                    message: "STANDARD: ${exchangeProperty.productTitle} ($${exchangeProperty.productPrice})"
+                doCatch:
+                  - exception:
+                      - java.lang.Exception
+                    steps:
+                      - log:
+                          message: "Product API error: ${exception.message}"

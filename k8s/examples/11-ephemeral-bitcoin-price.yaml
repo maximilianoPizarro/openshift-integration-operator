@@ -1,7 +1,7 @@
 apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
-  name: ephemeral-bitcoin-price
+  name: ephemeral-exchange-rate
   namespace: openshift-integration
 spec:
   deploymentMode: EPHEMERAL
@@ -11,9 +11,9 @@ spec:
     ttlSeconds: 3600
   kaotoDesign: |
     - route:
-        id: bitcoin-price-monitor
+        id: exchange-rate-poll
         from:
-          uri: "timer:btcPoll"
+          uri: "timer:fxPoll"
           parameters:
             period: "60000"
           steps:
@@ -21,14 +21,17 @@ spec:
                 name: CamelHttpMethod
                 constant: GET
             - to:
-                uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+                uri: "https://open.er-api.com/v6/latest/USD"
             - unmarshal:
                 json: {}
             - setProperty:
-                name: btcUsd
-                jsonpath: "$.bpi.USD.rate"
+                name: eurRate
+                jsonpath: "$.rates.EUR"
             - setProperty:
-                name: btcEur
-                jsonpath: "$.bpi.EUR.rate"
+                name: gbpRate
+                jsonpath: "$.rates.GBP"
+            - setProperty:
+                name: arsRate
+                jsonpath: "$.rates.ARS"
             - log:
-                message: "Bitcoin price — USD: ${exchangeProperty.btcUsd} | EUR: ${exchangeProperty.btcEur}"
+                message: "USD exchange rates — EUR: ${exchangeProperty.eurRate} | GBP: ${exchangeProperty.gbpRate} | ARS: ${exchangeProperty.arsRate}"

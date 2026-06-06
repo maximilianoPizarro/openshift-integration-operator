@@ -1,0 +1,87 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-saga-multi-api
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: saga-multi-api-orchestration
+        from:
+          uri: "timer:sagaTick"
+          parameters:
+            period: "45000"
+          steps:
+            - log:
+                message: "=== Starting Saga: Multi-API Orchestration ==="
+            - saga:
+                propagation: REQUIRED
+                completionMode: AUTO
+                steps:
+                  - to:
+                      uri: "direct:step1-get-user"
+                  - to:
+                      uri: "direct:step2-get-todos"
+                  - to:
+                      uri: "direct:step3-decision"
+            - log:
+                message: "=== Saga Complete ==="
+    - route:
+        id: step1-get-user
+        from:
+          uri: "direct:step1-get-user"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - to:
+                uri: "https://jsonplaceholder.typicode.com/users/1"
+            - unmarshal:
+                json: {}
+            - setProperty:
+                name: sagaUserName
+                jsonpath: "$.name"
+            - setProperty:
+                name: sagaUserEmail
+                jsonpath: "$.email"
+            - log:
+                message: "Saga Step 1 OK: user=${exchangeProperty.sagaUserName}"
+    - route:
+        id: step2-get-todos
+        from:
+          uri: "direct:step2-get-todos"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - to:
+                uri: "https://jsonplaceholder.typicode.com/todos?userId=1&_limit=5"
+            - unmarshal:
+                json: {}
+            - setProperty:
+                name: todoCount
+                jsonpath: "$.length()"
+            - log:
+                message: "Saga Step 2 OK: ${exchangeProperty.todoCount} todos for ${exchangeProperty.sagaUserName}"
+    - route:
+        id: step3-decision
+        from:
+          uri: "direct:step3-decision"
+          steps:
+            - log:
+                message: "Saga Step 3: Making decision for ${exchangeProperty.sagaUserName}"
+            - choice:
+                when:
+                  - simple: "${exchangeProperty.todoCount} > 3"
+                    steps:
+                      - log:
+                          message: "DECISION: User has many todos — send reminder notification"
+                otherwise:
+                  steps:
+                    - log:
+                        message: "DECISION: User is on track — no action needed"

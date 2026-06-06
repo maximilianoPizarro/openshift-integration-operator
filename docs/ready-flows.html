@@ -6611,7 +6611,7 @@ const FLOWS = [
         name: "bitcoin-price-alert",
         type: "CAMEL_ROUTE",
         components: "timer, http, jackson, log, kafka",
-        description: "Monitor Bitcoin price from CoinDesk API, alert when threshold is crossed",
+        description: "Monitor Exchange rate from CoinDesk API, alert when threshold is crossed",
         pattern: "Real-Time Price Monitoring",
         kaotoDesign: `- route:
     id: bitcoin-price-alert
@@ -6626,13 +6626,13 @@ const FLOWS = [
         - doTry:
             steps:
               - to:
-                  uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+                  uri: "https://open.er-api.com/v6/latest/USD"
               - unmarshal:
                   json:
                     library: jackson
               - setProperty:
                   name: btcPriceUSD
-                  jsonpath: "$.bpi.USD.rate_float"
+                  jsonpath: "$.rates.EUR"
               - setProperty:
                   name: lastUpdated
                   jsonpath: "$.time.updated"
@@ -6665,13 +6665,13 @@ const FLOWS = [
                   otherwise:
                     steps:
                       - log:
-                          message: "BTC price normal: $\${exchangeProperty.btcPriceUSD}"
+                          message: "EUR/GBP rate normal: $\${exchangeProperty.btcPriceUSD}"
             doCatch:
               - exception:
                   - "java.lang.Exception"
                 steps:
                   - log:
-                      message: "BTC price check failed: \${exception.message}"
+                      message: "EUR/GBP rate check failed: \${exception.message}"
                       loggingLevel: ERROR`
       },
       {
@@ -7042,13 +7042,13 @@ const FLOWS = [
         - doTry:
             steps:
               - to:
-                  uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+                  uri: "https://open.er-api.com/v6/latest/USD"
               - unmarshal:
                   json:
                     library: jackson
               - setProperty:
                   name: btcPrice
-                  jsonpath: "$.bpi.USD.rate"
+                  jsonpath: "$.rates.EUR"
             doCatch:
               - exception:
                   - "java.lang.Exception"
@@ -8818,7 +8818,7 @@ const FLOWS = [
         name: "publicapi-bitcoin-price-poll",
         type: "CAMEL_ROUTE",
         components: "timer, http, unmarshal, log",
-        description: "Polls CoinDesk every 30s and logs the current Bitcoin price in USD",
+        description: "Polls CoinDesk every 30s and logs the current Exchange rate in USD",
         pattern: "Simple Poll + Log",
         kaotoDesign: `- route:
     id: publicapi-bitcoin-price-poll
@@ -8828,19 +8828,19 @@ const FLOWS = [
         period: "30000"
       steps:
         - to:
-            uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+            uri: "https://open.er-api.com/v6/latest/USD"
         - unmarshal:
             json: {}
         - setProperty:
             name: btcPrice
             jsonpath:
-              expression: "$.bpi.USD.rate"
+              expression: "$.rates.EUR"
         - setProperty:
             name: btcCurrency
             jsonpath:
-              expression: "$.bpi.USD.code"
+              expression: "$.base"
         - log:
-            message: "Bitcoin price: \${exchangeProperty.btcPrice} \${exchangeProperty.btcCurrency}"`
+            message: "Exchange rate: \${exchangeProperty.btcPrice} \${exchangeProperty.btcCurrency}"`
       },
       {
         name: "publicapi-spacex-latest-launch",
@@ -9076,7 +9076,7 @@ const FLOWS = [
         name: "publicapi-bitcoin-vs-ipgeo-compose",
         type: "CAMEL_ROUTE",
         components: "timer, http, unmarshal, log",
-        description: "Calls CoinDesk and IP geolocation APIs, then logs a combined summary of Bitcoin price and current location",
+        description: "Calls CoinDesk and IP geolocation APIs, then logs a combined summary of Exchange rate and current location",
         pattern: "Multi-API Composition",
         kaotoDesign: `- route:
     id: publicapi-bitcoin-vs-ipgeo-compose
@@ -9086,13 +9086,13 @@ const FLOWS = [
         period: "60000"
       steps:
         - to:
-            uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+            uri: "https://open.er-api.com/v6/latest/USD"
         - unmarshal:
             json: {}
         - setProperty:
             name: btcRate
             jsonpath:
-              expression: "$.bpi.USD.rate"
+              expression: "$.rates.EUR"
         - to:
             uri: "https://ipapi.co/json/"
         - unmarshal:
@@ -9228,7 +9228,7 @@ const FLOWS = [
         period: "300000"
       steps:
         - to:
-            uri: "http://numbersapi.com/random/trivia"
+            uri: "https://catfact.ninja/fact"
         - log:
             message: "Number trivia: \${body}"`
       },
@@ -9236,7 +9236,7 @@ const FLOWS = [
         name: "publicapi-hourly-bitcoin-check",
         type: "CAMEL_ROUTE",
         components: "timer, http, unmarshal, log",
-        description: "Checks Bitcoin price every 10 minutes with throttled polling cadence",
+        description: "Checks Exchange rate every 10 minutes with throttled polling cadence",
         pattern: "Throttled Polling",
         kaotoDesign: `- route:
     id: publicapi-hourly-bitcoin-check
@@ -9246,21 +9246,21 @@ const FLOWS = [
         period: "600000"
       steps:
         - to:
-            uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+            uri: "https://open.er-api.com/v6/latest/USD"
         - unmarshal:
             json: {}
         - setProperty:
             name: usdRate
             jsonpath:
-              expression: "$.bpi.USD.rate"
+              expression: "$.rates.EUR"
         - setProperty:
             name: eurRate
             jsonpath:
-              expression: "$.bpi.EUR.rate"
+              expression: "$.rates.EUR"
         - setProperty:
             name: gbpRate
             jsonpath:
-              expression: "$.bpi.GBP.rate"
+              expression: "$.rates.GBP"
         - log:
             message: "BTC check — USD: \${exchangeProperty.usdRate} | EUR: \${exchangeProperty.eurRate} | GBP: \${exchangeProperty.gbpRate}"`
       },
@@ -9385,7 +9385,7 @@ const FLOWS = [
         name: "publicapi-multi-currency-aggregate",
         type: "CAMEL_ROUTE",
         components: "timer, http, unmarshal, log",
-        description: "Aggregates Bitcoin prices across USD, EUR, and GBP from CoinDesk into a single summary log",
+        description: "Aggregates Exchange rates across USD, EUR, and GBP from CoinDesk into a single summary log",
         pattern: "Aggregation",
         kaotoDesign: `- route:
     id: publicapi-multi-currency-aggregate
@@ -9395,21 +9395,21 @@ const FLOWS = [
         period: "120000"
       steps:
         - to:
-            uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+            uri: "https://open.er-api.com/v6/latest/USD"
         - unmarshal:
             json: {}
         - setProperty:
             name: usd
             jsonpath:
-              expression: "$.bpi.USD.rate_float"
+              expression: "$.rates.EUR"
         - setProperty:
             name: eur
             jsonpath:
-              expression: "$.bpi.EUR.rate_float"
+              expression: "$.rates.EUR"
         - setProperty:
             name: gbp
             jsonpath:
-              expression: "$.bpi.GBP.rate_float"
+              expression: "$.rates.GBP"
         - setProperty:
             name: updatedTime
             jsonpath:
