@@ -21,10 +21,10 @@
 <p align="center">
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/">Documentation</a> ·
   <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a> ·
-  <a href="docs/architecture.html">Architecture</a> ·
-  <a href="docs/quickstart.html">Quick Start</a> ·
-  <a href="docs/operations.html">Operations</a> ·
-  <a href="docs/examples-catalog.html">Examples (255)</a>
+  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/architecture.html">Architecture</a> ·
+  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html">Quick Start</a> ·
+  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html">Ready Flows (182)</a> ·
+  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/examples-catalog.html">Examples (255)</a>
 </p>
 
 ---
@@ -54,6 +54,10 @@
 | YAML Editor | Spec & Status | Platform Status |
 |---|---|---|
 | ![Editor](docs/images/console-plugin-editor.png) | ![Spec](docs/images/console-plugin-spec.png) | ![Status](docs/images/console-plugin-status.png) |
+
+| Flow Overview | Flow Logs | Lifecycle Controls |
+|---|---|---|
+| ![Overview](docs/images/console-plugin-overview.png) | ![Logs](docs/images/console-plugin-logs.png) | ![Pause](docs/images/console-plugin-pause-flow.png) |
 
 ## Architecture Overview
 
@@ -283,9 +287,41 @@ oc get integrationflow ephemeral-camel-demo -w
 # POST /api/flows/ephemeral-camel-demo/promote-to-gitops
 ```
 
-The platform ships **9 pre-built examples** covering Camel Routes, Kamelets, Pipes, SonataFlow workflows, and ephemeral Quick Try, plus a **[catalog of 255 examples](docs/examples-catalog.html)** spanning 15 categories and 310 Apache Camel Quarkus components.
+The platform ships **21 pre-built examples** in `k8s/examples/` covering Camel Routes, Kamelets, Pipes, SonataFlow, and ephemeral Quick Try with real public API calls. Browse online:
 
-See the [Quick Start Guide](docs/quickstart.html) for all 9 examples, the [Examples Catalog](docs/examples-catalog.html) for 255 ready-to-use flows, and the [Operations Guide](docs/operations.html) for validation and troubleshooting.
+- **[Ready Flows (182)](https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html)** — Complete IntegrationFlow CRs with full Camel route logic, organized by pattern (AI/LLM, Saga, Circuit Breaker, Decision, Event-Driven, API Gateway, ETL, IoT, Orchestration, Hybrid Cloud, Public APIs, Enterprise Automation)
+- **[Examples Catalog (255)](https://maximilianopizarro.github.io/openshift-integration-operator/examples-catalog.html)** — Component-focused examples spanning 15 categories and 310 Apache Camel Quarkus components
+- **[Quick Start Guide](https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html)** — Install + 10 examples including multi-cluster selector
+
+### Ephemeral Quickstart (No Auth Required)
+
+Try these immediately after login — they call public APIs and require zero configuration:
+
+```bash
+oc apply -f k8s/examples/10-ephemeral-jsonplaceholder.yaml   # Poll posts + split
+oc apply -f k8s/examples/11-ephemeral-bitcoin-price.yaml     # Exchange rate monitor
+oc apply -f k8s/examples/13-ephemeral-countries-cbr.yaml     # Content-based routing
+oc apply -f k8s/examples/18-ephemeral-decision-circuit-breaker.yaml  # Circuit breaker + fallback
+oc apply -f k8s/examples/19-ephemeral-saga-multi-api.yaml    # Saga orchestration
+oc apply -f k8s/examples/20-ephemeral-api-composition.yaml   # Multi-API + segmentation
+
+# Watch logs
+oc logs -f deploy/iflow-ephemeral-exchange-rate-worker -n openshift-integration
+```
+
+### Precompiled Worker Images
+
+Ephemeral flows auto-select the optimal worker image based on detected Camel components:
+
+| Image | Components |
+|-------|-----------|
+| `camel-worker-core` | timer, log, direct, seda, bean, mock |
+| `camel-worker-messaging` | + kafka, amqp, jms, mqtt5, nats |
+| `camel-worker-http` | + platform-http, rest, graphql, grpc |
+| `camel-worker-data` | + sql, jdbc, mongodb, file, ftp |
+| `camel-worker-cloud` | + aws2-s3/sqs/sns, azure, google |
+| `camel-worker-ai` | + langchain4j-chat, djl |
+| `camel-worker-full` | 80+ extensions (fallback for multi-domain) |
 
 ## Project Structure
 
