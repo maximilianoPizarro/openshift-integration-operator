@@ -145,7 +145,7 @@ spec:
             value: openshift-pipelines
       params:
         - name: IMAGE
-          value: image-registry.openshift-image-registry.svc:5000/{{ .Values.namespace }}/$(params.flow-name):$(params.commit-sha)
+          value: image-registry.openshift-image-registry.svc:5000/{{ .Values.namespace }}/$(params.flow-name):latest
         - name: CONTEXT
           value: .
         - name: TLS_VERIFY

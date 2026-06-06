@@ -1,0 +1,15 @@
+# Camel K IntegrationPlatform required for Pipe and Kamelet examples (etl-pipe, s3-to-db-kamelet).
+apiVersion: camel.apache.org/v1
+kind: IntegrationPlatform
+metadata:
+  name: camel-k
+  namespace: openshift-integration
+  labels:
+    app.kubernetes.io/part-of: integration-platform
+spec:
+  build:
+    baseImage: registry.access.redhat.com/ubi9/openjdk-17-runtime:latest
+    registry:
+      address: image-registry.openshift-image-registry.svc:5000
+      organization: openshift-integration
+      insecure: true

@@ -35,7 +35,8 @@
 - **Quick Try (Ephemeral) Mode** — Deploy and test flows directly in the cluster without Git or ArgoCD; configurable TTL, extend, and promote to GitOps
 - **Multi-Provider Git** — Connect to Gitea, GitHub, or GitLab for scaffolded worker source with auto-detection
 - **Visual Designer** — Embedded Kaoto canvas in the OpenShift Console for drag-and-drop flow design
-- **GitOps Native** — Tekton builds container images; ArgoCD syncs worker deployments from Git
+- **GitOps Native** — Scaffold to Gitea → Tekton builds Quarkus worker images → Argo CD syncs `base/` manifests
+- **Template Catalog** — Browse 200+ ready flows from the console create form (`docs/flow-catalog.json`)
 - **MCP/AI Ready** — Model Context Protocol bridge for discovering and invoking AI tools in flows
 - **Observable** — OpenTelemetry instrumentation with real-time SSE telemetry for canvas node coloring
 - **Auto-scaling Workers** — HPA v2-driven worker pods scale on CPU and memory utilization
@@ -135,8 +136,57 @@ helm repo update
 helm install integration-operator \
   integration-platform/openshift-integration-operator \
   --namespace openshift-integration \
-  --create-namespace
+  --create-namespace \
+  --set gitea.password='your-gitea-password' \
+  --set tekton.approvalEnabled=false
 ```
+
+For development clusters, see [Deploy to a Cluster](#deploy-to-a-cluster) (binary build + Quay console plugin).
+
+### GitOps examples (8 catalog flows)
+
+Pre-built examples in `k8s/examples/` exercise the full pipeline (Gitea → Tekton → Argo CD):
+
+| File | Flow | Type |
+|------|------|------|
+| `01-rest-to-kafka.yaml` | rest-to-kafka | Camel Route |
+| `02-order-routing-cbr.yaml` | order-routing-cbr | Camel Route |
+| `03-parallel-enrichment.yaml` | parallel-enrichment | Camel Route |
+| `04-error-handling-dlq.yaml` | error-handling-dlq | Camel Route |
+| `05-s3-to-db-kamelet.yaml` | s3-to-db-kamelet | Kamelet |
+| `06-etl-pipe.yaml` | etl-pipe | Pipe |
+| `07-file-processor-workflow.yaml` | file-processor-workflow | SonataFlow |
+| `08-saga-workflow.yaml` | saga-workflow | SonataFlow |
+
+Apply sequentially (~12s between flows to avoid Gitea contention):
+
+```bash
+for yaml in 01-rest-to-kafka 02-order-routing-cbr 03-parallel-enrichment \
+  04-error-handling-dlq 05-s3-to-db-kamelet 06-etl-pipe \
+  07-file-processor-workflow 08-saga-workflow; do
+  oc apply -f "k8s/examples/${yaml}.yaml"
+  sleep 12
+done
+```
+
+**Camel K bootstrap** (required for Pipe/Kamelet examples):
+
+```bash
+oc apply -f k8s/bootstrap/camel-k-platform.yaml
+
+TOKEN=$(oc whoami -t)
+oc create secret docker-registry camel-k-registry-auth \
+  -n openshift-integration \
+  --docker-server=image-registry.openshift-image-registry.svc:5000 \
+  --docker-username=$(oc whoami) \
+  --docker-password="$TOKEN" \
+  --dry-run=client -o yaml | oc apply -f -
+
+oc patch integrationplatform camel-k -n openshift-integration --type=merge \
+  -p '{"spec":{"build":{"registry":{"secret":"camel-k-registry-auth"}}}}'
+```
+
+Verify: `oc get integrationflow -n openshift-integration` → all eight in `Running` phase.
 
 ### Example: Camel Route — REST to Kafka
 
@@ -287,7 +337,7 @@ oc get integrationflow ephemeral-camel-demo -w
 # POST /api/flows/ephemeral-camel-demo/promote-to-gitops
 ```
 
-The platform ships **21 pre-built examples** in `k8s/examples/` covering Camel Routes, Kamelets, Pipes, SonataFlow, and ephemeral Quick Try with real public API calls. Browse online:
+The platform ships **29 pre-built examples** in `k8s/examples/` — eight GitOps catalog flows (`01`–`08`), one ephemeral demo (`09`), and twenty public-API Quick Try flows (`10`–`21`). Browse online:
 
 - **[Ready Flows (200+)](https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html)** — Complete IntegrationFlow CRs with full Camel route logic, organized by pattern (AI/LLM, Saga, Circuit Breaker, Decision, Event-Driven, API Gateway, ETL, IoT, Orchestration, Hybrid Cloud & Multi-Cloud SaaS for ROSA/ARO/GCP, Public APIs, Enterprise Automation)
 - **[Examples Catalog (255)](https://maximilianopizarro.github.io/openshift-integration-operator/examples-catalog.html)** — Component-focused examples spanning 15 categories and 310 Apache Camel Quarkus components
@@ -317,7 +367,7 @@ Ephemeral flows auto-select the optimal worker image based on detected Camel com
 |-------|-----------|
 | `camel-worker-core` | timer, log, direct, seda, bean, mock |
 | `camel-worker-messaging` | + kafka, amqp, jms, mqtt5, nats |
-| `camel-worker-http` | + platform-http, rest, graphql, grpc |
+| `camel-worker-http` | + platform-http, http, https, rest, jsonpath, jackson, graphql, grpc |
 | `camel-worker-data` | + sql, jdbc, mongodb, file, ftp |
 | `camel-worker-cloud` | + aws2-s3/sqs/sns, azure, google |
 | `camel-worker-ai` | + langchain4j-chat, djl |
@@ -331,7 +381,7 @@ openshift-integration-operator/
 │   ├── api/v1alpha1/          # IntegrationFlow CRD types + DeploymentMode enum
 │   ├── operator/              # Reconciler controller
 │   ├── ephemeral/             # Ephemeral runtime deployers (Quick Try mode)
-│   ├── service/               # Scaffolding & GitOps services
+│   ├── service/               # Scaffolding, GitOps, GitOpsManifestGenerator
 │   │   └── git/               # GitProvider interface + Gitea/GitHub/GitLab impls
 │   ├── telemetry/             # SSE telemetry API
 │   └── mcp/                   # MCP bridge API
@@ -348,11 +398,16 @@ openshift-integration-operator/
 │   ├── quickstart.html
 │   ├── operations.html
 │   └── artifacthub-repo.yml
+├── k8s/
+│   ├── examples/              # GitOps (01–08) + ephemeral (09–21) IntegrationFlows
+│   └── bootstrap/             # Camel K IntegrationPlatform for Pipe/Kamelet
 ├── scripts/
 │   ├── deploy-cluster.sh      # Binary-build operator + plugin, Helm upgrade
-│   └── cleanup-failed-builds.sh
+│   ├── validate-ready-flows.js
+│   └── extract-flow-catalog.js
+├── .cursor/skills/            # Agent skills: deploy, gitops-examples, ephemeral, plugin
 ├── .github/workflows/
-│   └── build-push-quay.yml    # CI: build, test, push to Quay.io
+│   └── build-push-quay.yml    # CI: test, validate-catalog, push to Quay.io
 └── pom.xml                      # Quarkus + Operator SDK
 ```
 
@@ -411,28 +466,72 @@ docker build -f src/main/docker/Dockerfile.jvm \
 
 ## Deploy to a Cluster
 
-For development clusters with OpenShift binary builds:
+### Recommended: dev cluster (operator binary build + Quay plugin)
+
+Build the operator from source via OpenShift binary build; use the **CI-published** console plugin image (do not rebuild the plugin locally unless developing UI changes).
+
+```bash
+mvn -B clean package -DskipTests
+oc apply -f target/kubernetes/integrationflows.platform.io-v1.yml
+oc start-build openshift-integration-operator --from-dir=. --follow -n openshift-integration
+```
+
+Note the image digest from the build output, then:
+
+```bash
+helm upgrade --install openshift-integration-operator \
+  helm/openshift-integration-operator \
+  --namespace openshift-integration \
+  --set operator.image.repository="image-registry.openshift-image-registry.svc:5000/openshift-integration/openshift-integration-operator" \
+  --set operator.image.tag=latest \
+  --set consolePlugin.image.repository="quay.io/maximilianopizarro/integration-console-plugin" \
+  --set consolePlugin.image.tag=latest \
+  --set gitea.password='your-gitea-password' \
+  --set tekton.approvalEnabled=false
+
+# Required: pin digest — :latest is not repulled on existing nodes
+oc set image deployment/openshift-integration-operator operator=\
+  image-registry.openshift-image-registry.svc:5000/openshift-integration/openshift-integration-operator@sha256:<digest> \
+  -n openshift-integration
+```
+
+Apply [GitOps examples](#gitops-examples-8-catalog-flows) and Camel K bootstrap after deploy.
+
+### Alternative: `scripts/deploy-cluster.sh`
+
+Builds both operator and console plugin via OpenShift ImageStreams:
 
 ```bash
 mvn -B package -DskipTests
 ./scripts/deploy-cluster.sh
 ```
 
-This builds operator + console plugin ImageStreams, runs Helm upgrade, and prints ephemeral smoke-test commands.
+### Production: Quay.io images
 
-For Quay.io images, use Helm with `operator.image.tag` and `consolePlugin.image.tag` as shown in the [Helm README](helm/openshift-integration-operator/README.md).
+CI publishes on every push to `main`. See the [Helm README](helm/openshift-integration-operator/README.md) for full parameter reference.
+
+Agent-oriented deploy guides live in `.cursor/skills/` (`deploy-to-openshift`, `gitops-examples`, `ephemeral-mode`, `console-plugin-build`).
 
 ## CI/CD Overview
 
-| Workflow | Trigger | Actions |
-|----------|---------|---------|
-| **Build and push to Quay.io** | Push to `main`, tags `v*`, manual dispatch | Maven test, push operator + console plugin images to Quay.io, package Helm chart to `docs/` |
+| Workflow | Trigger | Jobs |
+|----------|---------|------|
+| **Build and push to Quay.io** | Push to `main`, tags `v*`, manual dispatch | `test` (Java 17+21), `validate-catalog`, `helm-lint`, `build-jvm`, `build-console-plugin`, `build-camel-workers`, `helm-publish` |
+| **pages build and deployment** | Push to `main` | GitHub Pages (docs + Helm repo index) |
 
-Images are published to:
+Images published on every `main` push:
 
 ```
 quay.io/maximilianopizarro/openshift-integration-operator:latest
 quay.io/maximilianopizarro/integration-console-plugin:latest
+quay.io/maximilianopizarro/camel-worker-{core,messaging,http,data,cloud,ai,full}:latest
+```
+
+Version tags (`v0.3.0`) are added on git tag push. Validate flow catalog locally before push:
+
+```bash
+node scripts/validate-ready-flows.js
+python3 scripts/validate-catalog.py
 ```
 
 Helm charts are served from GitHub Pages:
@@ -539,9 +638,11 @@ The console plugin follows [Red Hat PatternFly](https://www.patternfly.org/) gui
 
 Use SDK components, prefix CSS with `integration-plugin__`, no Bootstrap/Tailwind.
 
-## Embedded Scaffolds & Worker Images
+## GitOps Scaffold & Worker Images
 
-When `gitRepository` uses a placeholder host (`gitea.example.com`), Tekton builds from embedded scaffold ConfigMaps instead of `git-clone`. Ephemeral workers auto-select the smallest image covering detected Camel components (`core`, `messaging`, `http`, `data`, `cloud`, `ai`, or `full`).
+For GitOps flows, the operator scaffolds a Quarkus project to Gitea (`pom.xml`, runtime Dockerfile, routes/workflows, `base/` manifests) and triggers Tekton `integration-flow-build`. The pipeline runs `mvn package` then packages `target/quarkus-app` into the worker image.
+
+Placeholder git hosts (`gitea.example.com`) are rewritten to the configured Gitea URL. Ephemeral workers auto-select the smallest image covering detected Camel components (`core`, `messaging`, `http`, `data`, `cloud`, `ai`, or `full`). Set `ephemeral.preferFullWorker: false` (default) for tier selection.
 
 ## License
 

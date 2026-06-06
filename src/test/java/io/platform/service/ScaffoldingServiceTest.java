@@ -80,6 +80,9 @@ public class ScaffoldingServiceTest {
         var result = scaffoldingService.scaffold(IntegrationType.CAMEL_PIPE, null);
 
         assertNotNull(result);
+        assertTrue(result.pomXml().contains("<maven.compiler.release>17</maven.compiler.release>"));
+        assertTrue(result.pomXml().contains("quarkus-maven-plugin"));
+        assertTrue(result.dockerfileJvm().contains("COPY target/quarkus-app"));
         assertTrue(result.pomXml().contains("camel-quarkus-kamelet"));
         assertTrue(result.projectStructureSummary().contains("CAMEL_PIPE"));
         assertTrue(result.workflowDefinition().contains("kind: Pipe"));

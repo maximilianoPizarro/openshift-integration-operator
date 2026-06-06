@@ -16,7 +16,7 @@ globs: ["**/*.java", "**/*.yaml", "**/*.yml", "**/*.tsx", "**/*.ts"]
 - `io.platform.operator` -- JOSDK Reconciler implementations
 - `io.platform.ephemeral` -- Ephemeral runtime deployers and cleanup (Quick Try mode)
 - `io.platform.lifecycle` -- Flow lifecycle REST API (pause/resume/stop, extend TTL, promote, logs)
-- `io.platform.service` -- Business logic (ScaffoldingService, GitOpsService)
+- `io.platform.service` -- Business logic (ScaffoldingService, GitOpsService, GitOpsManifestGenerator)
 - `io.platform.service.git` -- GitProvider implementations and GitUrlResolver (placeholder host rewrite)
 - `io.platform.telemetry` -- REST/SSE telemetry endpoints
 - `io.platform.mcp` -- MCP (Model Context Protocol) bridge for AI tool calling
@@ -47,6 +47,19 @@ globs: ["**/*.java", "**/*.yaml", "**/*.yml", "**/*.tsx", "**/*.ts"]
 - Kaoto embedded via iframe, communication via `postMessage` API
 - Telemetry via `EventSource` SSE client
 
+## GitOps scaffold
+- `DefaultScaffoldingService` generates `pom.xml` (Java 17, Quarkus plugin), runtime Dockerfile, and workflow files
+- `DefaultGitOpsService` pushes scaffold + `base/` manifests (deployment/service, pipe, kamelet, or sonataflow)
+- Tekton pipeline builds with `build-maven` then image stage copies `target/quarkus-app`
+- Examples: `k8s/examples/01`–`08` (GitOps), `09`+ (ephemeral); bootstrap: `k8s/bootstrap/camel-k-platform.yaml`
+
+## Skills (`.cursor/skills/`)
+- `deploy-to-openshift` -- operator Helm deploy, digest pinning, Camel K bootstrap
+- `gitops-examples` -- eight catalog flows, Tekton + Argo CD verification
+- `console-plugin-build` -- Quay CI image for cluster; local webpack for dev
+- `ephemeral-mode` -- Quick Try TTL, worker tiers, promote-to-gitops
+
 ## Testing
 - Unit tests use `@QuarkusTest` and rest-assured
 - Test files mirror source structure under `src/test/java/`
+- `GitOpsManifestGeneratorTest`, `ScaffoldingServiceTest` cover scaffold output

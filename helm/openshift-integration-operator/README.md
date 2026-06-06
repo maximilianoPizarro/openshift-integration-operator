@@ -1,8 +1,8 @@
 # OpenShift Integration Operator
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
-![AppVersion: v0.2.0](https://img.shields.io/badge/AppVersion-v0.2.0-informational?style=flat-square)
+![AppVersion: 0.3.0](https://img.shields.io/badge/AppVersion-0.3.0-informational?style=flat-square)
 ![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)
 
 Real-Time Integration & Orchestration Platform for OpenShift — an open-source alternative to n8n, powered by Apache Camel + CNCF SonataFlow with a visual Kaoto designer embedded in the OpenShift Console.
@@ -74,7 +74,24 @@ helm repo update
 helm install integration-operator \
   integration-platform/openshift-integration-operator \
   --namespace openshift-integration \
-  --create-namespace
+  --create-namespace \
+  --set gitea.password='your-gitea-password' \
+  --set tekton.approvalEnabled=false
+```
+
+### Development cluster (binary-built operator)
+
+When the operator image is built via `oc start-build` into the internal registry, use local chart + pin digest after upgrade. See [root README — Deploy to a Cluster](../../README.md#deploy-to-a-cluster).
+
+```bash
+helm upgrade --install openshift-integration-operator \
+  helm/openshift-integration-operator \
+  --namespace openshift-integration \
+  --set operator.image.repository="image-registry.openshift-image-registry.svc:5000/openshift-integration/openshift-integration-operator" \
+  --set operator.image.tag=latest \
+  --set consolePlugin.image.tag=latest \
+  --set gitea.password='your-gitea-password' \
+  --set tekton.approvalEnabled=false
 ```
 
 ### Install with Custom Values
@@ -84,9 +101,12 @@ helm install integration-operator \
   integration-platform/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.2.0 \
+  --set operator.image.tag=latest \
+  --set consolePlugin.image.tag=latest \
   --set workers.maxReplicas=20 \
-  --set telemetry.otelCollectorEndpoint=http://my-otel:4317
+  --set telemetry.otelCollectorEndpoint=http://my-otel:4317 \
+  --set gitea.password='your-gitea-password' \
+  --set tekton.approvalEnabled=false
 ```
 
 ### Upgrade
@@ -111,7 +131,7 @@ helm uninstall integration-operator --namespace openshift-integration
 | Parameter | Description | Default |
 |---|---|---|
 | `operator.image.repository` | Operator container image | `quay.io/maximilianopizarro/openshift-integration-operator` |
-| `operator.image.tag` | Image tag | `v0.2.0` |
+| `operator.image.tag` | Image tag | `v0.3.0` (use `latest` from CI on dev clusters) |
 | `operator.image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `operator.replicas` | Number of operator replicas | `1` |
 | `operator.resources.requests.cpu` | CPU request | `250m` |
@@ -181,7 +201,7 @@ helm uninstall integration-operator --namespace openshift-integration
 |---|---|---|
 | `consolePlugin.enabled` | Deploy the OpenShift Console Dynamic Plugin | `true` |
 | `consolePlugin.image.repository` | Console plugin container image | `quay.io/maximilianopizarro/integration-console-plugin` |
-| `consolePlugin.image.tag` | Console plugin image tag | `v0.2.0` |
+| `consolePlugin.image.tag` | Console plugin image tag | `v0.3.0` (use `latest` from CI) |
 | `consolePlugin.replicas` | Console plugin replicas | `1` |
 
 ### SonataFlow
@@ -202,9 +222,20 @@ helm uninstall integration-operator --namespace openshift-integration
 | `ephemeral.enabled` | Enable ephemeral deployment mode | `true` |
 | `ephemeral.defaultTtlSeconds` | Default TTL when not specified in CR | `3600` |
 | `ephemeral.maxTtlSeconds` | Maximum TTL for extend API | `86400` |
-| `ephemeral.camelWorkerImage` | Container image for ephemeral Camel route workers | `quay.io/.../camel-yaml-worker:v0.2.0` |
-| `ephemeral.camelTestImage` | Container image for ephemeral Camel test jobs | `quay.io/.../camel-test-runner:v0.2.0` |
+| `ephemeral.preferFullWorker` | Use full worker for all ephemeral routes | `false` |
+| `ephemeral.camelWorkerImage` | Core tier worker image | `quay.io/.../camel-worker-core:v0.3.0` |
+| `ephemeral.camelWorkerHttpImage` | HTTP tier (http, https, jsonpath, jackson) | `quay.io/.../camel-worker-http:v0.3.0` |
+| `ephemeral.camelTestImage` | Ephemeral Camel test jobs | `quay.io/.../camel-test-runner:v0.3.0` |
 | `ephemeral.camelK.detect` | Auto-detect Camel K for Kamelet/Pipe ephemeral deploys | `true` |
+
+### Tekton
+
+| Parameter | Description | Default |
+|---|---|---|
+| `tekton.approvalEnabled` | Require ApprovalTask before build | `true` |
+| `tekton.approver` | Approver identity for ApprovalTask | `system:admin` |
+
+Set `tekton.approvalEnabled=false` on dev/workshop clusters so GitOps example flows build without manual approval.
 
 ### General
 

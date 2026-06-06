@@ -19,7 +19,14 @@ public class ScaffoldSourceResolver {
         if (!"embedded".equalsIgnoreCase(scaffoldSource)) {
             return false;
         }
-        return gitUrlResolver.isPlaceholderOrEmpty(gitRepository);
+        if (gitRepository == null || gitRepository.isBlank()) {
+            return true;
+        }
+        if (gitUrlResolver.isPlaceholderOrEmpty(gitRepository)) {
+            // When a real Git provider is configured, placeholder hosts are rewritten and Git is used.
+            return gitUrlResolver.resolve(gitRepository).equals(gitRepository);
+        }
+        return false;
     }
 
     public String scaffoldConfigMapName(IntegrationType type) {

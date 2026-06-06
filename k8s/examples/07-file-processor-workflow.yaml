@@ -4,8 +4,8 @@ metadata:
   name: file-processor-workflow
   namespace: openshift-integration
 spec:
-  integrationType: CAMEL_ROUTE
-  engine: CAMEL
+  integrationType: SONATAFLOW
+  engine: SONATAFLOW
   gitRepository: https://gitea.example.com/user1/file-processor-workflow
   branch: main
   targeting:

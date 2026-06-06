@@ -8,75 +8,160 @@ description: Deploy the operator to an OpenShift cluster using Helm
 ## Prerequisites
 - `oc` CLI installed and logged in
 - Helm 3 installed
-- OpenShift cluster with ImageStreams / BuildConfigs (for cluster-local builds)
+- OpenShift cluster with ImageStreams / BuildConfigs (operator binary build)
+- Gitea reachable from cluster (GitOps examples)
 
-## Option A: Cluster-local deploy (`scripts/deploy-cluster.sh`)
+## Recommended: Dev cluster update (operator local + plugin Quay)
 
-Use this for development clusters — builds operator and console plugin via OpenShift binary builds and internal registry ImageStreams.
+Use this workflow for the Red Hat workshops / dev cluster. Builds the **operator** via OpenShift binary build; uses **Quay** for the console plugin (CI-built, do not `oc start-build` the plugin locally).
 
 ```bash
-# From repo root; requires mvn package first for CRD
-mvn -B package -DskipTests
-./scripts/deploy-cluster.sh
+# From repo root
+mvn -B clean package -DskipTests
+
+oc apply -f target/kubernetes/integrationflows.platform.io-v1.yml
+
+oc start-build openshift-integration-operator --from-dir=. --follow -n openshift-integration
 ```
 
-The script:
-1. Applies CRD from `target/kubernetes/integrationflows.platform.io-v1.yml`
-2. Binary-builds `openshift-integration-operator` ImageStream
-3. Binary-builds `integration-console-plugin` ImageStream (from `console-plugin/`)
-4. Helm upgrade with internal registry image refs
-5. Waits for operator and console plugin rollouts
+Capture the pushed digest from build output (e.g. `sha256:8d2d7881...`).
+
+```bash
+helm upgrade --install openshift-integration-operator \
+  helm/openshift-integration-operator \
+  --namespace openshift-integration \
+  --set operator.image.repository="image-registry.openshift-image-registry.svc:5000/openshift-integration/openshift-integration-operator" \
+  --set operator.image.tag=latest \
+  --set consolePlugin.image.repository="quay.io/maximilianopizarro/integration-console-plugin" \
+  --set consolePlugin.image.tag=latest \
+  --set gitea.password='Welcome123!' \
+  --set tekton.approvalEnabled=false
+```
+
+**Pin operator image by digest** (required — `:latest` is not repulled by kubelet on existing nodes):
+
+```bash
+oc set image deployment/openshift-integration-operator operator=\
+  image-registry.openshift-image-registry.svc:5000/openshift-integration/openshift-integration-operator@sha256:<digest> \
+  -n openshift-integration
+
+oc rollout status deployment/openshift-integration-operator -n openshift-integration --timeout=180s
+oc rollout status deployment/integration-console-plugin -n openshift-integration --timeout=120s
+```
 
 Verify:
 ```bash
 oc get pods -n openshift-integration
+oc get deploy openshift-integration-operator -n openshift-integration \
+  -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
 oc get consoleplugin integration-console-plugin
 ```
 
-## Option B: Quay.io images (production / CI)
+## Option A: `scripts/deploy-cluster.sh` (full local build)
 
-1. **Build and push operator image**
+Builds **both** operator and console plugin via OpenShift binary builds. Prefer the recommended workflow above for day-to-day dev (faster plugin rollout from Quay CI).
+
 ```bash
 mvn -B package -DskipTests
-docker build -f src/main/docker/Dockerfile.jvm -t quay.io/maximilianopizarro/openshift-integration-operator:latest .
-docker push quay.io/maximilianopizarro/openshift-integration-operator:latest
+./scripts/deploy-cluster.sh
 ```
 
-2. **Build and push console plugin image**
-```bash
-docker build -f console-plugin/Dockerfile -t quay.io/maximilianopizarro/integration-console-plugin:latest console-plugin
-docker push quay.io/maximilianopizarro/integration-console-plugin:latest
-```
+Still pin operator digest after the script if pods show stale behavior.
 
-3. **Install via Helm**
+## Option B: Quay.io images (production / CI)
+
+Triggered by GitHub Actions on push to `main` (`.github/workflows/build-push-quay.yml`).
+
 ```bash
 helm upgrade --install openshift-integration-operator \
   helm/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.3.0 \
-  --set consolePlugin.image.tag=v0.3.0
+  --set operator.image.repository=quay.io/maximilianopizarro/openshift-integration-operator \
+  --set operator.image.tag=latest \
+  --set consolePlugin.image.repository=quay.io/maximilianopizarro/integration-console-plugin \
+  --set consolePlugin.image.tag=latest \
+  --set gitea.password='...' \
+  --set tekton.approvalEnabled=false
+```
+
+On version tag push (`v*`), CI also publishes `:v0.3.0` and native images.
+
+## Camel K bootstrap (Pipe / Kamelet examples)
+
+Required once per namespace for `etl-pipe` and `s3-to-db-kamelet`:
+
+```bash
+oc apply -f k8s/bootstrap/camel-k-platform.yaml
+
+# Registry push secret for Camel K kit builds (401 Unauthorized without this)
+TOKEN=$(oc whoami -t)
+oc create secret docker-registry camel-k-registry-auth \
+  -n openshift-integration \
+  --docker-server=image-registry.openshift-image-registry.svc:5000 \
+  --docker-username=$(oc whoami) \
+  --docker-password="$TOKEN" \
+  --dry-run=client -o yaml | oc apply -f -
+
+oc patch integrationplatform camel-k -n openshift-integration --type=merge \
+  -p '{"spec":{"build":{"registry":{"secret":"camel-k-registry-auth"}}}}'
+```
+
+Verify: `oc get integrationplatform camel-k -n openshift-integration` → `Ready`.
+
+## GitOps examples
+
+Eight catalog flows in `k8s/examples/01`–`08`. See skill `gitops-examples` for apply order, pipeline verification, and troubleshooting.
+
+Quick apply (sequential, ~12s gap avoids Gitea HTTP 500 under concurrent scaffold):
+
+```bash
+for yaml in 01-rest-to-kafka 02-order-routing-cbr 03-parallel-enrichment \
+  04-error-handling-dlq 05-s3-to-db-kamelet 06-etl-pipe \
+  07-file-processor-workflow 08-saga-workflow; do
+  oc apply -f "k8s/examples/${yaml}.yaml"
+  sleep 12
+done
+```
+
+After Tekton builds succeed, restart deployments stuck in `ImagePullBackOff`:
+
+```bash
+for d in iflow-rest-to-kafka iflow-error-handling-dlq iflow-order-routing-cbr iflow-parallel-enrichment; do
+  oc rollout restart deployment/$d -n openshift-integration
+done
+```
+
+Refresh Argo CD health if flows show `PartiallyHealthy` while pods are fine:
+
+```bash
+for app in rest-to-kafka-in-cluster error-handling-dlq-in-cluster \
+  order-routing-cbr-in-cluster parallel-enrichment-in-cluster; do
+  oc annotate application $app -n openshift-gitops argocd.argoproj.io/refresh=hard --overwrite
+done
 ```
 
 ## Secrets management
 
-Do **not** commit passwords or tokens in `values.yaml`. Options:
+Do **not** commit passwords in `values.yaml`.
 
 | Provider | Helm |
 |----------|------|
-| Dev (`values`) | `--set gitea.password=...` at install time |
-| External Secrets | `secrets.provider=external-secrets` + `secrets.externalSecrets.enabled=true` |
-| Sealed Secrets | Encrypt with `kubeseal`, apply alongside Helm |
+| Dev | `--set gitea.password=...` at install time |
+| External Secrets | `secrets.provider=external-secrets` |
+| Sealed Secrets | Encrypt with `kubeseal` |
 
-```yaml
-secrets:
-  provider: external-secrets
-  externalSecrets:
-    enabled: true
-    secretStoreRef: cluster-secret-store
-```
+Tekton git clone uses `integration-git-basic-auth` (Helm template includes `.git-credentials` + `.gitconfig`).
 
-Git credentials are mounted from Secret refs when External Secrets is enabled (`templates/external-secret.yaml`).
+## Helm values (dev cluster)
+
+| Key | Dev value | Notes |
+|-----|-----------|-------|
+| `gitea.password` | workshop password | Required for Gitea push |
+| `tekton.approvalEnabled` | `false` | Skip ApprovalTask in pipeline |
+| `consolePlugin.image.tag` | `latest` | From Quay CI; `v0.3.0` may be stale |
+| `ephemeral.preferFullWorker` | `false` | Tier-based worker selection |
+| `sonataflow.namespace` | `kogito-bpm` | SonataFlow CR target |
 
 ## Multi-namespace
 
@@ -88,67 +173,32 @@ sonataflow:
   namespace: kogito-bpm
 ```
 
-Per-CR worker resources are created in the IntegrationFlow namespace. Multi-cluster uses Argo CD ApplicationSets with `spec.targeting`.
-
 ## Ephemeral smoke test
-
-After deploy, validate Quick Try mode:
 
 ```bash
 oc apply -f k8s/examples/09-ephemeral-demo.yaml
-
-# Wait for Running phase
 oc get integrationflow ephemeral-camel-demo -n openshift-integration -w
-
-# Confirm ephemeral worker deployment
-oc get deploy -n openshift-integration -l platform.io/ephemeral=true
-
-# Check operator logs for deploy confirmation
-oc logs deploy/openshift-integration-operator -n openshift-integration --tail=20 | grep -i ephemeral
+oc get deploy -l platform.io/ephemeral=true -n openshift-integration
 ```
 
-Expected: `status.phase=Running`, `status.ephemeralWorkerRef` set, worker pod logging timer messages.
+See skill `ephemeral-mode` for TTL, promote, and worker tiers.
 
 ## Console plugin proxy
 
-The plugin uses proxy alias `backend` in the ConsolePlugin CR. Frontend requests go through:
+- Plugin name: `integration-console-plugin`
+- Proxy path: `/api/proxy/plugin/integration-console-plugin/backend/...`
+- Backend: operator Service **HTTPS port 8443** (serving cert). HTTP 8080 → `502` / TLS handshake errors.
 
-```
-/api/proxy/plugin/integration-console-plugin/backend/...
-```
+## Troubleshooting
 
-Plugin name must match `integration-console-plugin` (see `console-plugin/src/constants.ts`).
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Operator runs old code after binary build | `:latest` not repulled | `oc set image ...@sha256:<digest>` |
+| PipelineRun `Source option 5` / Java 5 | Stale scaffold in Gitea | Redeploy operator with scaffold fix; recreate flow |
+| `ImagePullBackOff` on `iflow-*` | Deploy before image built | Wait for PipelineRun; `oc rollout restart deployment/...` |
+| `etl-pipe` Waiting For Platform | No IntegrationPlatform | Apply `k8s/bootstrap/camel-k-platform.yaml` |
+| Camel K `401 Unauthorized` on kit push | Missing registry secret | Create `camel-k-registry-auth` (see above) |
+| Gitea HTTP 500 on scaffold | Concurrent reconciles | Apply flows sequentially; operator retries writes |
+| Argo CD `Degraded` but pod Running | Stale health cache | Hard refresh Application annotations |
 
-The proxy target is the operator Service on **HTTPS port 8443** (OpenShift serving cert). Plain HTTP on 8080 causes `502` / `tls: first record does not look like a TLS handshake` in console logs.
-
-## GitOps test flow (optional)
-
-```bash
-cat <<EOF | oc apply -n openshift-integration -f -
-apiVersion: platform.io/v1alpha1
-kind: IntegrationFlow
-metadata:
-  name: test-camel-flow
-spec:
-  engine: CAMEL
-  gitRepository: https://gitea.example.com/demo/test-worker.git
-  branch: main
-  targeting:
-    strategy: explicit
-    clusters:
-      - local
-  kaotoDesign: |
-    - route:
-        from:
-          uri: timer:tick
-          parameters:
-            period: 5000
-          steps:
-            - log:
-                message: "Hello from test flow"
-EOF
-
-oc get integrationflow test-camel-flow -o yaml
-```
-
-Placeholder git hosts (`gitea.example.com`, etc.) are rewritten to operator-configured URLs via `GitUrlResolver`.
+Placeholder git hosts (`gitea.example.com`) are rewritten via `GitUrlResolver` / `ScaffoldSourceResolver`.

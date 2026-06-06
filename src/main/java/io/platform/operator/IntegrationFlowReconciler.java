@@ -219,7 +219,8 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                         "Using embedded scaffold ConfigMap for build");
             } else {
                 var gitResult = gitOpsService.pushScaffold(
-                        gitUrlResolver.resolve(spec.getGitRepository()), spec.getBranch(), scaffoldResult);
+                        gitUrlResolver.resolve(spec.getGitRepository()), spec.getBranch(),
+                        flowName, type, scaffoldResult);
 
                 if (!gitResult.success()) {
                     status.setPhase(IntegrationFlowStatus.Phase.Error);

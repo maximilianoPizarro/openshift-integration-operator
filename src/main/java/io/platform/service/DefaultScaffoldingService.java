@@ -40,7 +40,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
         String otelDecorator = type.isCamel()
                 ? generateCamelOtelDecorator()
                 : generateSonataFlowOtelDecorator();
-        String kustomizeBase = generateKustomizeBase(flowName);
+        String kustomizeBase = GitOpsManifestGenerator.kustomization(flowName, type);
         String applicationProperties = generateApplicationProperties(flowName, resilience);
         Set<String> detectedComponents = componentDetector.detectComponents(kaotoDesign);
 
@@ -49,9 +49,22 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         + "KaotoOtelDecorator.java, base/kustomization.yaml, application.properties",
                 type, flowName, kaotoDesign != null ? kaotoDesign.length() : 0);
 
+        String dockerfile = generateDockerfileJvm();
+
         return new ScaffoldResult(
                 pomXml, workflowDef, summary, kaotoConfig, otelDecorator, kustomizeBase, applicationProperties,
-                detectedComponents);
+                detectedComponents, dockerfile);
+    }
+
+    static String generateDockerfileJvm() {
+        // Tekton build-maven produces target/quarkus-app; image stage only packages the runtime.
+        return """
+                FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.20
+                COPY target/quarkus-app /deployments/
+                EXPOSE 8080
+                ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0"
+                CMD ["java", "-jar", "/deployments/quarkus-run.jar"]
+                """;
     }
 
     private String generateWorkflowDefinition(IntegrationType type, String flowName, String kaotoDesign) {
@@ -242,19 +255,6 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                 """;
     }
 
-    private String generateKustomizeBase(String flowName) {
-        return """
-                apiVersion: kustomize.config.k8s.io/v1beta1
-                kind: Kustomization
-                resources:
-                  - deployment.yaml
-                  - service.yaml
-                commonLabels:
-                  app.kubernetes.io/part-of: integration-platform
-                  kaoto.io/integration: "%s"
-                """.formatted(flowName);
-    }
-
     private String generateApplicationProperties(String flowName, ResilienceSpec resilience) {
         var sb = new StringBuilder();
         sb.append("quarkus.application.name=%s\n".formatted(flowName));
@@ -299,6 +299,29 @@ public class DefaultScaffoldingService implements ScaffoldingService {
         };
     }
 
+    private static final String POM_JAVA_PROPERTIES = """
+                        <maven.compiler.release>17</maven.compiler.release>
+                        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>""";
+
+    private static final String POM_BUILD_BLOCK = """
+                    <build>
+                        <plugins>
+                            <plugin>
+                                <groupId>io.quarkus.platform</groupId>
+                                <artifactId>quarkus-maven-plugin</artifactId>
+                                <version>${quarkus.platform.version}</version>
+                                <extensions>true</extensions>
+                                <executions>
+                                    <execution>
+                                        <goals>
+                                            <goal>build</goal>
+                                        </goals>
+                                    </execution>
+                                </executions>
+                            </plugin>
+                        </plugins>
+                    </build>""";
+
     private static final String CAMEL_BOM_BLOCK = """
                         <dependency>
                             <groupId>io.quarkus.platform</groupId>
@@ -327,6 +350,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     <version>1.0.0-SNAPSHOT</version>
                     <properties>
                         <quarkus.platform.version>3.36.1</quarkus.platform.version>
+                %s
                     </properties>
                     <dependencyManagement>
                         <dependencies>
@@ -348,6 +372,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         </dependency>
                         <dependency>
                             <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-arc</artifactId>
+                        </dependency>
+                        <dependency>
+                            <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-opentelemetry</artifactId>
                         </dependency>
                         <dependency>
@@ -355,8 +383,9 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                             <artifactId>camel-quarkus-opentelemetry</artifactId>
                         </dependency>
                     </dependencies>
+                %s
                 </project>
-                """.formatted(flowName, CAMEL_BOM_BLOCK);
+                """.formatted(flowName, POM_JAVA_PROPERTIES, CAMEL_BOM_BLOCK, POM_BUILD_BLOCK);
     }
 
     private String generateCamelKameletPom(String flowName) {
@@ -371,6 +400,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     <version>1.0.0-SNAPSHOT</version>
                     <properties>
                         <quarkus.platform.version>3.36.1</quarkus.platform.version>
+                %s
                     </properties>
                     <dependencyManagement>
                         <dependencies>
@@ -396,6 +426,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         </dependency>
                         <dependency>
                             <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-arc</artifactId>
+                        </dependency>
+                        <dependency>
+                            <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-opentelemetry</artifactId>
                         </dependency>
                         <dependency>
@@ -403,8 +437,9 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                             <artifactId>camel-quarkus-opentelemetry</artifactId>
                         </dependency>
                     </dependencies>
+                %s
                 </project>
-                """.formatted(flowName, CAMEL_BOM_BLOCK);
+                """.formatted(flowName, POM_JAVA_PROPERTIES, CAMEL_BOM_BLOCK, POM_BUILD_BLOCK);
     }
 
     private String generateCamelPipePom(String flowName) {
@@ -419,6 +454,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     <version>1.0.0-SNAPSHOT</version>
                     <properties>
                         <quarkus.platform.version>3.36.1</quarkus.platform.version>
+                %s
                     </properties>
                     <dependencyManagement>
                         <dependencies>
@@ -444,6 +480,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         </dependency>
                         <dependency>
                             <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-arc</artifactId>
+                        </dependency>
+                        <dependency>
+                            <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-opentelemetry</artifactId>
                         </dependency>
                         <dependency>
@@ -451,8 +491,9 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                             <artifactId>camel-quarkus-opentelemetry</artifactId>
                         </dependency>
                     </dependencies>
+                %s
                 </project>
-                """.formatted(flowName, CAMEL_BOM_BLOCK);
+                """.formatted(flowName, POM_JAVA_PROPERTIES, CAMEL_BOM_BLOCK, POM_BUILD_BLOCK);
     }
 
     private String generateCamelTestPom(String flowName) {
@@ -467,6 +508,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     <version>1.0.0-SNAPSHOT</version>
                     <properties>
                         <quarkus.platform.version>3.36.1</quarkus.platform.version>
+                %s
                     </properties>
                     <dependencyManagement>
                         <dependencies>
@@ -496,6 +538,10 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                         </dependency>
                         <dependency>
                             <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-arc</artifactId>
+                        </dependency>
+                        <dependency>
+                            <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-opentelemetry</artifactId>
                         </dependency>
                         <dependency>
@@ -503,8 +549,9 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                             <artifactId>camel-quarkus-opentelemetry</artifactId>
                         </dependency>
                     </dependencies>
+                %s
                 </project>
-                """.formatted(flowName, CAMEL_BOM_BLOCK);
+                """.formatted(flowName, POM_JAVA_PROPERTIES, CAMEL_BOM_BLOCK, POM_BUILD_BLOCK);
     }
 
     private String generateSonataFlowPom(String flowName) {
@@ -519,6 +566,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                     <version>1.0.0-SNAPSHOT</version>
                     <properties>
                         <quarkus.platform.version>3.36.1</quarkus.platform.version>
+                %s
                     </properties>
                     <dependencyManagement>
                         <dependencies>
@@ -529,16 +577,30 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                                 <type>pom</type>
                                 <scope>import</scope>
                             </dependency>
+                            <dependency>
+                                <groupId>org.kie.kogito</groupId>
+                                <artifactId>kogito-bom</artifactId>
+                                <version>10.1.0</version>
+                                <type>pom</type>
+                                <scope>import</scope>
+                            </dependency>
+                %s
                         </dependencies>
                     </dependencyManagement>
                     <dependencies>
                         <dependency>
                             <groupId>org.kie.kogito</groupId>
                             <artifactId>kogito-quarkus-serverless-workflow</artifactId>
+                            <version>10.1.0</version>
                         </dependency>
                         <dependency>
                             <groupId>org.kie</groupId>
                             <artifactId>kie-addons-quarkus-knative-eventing</artifactId>
+                            <version>10.1.0</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-arc</artifactId>
                         </dependency>
                         <dependency>
                             <groupId>io.quarkus</groupId>
@@ -549,7 +611,8 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                             <artifactId>camel-quarkus-opentelemetry</artifactId>
                         </dependency>
                     </dependencies>
+                %s
                 </project>
-                """.formatted(flowName);
+                """.formatted(flowName, POM_JAVA_PROPERTIES, CAMEL_BOM_BLOCK, POM_BUILD_BLOCK);
     }
 }
