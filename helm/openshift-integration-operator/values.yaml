@@ -1,7 +1,7 @@
 operator:
   image:
     repository: quay.io/maximilianopizarro/openshift-integration-operator
-    tag: v0.2.0
+    tag: v0.3.0
     pullPolicy: IfNotPresent
   replicas: 1
   resources:
@@ -15,6 +15,7 @@ operator:
     create: true
     name: integration-operator-sa
   proxyPort: 8443
+  watchedNamespaces: []   # empty = cluster-wide watch
 
 workers:
   enabled: true
@@ -45,8 +46,29 @@ git:
 gitea:
   url: https://gitea-gitea.apps.cluster-xtvzv.dynamic.redhatworkshops.io
   username: user1
-  password: Welcome123!
+  password: ""   # set via --set or External Secrets; never commit real passwords
   org: user1
+
+scaffolds:
+  source: embedded   # embedded | git | oci | configmap
+  gitRepo: ""
+  gitBranch: main
+  ociImage: ""
+  configMapPrefix: "scaffold-"
+  templates:
+    camelRoute: true
+    camelKamelet: true
+    camelPipe: true
+    camelTest: true
+    sonataflow: true
+
+secrets:
+  provider: values   # values | external-secrets | sealed-secrets
+  externalSecrets:
+    enabled: false
+    secretStoreRef: cluster-secret-store
+    refreshInterval: 1h
+    gitCredentialsSecretName: integration-git-credentials
 
 github:
   url: https://api.github.com
@@ -80,7 +102,7 @@ consolePlugin:
   enabled: true
   image:
     repository: quay.io/maximilianopizarro/integration-console-plugin
-    tag: v0.2.0
+    tag: v0.3.0
   replicas: 1
 
 sonataflow:
@@ -98,8 +120,14 @@ ephemeral:
   enabled: true
   defaultTtlSeconds: 3600
   maxTtlSeconds: 86400
-  camelWorkerImage: quay.io/maximilianopizarro/camel-yaml-worker:v0.2.0
-  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.2.0
+  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.3.0
+  camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.3.0
+  camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.3.0
+  camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.3.0
+  camelWorkerCloudImage: quay.io/maximilianopizarro/camel-worker-cloud:v0.3.0
+  camelWorkerAiImage: quay.io/maximilianopizarro/camel-worker-ai:v0.3.0
+  camelWorkerFullImage: quay.io/maximilianopizarro/camel-worker-full:v0.3.0
+  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.3.0
   camelK:
     detect: true
 

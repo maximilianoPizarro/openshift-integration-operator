@@ -3,7 +3,10 @@ package io.platform.service;
 import io.platform.api.v1alpha1.IntegrationType;
 import io.platform.api.v1alpha1.ResilienceSpec;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+
+import java.util.Set;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,6 +16,9 @@ public class DefaultScaffoldingService implements ScaffoldingService {
 
     private static final Logger LOG = Logger.getLogger(DefaultScaffoldingService.class);
     private static final String DEFAULT_FLOW_NAME = "integration-flow";
+
+    @Inject
+    CamelComponentDetector componentDetector;
 
     private static final Pattern YAML_ID_PATTERN = Pattern.compile("(?m)^\\s*id:\\s*['\"]?([^'\"\\s\\n]+)");
     private static final Pattern JSON_ID_PATTERN = Pattern.compile("\"id\"\\s*:\\s*\"([^\"]+)\"");
@@ -36,6 +42,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                 : generateSonataFlowOtelDecorator();
         String kustomizeBase = generateKustomizeBase(flowName);
         String applicationProperties = generateApplicationProperties(flowName, resilience);
+        Set<String> detectedComponents = componentDetector.detectComponents(kaotoDesign);
 
         String summary = String.format(
                 "Generated %s project '%s' with pom.xml, workflow definition (%d bytes), kaoto-config.json, "
@@ -43,7 +50,8 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                 type, flowName, kaotoDesign != null ? kaotoDesign.length() : 0);
 
         return new ScaffoldResult(
-                pomXml, workflowDef, summary, kaotoConfig, otelDecorator, kustomizeBase, applicationProperties);
+                pomXml, workflowDef, summary, kaotoConfig, otelDecorator, kustomizeBase, applicationProperties,
+                detectedComponents);
     }
 
     private String generateWorkflowDefinition(IntegrationType type, String flowName, String kaotoDesign) {

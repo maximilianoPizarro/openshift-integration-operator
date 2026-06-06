@@ -1,0 +1,22 @@
+{{- if eq (.Values.scaffolds.source | default "embedded") "embedded" }}
+{{- range $type, $enabled := .Values.scaffolds.templates }}
+{{- if $enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scaffold-{{ $type | kebabcase }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    platform.io/component: scaffold
+    platform.io/integration-type: {{ $type }}
+    {{- include "operator.labels" $ | nindent 4 }}
+data:
+{{- $glob := printf "scaffolds/%s/**" ($type | kebabcase) }}
+{{- range $path, $content := $.Files.Glob $glob }}
+  {{ $path | replace (printf "scaffolds/%s/" ($type | kebabcase)) "" | replace "/" "__" }}: |
+{{ $content | toString | nindent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -22,23 +22,51 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [17, 21]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: ${{ matrix.java }}
           distribution: 'temurin'
           cache: maven
 
       - name: Run tests
         run: mvn -B test
 
+  validate-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate examples catalog components
+        run: python3 scripts/validate-catalog.py
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Helm lint and template
+        run: |
+          helm lint helm/openshift-integration-operator
+          helm template integration-operator helm/openshift-integration-operator > /tmp/rendered.yaml
+
   build-jvm:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, validate-catalog, helm-lint]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -113,7 +141,7 @@ jobs:
 
   build-console-plugin:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, validate-catalog, helm-lint]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -168,10 +196,22 @@ jobs:
           push: true
           tags: ${{ steps.plugin-tags.outputs.tags }}
 
-  build-camel-worker:
+  build-camel-workers:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, validate-catalog]
     continue-on-error: true
+    strategy:
+      matrix:
+        worker:
+          - camel-worker-core
+          - camel-worker-messaging
+          - camel-worker-http
+          - camel-worker-data
+          - camel-worker-cloud
+          - camel-worker-ai
+          - camel-worker-full
+          - camel-yaml-worker
+          - camel-test-runner
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -193,50 +233,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Camel YAML worker image
+      - name: Build and push ${{ matrix.worker }} image
         uses: docker/build-push-action@v6
         with:
-          context: ./workers/camel-yaml-worker
-          file: ./workers/camel-yaml-worker/Dockerfile.jvm
+          context: ./workers/${{ matrix.worker }}
+          file: ./workers/${{ matrix.worker }}/Dockerfile.jvm
           push: true
           tags: |
-            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/camel-yaml-worker:v0.2.0
-            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/camel-yaml-worker:latest
-
-  build-camel-test-runner:
-    runs-on: ubuntu-latest
-    needs: test
-    continue-on-error: true
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Login to Quay.io
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.QUAY_REGISTRY }}
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_PASSWORD }}
-
-      - name: Login to registry.access.redhat.com
-        uses: docker/login-action@v3
-        with:
-          registry: registry.access.redhat.com
-          username: ${{ secrets.REDHAT_REGISTRY_USERNAME }}
-          password: ${{ secrets.REDHAT_REGISTRY_PASSWORD }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Camel test runner image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./workers/camel-test-runner
-          file: ./workers/camel-test-runner/Dockerfile.jvm
-          push: true
-          tags: |
-            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/camel-test-runner:v0.2.0
-            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/camel-test-runner:latest
+            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:v0.3.0
+            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:latest
 
   build-native:
     runs-on: ubuntu-latest

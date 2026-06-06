@@ -2,8 +2,8 @@ apiVersion: v2
 name: openshift-integration-operator
 description: Real-Time Integration & Orchestration Platform for OpenShift - Apache Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and OpenTelemetry observability
 type: application
-version: 0.2.0
-appVersion: "0.2.0"
+version: 0.3.0
+appVersion: "0.3.0"
 kubeVersion: ">=1.27.0-0"
 home: https://maximilianopizarro.github.io/openshift-integration-operator/
 sources:
@@ -46,9 +46,9 @@ annotations:
       url: https://github.com/maximilianoPizarro/openshift-integration-operator
   artifacthub.io/images: |
     - name: operator
-      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.2.0
+      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.3.0
     - name: console-plugin
-      image: quay.io/maximilianopizarro/integration-console-plugin:v0.2.0
+      image: quay.io/maximilianopizarro/integration-console-plugin:v0.3.0
   artifacthub.io/crds: |
     - kind: IntegrationFlow
       version: v1alpha1
@@ -81,6 +81,16 @@ annotations:
     - url: https://artifacthub.io/packages/helm/openshift-gitops/openshift-gitops
     - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
   artifacthub.io/changes: |
+    - kind: added
+      description: Embedded scaffold registry with Tekton populate-scaffold task for placeholder Git URLs
+    - kind: added
+      description: Domain-specific ephemeral worker images (core, messaging, http, data, cloud, ai, full) with auto-selection
+    - kind: added
+      description: External Secrets Operator template and secrets provider configuration
+    - kind: added
+      description: Catalog validation CI job and Java 17/21 build matrix
+    - kind: changed
+      description: Console plugin served by Go static server (golang runtime label)
     - kind: added
       description: Five integration types — Camel Route, Kamelet, Pipe, Test, SonataFlow
     - kind: added

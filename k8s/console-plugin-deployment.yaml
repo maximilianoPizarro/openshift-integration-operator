@@ -1,30 +1,4 @@
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: integration-plugin-nginx
-  namespace: openshift-integration
-data:
-  tls.conf: |
-    server {
-        listen 8443 ssl;
-        ssl_certificate /var/serving-cert/tls.crt;
-        ssl_certificate_key /var/serving-cert/tls.key;
-        root /opt/app-root/src;
-
-        etag off;
-        if_modified_since off;
-        add_header Cache-Control "no-store, no-cache, must-revalidate";
-        add_header Access-Control-Allow-Origin "*";
-
-        location ~* \.json$ {
-            default_type application/json;
-        }
-
-        location ~* \.js$ {
-            default_type application/javascript;
-        }
-    }
+# Console plugin Deployment — Go static server (serve) on HTTPS port 9443.
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -468,7 +442,7 @@ metadata:
   labels:
     app: integration-console-plugin
     app.kubernetes.io/part-of: integration-platform
-    app.openshift.io/runtime: nginx
+    app.openshift.io/runtime: golang
 spec:
   replicas: 1
   selector:
@@ -480,22 +454,15 @@ spec:
         app: integration-console-plugin
     spec:
       containers:
-        - name: plugin
-          image: registry.access.redhat.com/ubi9/nginx-124:latest
-          command: ["nginx", "-g", "daemon off;"]
+        - name: console-plugin
+          image: quay.io/maximilianopizarro/integration-console-plugin:v0.3.0
           ports:
-            - containerPort: 8443
+            - containerPort: 9443
               protocol: TCP
           volumeMounts:
             - name: plugin-serving-cert
               readOnly: true
               mountPath: /var/serving-cert
-            - name: plugin-nginx-conf
-              readOnly: true
-              mountPath: /opt/app-root/etc/nginx.d
-            - name: plugin-content
-              readOnly: true
-              mountPath: /opt/app-root/src
           resources:
             requests:
               cpu: 50m
@@ -508,12 +475,6 @@ spec:
           secret:
             secretName: integration-console-plugin-cert
             defaultMode: 420
-        - name: plugin-nginx-conf
-          configMap:
-            name: integration-plugin-nginx
-        - name: plugin-content
-          configMap:
-            name: integration-plugin-content
 ---
 apiVersion: console.openshift.io/v1
 kind: ConsolePlugin

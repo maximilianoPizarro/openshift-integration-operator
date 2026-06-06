@@ -54,9 +54,41 @@ helm upgrade --install openshift-integration-operator \
   helm/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=latest \
-  --set consolePlugin.image.tag=latest
+  --set operator.image.tag=v0.3.0 \
+  --set consolePlugin.image.tag=v0.3.0
 ```
+
+## Secrets management
+
+Do **not** commit passwords or tokens in `values.yaml`. Options:
+
+| Provider | Helm |
+|----------|------|
+| Dev (`values`) | `--set gitea.password=...` at install time |
+| External Secrets | `secrets.provider=external-secrets` + `secrets.externalSecrets.enabled=true` |
+| Sealed Secrets | Encrypt with `kubeseal`, apply alongside Helm |
+
+```yaml
+secrets:
+  provider: external-secrets
+  externalSecrets:
+    enabled: true
+    secretStoreRef: cluster-secret-store
+```
+
+Git credentials are mounted from Secret refs when External Secrets is enabled (`templates/external-secret.yaml`).
+
+## Multi-namespace
+
+```yaml
+operator:
+  watchedNamespaces: []   # cluster-wide (default)
+namespace: openshift-integration
+sonataflow:
+  namespace: kogito-bpm
+```
+
+Per-CR worker resources are created in the IntegrationFlow namespace. Multi-cluster uses Argo CD ApplicationSets with `spec.targeting`.
 
 ## Ephemeral smoke test
 

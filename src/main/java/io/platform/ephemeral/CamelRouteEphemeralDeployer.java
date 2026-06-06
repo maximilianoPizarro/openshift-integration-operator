@@ -5,10 +5,11 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.platform.api.v1alpha1.IntegrationType;
+import io.platform.service.CamelComponentDetector;
 import io.platform.service.ScaffoldingService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.util.HashMap;
@@ -23,11 +24,22 @@ public class CamelRouteEphemeralDeployer {
     @Inject
     KubernetesClient kubernetesClient;
 
-    @ConfigProperty(name = "ephemeral.camel-worker-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-yaml-worker:v0.2.0")
-    String workerImage;
+    @Inject
+    EphemeralWorkerImageResolver imageResolver;
+
+    @Inject
+    CamelComponentDetector componentDetector;
 
     public String deploy(String flowName, String namespace, ScaffoldingService.ScaffoldResult scaffold) {
+        return deploy(flowName, namespace, scaffold, IntegrationType.CAMEL_ROUTE);
+    }
+
+    public String deploy(String flowName, String namespace, ScaffoldingService.ScaffoldResult scaffold,
+                         IntegrationType integrationType) {
+        var components = scaffold.detectedComponents() != null && !scaffold.detectedComponents().isEmpty()
+                ? scaffold.detectedComponents()
+                : componentDetector.detectComponents(scaffold.workflowDefinition());
+        String workerImage = imageResolver.resolveWorkerImage(components, integrationType);
         String cmName = "iflow-" + flowName + "-sources";
         String deployName = "iflow-" + flowName + "-worker";
         String svcName = "iflow-" + flowName;

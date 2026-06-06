@@ -19,7 +19,10 @@ npm run build
 Multi-stage Dockerfile at `console-plugin/Dockerfile`:
 
 1. **Build stage** — UBI9 Node.js 22, `npm ci`, webpack production build
-2. **Serve stage** — UBI9 nginx 124, serves `dist/` over HTTPS on port **9443**
+2. **Go build** — UBI9 go-toolset, compiles `serve.go` static HTTPS server
+3. **Runtime** — UBI9 micro with `serve` binary, serves `dist/` on port **9443**
+
+Helm label: `app.openshift.io/runtime: golang`.
 
 ```bash
 docker build -f console-plugin/Dockerfile \

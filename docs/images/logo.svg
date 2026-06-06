@@ -1,41 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1f6feb"/>
-      <stop offset="50%" style="stop-color:#388bfd"/>
-      <stop offset="100%" style="stop-color:#8957e5"/>
+      <stop offset="0%" style="stop-color:#EE0000"/>
+      <stop offset="45%" style="stop-color:#CC0000"/>
+      <stop offset="100%" style="stop-color:#F7941D"/>
     </linearGradient>
-    <linearGradient id="inner" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#58a6ff"/>
-      <stop offset="100%" style="stop-color:#bc8cff"/>
+    <linearGradient id="hub" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF"/>
+      <stop offset="100%" style="stop-color:#FFE0B2"/>
     </linearGradient>
   </defs>
-  <!-- Background circle -->
   <circle cx="256" cy="256" r="240" fill="url(#bg)"/>
-  <!-- OpenShift-style gear outer ring -->
-  <circle cx="256" cy="256" r="180" fill="none" stroke="#ffffff" stroke-width="8" opacity="0.2"/>
-  <!-- Integration flow arrows (three converging paths) -->
-  <!-- Left arrow -->
-  <path d="M100 200 L180 256 L100 312" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-  <!-- Center hub -->
-  <circle cx="256" cy="256" r="60" fill="url(#inner)" opacity="0.9"/>
-  <!-- Right arrow -->
-  <path d="M412 200 L332 256 L412 312" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-  <!-- Top connector -->
-  <line x1="256" y1="100" x2="256" y2="196" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.7"/>
-  <polygon points="240,196 256,180 272,196" fill="#ffffff" opacity="0.7"/>
-  <!-- Bottom connector -->
-  <line x1="256" y1="316" x2="256" y2="412" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.7"/>
-  <polygon points="240,316 256,332 272,316" fill="#ffffff" opacity="0.7"/>
-  <!-- Left connector -->
-  <line x1="180" y1="256" x2="196" y2="256" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.8"/>
-  <!-- Right connector -->
-  <line x1="316" y1="256" x2="332" y2="256" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.8"/>
-  <!-- Center icon: flow/integration symbol -->
-  <text x="256" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff">IO</text>
-  <!-- Small nodes around the hub -->
-  <circle cx="256" cy="130" r="16" fill="#58a6ff"/>
-  <circle cx="256" cy="382" r="16" fill="#8957e5"/>
-  <circle cx="130" cy="256" r="16" fill="#58a6ff"/>
-  <circle cx="382" cy="256" r="16" fill="#8957e5"/>
+  <!-- OpenShift-style hub ring -->
+  <circle cx="256" cy="256" r="175" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.25"/>
+  <!-- Converging integration arrows -->
+  <path d="M90 210 L175 256 L90 302" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+  <path d="M422 210 L337 256 L422 302" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+  <line x1="256" y1="95" x2="256" y2="185" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+  <polygon points="244,185 256,168 268,185" fill="#ffffff" opacity="0.7"/>
+  <line x1="256" y1="327" x2="256" y2="417" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+  <polygon points="244,327 256,344 268,327" fill="#ffffff" opacity="0.7"/>
+  <!-- Central hub -->
+  <circle cx="256" cy="256" r="58" fill="url(#hub)" opacity="0.95"/>
+  <!-- Stylized Camel silhouette (minimal) -->
+  <path d="M220 268 C210 252 215 238 228 232 C238 228 248 232 252 242 C258 232 272 226 286 232 C300 238 306 252 298 268 C292 280 278 286 262 288 L262 302 L250 302 L250 288 C234 286 226 278 220 268 Z"
+        fill="#CC0000" opacity="0.9"/>
+  <circle cx="278" cy="246" r="4" fill="#CC0000"/>
+  <!-- Node connectors -->
+  <circle cx="256" cy="125" r="14" fill="#ffffff" opacity="0.9"/>
+  <circle cx="256" cy="387" r="14" fill="#ffffff" opacity="0.9"/>
+  <circle cx="125" cy="256" r="14" fill="#ffffff" opacity="0.9"/>
+  <circle cx="387" cy="256" r="14" fill="#ffffff" opacity="0.9"/>
 </svg>

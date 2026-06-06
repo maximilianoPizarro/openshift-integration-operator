@@ -1,4 +1,4 @@
-# OpenShift binary build for the console plugin (webpack + nginx image).
+# OpenShift binary build for the console plugin (webpack + Go static server on 9443).
 # Usage: oc start-build integration-console-plugin --from-dir=console-plugin --follow -n openshift-integration
 apiVersion: build.openshift.io/v1
 kind: BuildConfig

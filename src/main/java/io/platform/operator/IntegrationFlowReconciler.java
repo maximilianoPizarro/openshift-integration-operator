@@ -20,6 +20,7 @@ import io.platform.lifecycle.FlowLifecycleService;
 import io.platform.service.ArgoService;
 import io.platform.service.git.GitUrlResolver;
 import io.platform.service.GitOpsService;
+import io.platform.service.ScaffoldSourceResolver;
 import io.platform.service.ScaffoldingService;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -61,6 +62,9 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
     @Inject
     GitUrlResolver gitUrlResolver;
+
+    @Inject
+    ScaffoldSourceResolver scaffoldSourceResolver;
 
     @ConfigProperty(name = "sonataflow.enabled", defaultValue = "true")
     boolean sonataFlowEnabled;
@@ -200,27 +204,39 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             var scaffoldResult = scaffoldingService.scaffold(type, spec.getKaotoDesign(), spec.getResilience());
             updateCondition(status, "Scaffolded", "True", "ScaffoldComplete", "Worker project scaffolded");
 
-            // Step 2: Push to Git via GitOps service
-            var gitResult = gitOpsService.pushScaffold(
-                    gitUrlResolver.resolve(spec.getGitRepository()), spec.getBranch(), scaffoldResult);
+            boolean useEmbeddedScaffold = scaffoldSourceResolver.useEmbeddedScaffold(spec.getGitRepository());
+            String commitHash;
 
-            if (!gitResult.success()) {
-                status.setPhase(IntegrationFlowStatus.Phase.Error);
-                status.setMessage("Git push failed: " + gitResult.message());
-                updateCondition(status, "GitPushed", "False", "PushFailed", gitResult.message());
-                finalizeStatus(resource, status);
-                return UpdateControl.patchStatus(resource);
+            if (useEmbeddedScaffold) {
+                commitHash = "embedded-" + (currentDesignHash != null && currentDesignHash.length() >= 7
+                        ? currentDesignHash.substring(0, 7) : flowName);
+                status.setGitCommitHash(commitHash);
+                status.setLastScaffoldedHash(currentDesignHash);
+                updateCondition(status, "GitPushed", "True", "EmbeddedScaffold",
+                        "Using embedded scaffold ConfigMap for build");
+            } else {
+                var gitResult = gitOpsService.pushScaffold(
+                        gitUrlResolver.resolve(spec.getGitRepository()), spec.getBranch(), scaffoldResult);
+
+                if (!gitResult.success()) {
+                    status.setPhase(IntegrationFlowStatus.Phase.Error);
+                    status.setMessage("Git push failed: " + gitResult.message());
+                    updateCondition(status, "GitPushed", "False", "PushFailed", gitResult.message());
+                    finalizeStatus(resource, status);
+                    return UpdateControl.patchStatus(resource);
+                }
+
+                commitHash = gitResult.commitHash();
+                status.setGitCommitHash(commitHash);
+                status.setLastScaffoldedHash(currentDesignHash);
+                updateCondition(status, "GitPushed", "True", "PushComplete", gitResult.message());
             }
-
-            status.setGitCommitHash(gitResult.commitHash());
-            status.setLastScaffoldedHash(currentDesignHash);
-            updateCondition(status, "GitPushed", "True", "PushComplete", gitResult.message());
 
             // Step 3: Trigger Tekton PipelineRun for the build
             status.setPhase(IntegrationFlowStatus.Phase.Building);
             createTektonPipelineRun(namespace, flowName,
                     gitUrlResolver.resolve(spec.getGitRepository()),
-                    spec.getBranch(), gitResult.commitHash());
+                    spec.getBranch(), commitHash, useEmbeddedScaffold, type);
 
             // Step 4: Reconcile ArgoCD ApplicationSet for multi-cluster deployment
             status.setPhase(IntegrationFlowStatus.Phase.Deploying);
@@ -364,7 +380,8 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
      * that must be pre-installed (via Helm chart or cluster bootstrap).
      */
     private void createTektonPipelineRun(String namespace, String flowName,
-                                          String gitRepo, String branch, String commitHash) {
+                                          String gitRepo, String branch, String commitHash,
+                                          boolean useEmbeddedScaffold, IntegrationType integrationType) {
         var pipelineRun = new io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder()
                 .withApiVersion("tekton.dev/v1")
                 .withKind("PipelineRun")
@@ -380,21 +397,28 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         var pipelineRunSpec = new java.util.HashMap<String, Object>();
         pipelineRunSpec.put("pipelineRef", Map.of("name", "integration-flow-build"));
         pipelineRunSpec.put("params", java.util.List.of(
-                Map.of("name", "git-url", "value", gitRepo),
-                Map.of("name", "git-revision", "value", commitHash),
+                Map.of("name", "git-url", "value", gitRepo != null ? gitRepo : ""),
+                Map.of("name", "git-revision", "value", branch != null ? branch : "main"),
                 Map.of("name", "commit-sha", "value", commitHash),
-                Map.of("name", "flow-name", "value", flowName)
+                Map.of("name", "flow-name", "value", flowName),
+                Map.of("name", "use-embedded-scaffold", "value", useEmbeddedScaffold ? "true" : "false"),
+                Map.of("name", "integration-type", "value", ScaffoldSourceResolver.toPipelineParam(integrationType))
         ));
-        pipelineRunSpec.put("workspaces", java.util.List.of(
-                Map.of("name", "shared-workspace",
-                       "volumeClaimTemplate", Map.of(
-                               "spec", Map.of(
-                                       "accessModes", java.util.List.of("ReadWriteOnce"),
-                                       "resources", Map.of(
-                                               "requests", Map.of("storage", "1Gi"))))),
-                Map.of("name", "basic-auth",
-                       "secret", Map.of("secretName", "integration-git-basic-auth"))
-        ));
+
+        var workspaces = new java.util.ArrayList<Map<String, Object>>();
+        workspaces.add(Map.of("name", "shared-workspace",
+                "volumeClaimTemplate", Map.of(
+                        "spec", Map.of(
+                                "accessModes", java.util.List.of("ReadWriteOnce"),
+                                "resources", Map.of(
+                                        "requests", Map.of("storage", "1Gi"))))));
+        workspaces.add(Map.of("name", "basic-auth",
+                "secret", Map.of("secretName", "integration-git-basic-auth")));
+        if (useEmbeddedScaffold) {
+            workspaces.add(Map.of("name", "scaffold-source",
+                    "configMap", Map.of("name", scaffoldSourceResolver.scaffoldConfigMapName(integrationType))));
+        }
+        pipelineRunSpec.put("workspaces", workspaces);
         pipelineRun.setAdditionalProperties(Map.of("spec", pipelineRunSpec));
 
         kubernetesClient.resource(pipelineRun).inNamespace(namespace).create();

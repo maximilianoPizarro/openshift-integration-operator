@@ -27,6 +27,19 @@ public class GitUrlResolver {
     @ConfigProperty(name = "gitlab.url", defaultValue = "https://gitlab.com")
     String gitlabUrl;
 
+    public boolean isPlaceholderOrEmpty(String gitRepository) {
+        if (gitRepository == null || gitRepository.isBlank()) {
+            return true;
+        }
+        try {
+            URI uri = URI.create(gitRepository.replace(" ", ""));
+            String host = uri.getHost();
+            return host != null && PLACEHOLDER_HOSTS.contains(host.toLowerCase());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     /**
      * Rewrites placeholder git hosts to the operator-configured provider URL.
      */

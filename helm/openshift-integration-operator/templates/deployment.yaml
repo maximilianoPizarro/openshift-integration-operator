@@ -67,8 +67,22 @@ spec:
               value: {{ .Values.ephemeral.defaultTtlSeconds | quote }}
             - name: EPHEMERAL_MAX_TTL_SECONDS
               value: {{ .Values.ephemeral.maxTtlSeconds | quote }}
+            - name: SCAFFOLDS_SOURCE
+              value: {{ .Values.scaffolds.source | default "embedded" | quote }}
             - name: EPHEMERAL_CAMEL_WORKER_IMAGE
               value: {{ .Values.ephemeral.camelWorkerImage | quote }}
+            - name: EPHEMERAL_CAMEL_WORKER_MESSAGING_IMAGE
+              value: {{ .Values.ephemeral.camelWorkerMessagingImage | quote }}
+            - name: EPHEMERAL_CAMEL_WORKER_HTTP_IMAGE
+              value: {{ .Values.ephemeral.camelWorkerHttpImage | quote }}
+            - name: EPHEMERAL_CAMEL_WORKER_DATA_IMAGE
+              value: {{ .Values.ephemeral.camelWorkerDataImage | quote }}
+            - name: EPHEMERAL_CAMEL_WORKER_CLOUD_IMAGE
+              value: {{ .Values.ephemeral.camelWorkerCloudImage | quote }}
+            - name: EPHEMERAL_CAMEL_WORKER_AI_IMAGE
+              value: {{ .Values.ephemeral.camelWorkerAiImage | quote }}
+            - name: EPHEMERAL_CAMEL_WORKER_FULL_IMAGE
+              value: {{ .Values.ephemeral.camelWorkerFullImage | quote }}
             - name: EPHEMERAL_CAMEL_TEST_IMAGE
               value: {{ .Values.ephemeral.camelTestImage | quote }}
             - name: PLATFORM_NAMESPACE

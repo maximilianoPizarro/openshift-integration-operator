@@ -13,7 +13,7 @@ WORKDIR /opt/app-root/src
 COPY go.mod serve.go ./
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o serve serve.go
 
-# Stage 3: Minimal runtime (UBI9 micro — ~30MB, no nginx)
+# Stage 3: Minimal runtime (UBI9 micro + Go serve binary, ~30MB)
 FROM registry.access.redhat.com/ubi9-micro:latest
 COPY --from=gobuilder /opt/app-root/src/serve /usr/local/bin/serve
 COPY --from=frontend /app/dist /opt/app-root/src

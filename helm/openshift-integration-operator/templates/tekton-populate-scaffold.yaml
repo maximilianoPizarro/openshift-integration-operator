@@ -1,0 +1,52 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: populate-scaffold
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/part-of: integration-platform
+    platform.io/component: build
+    {{- include "operator.labels" . | nindent 4 }}
+spec:
+  params:
+    - name: integration-type
+      type: string
+      description: Integration type (camelRoute, camelKamelet, etc.)
+    - name: flow-name
+      type: string
+      description: Flow name for artifactId substitution
+  workspaces:
+    - name: output
+    - name: scaffold-source
+      optional: true
+  steps:
+    - name: copy-scaffold
+      image: registry.redhat.io/ubi9/ubi-minimal:9.5
+      script: |
+        #!/bin/sh
+        set -eu
+        SCAFFOLD_DIR="$(workspaces.scaffold-source.path)"
+        OUT_DIR="$(workspaces.output.path)"
+        FLOW_NAME="$(params.flow-name)"
+
+        if [ ! -d "$SCAFFOLD_DIR" ] || [ -z "$(ls -A "$SCAFFOLD_DIR" 2>/dev/null || true)" ]; then
+          echo "ERROR: scaffold workspace empty — ensure ConfigMap scaffold-$(params.integration-type) exists"
+          exit 1
+        fi
+
+        mkdir -p "$OUT_DIR"
+        for key in "$SCAFFOLD_DIR"/*; do
+          [ -f "$key" ] || continue
+          rel=$(basename "$key" | sed 's/__/\//g')
+          target="$OUT_DIR/$rel"
+          mkdir -p "$(dirname "$target")"
+          cp "$key" "$target"
+        done
+
+        if [ -f "$OUT_DIR/pom.xml" ]; then
+          sed -i "s/integration-flow/${FLOW_NAME}/g" "$OUT_DIR/pom.xml" || \
+            sed -i '' "s/integration-flow/${FLOW_NAME}/g" "$OUT_DIR/pom.xml"
+        fi
+
+        echo "Scaffold populated for flow ${FLOW_NAME} ($(params.integration-type))"
+        find "$OUT_DIR" -type f | head -20

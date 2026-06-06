@@ -1,0 +1,7 @@
+- route:
+    id: integration-flow
+    from:
+      uri: "timer:tick?period=5000"
+    steps:
+      - log:
+          message: "Hello from integration-flow"

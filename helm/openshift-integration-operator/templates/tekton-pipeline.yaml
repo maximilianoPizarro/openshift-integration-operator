@@ -11,7 +11,8 @@ spec:
   params:
     - name: git-url
       type: string
-      description: Git repository URL
+      description: Git repository URL (ignored when use-embedded-scaffold=true)
+      default: ""
     - name: git-revision
       type: string
       default: main
@@ -20,12 +21,26 @@ spec:
       default: ""
     - name: flow-name
       type: string
+    - name: use-embedded-scaffold
+      type: string
+      description: When "true", populate workspace from embedded scaffold ConfigMap
+      default: "false"
+    - name: integration-type
+      type: string
+      description: Integration type for scaffold selection (camelRoute, camelKamelet, etc.)
+      default: camelRoute
   workspaces:
     - name: shared-workspace
     - name: basic-auth
       optional: true
+    - name: scaffold-source
+      optional: true
   tasks:
     - name: fetch-source
+      when:
+        - input: $(params.use-embedded-scaffold)
+          operator: in
+          values: ["false", ""]
       taskRef:
         resolver: cluster
         params:
@@ -50,10 +65,33 @@ spec:
         - name: basic-auth
           workspace: basic-auth
 
+    - name: populate-scaffold
+      when:
+        - input: $(params.use-embedded-scaffold)
+          operator: in
+          values: ["true"]
+      taskRef:
+        name: populate-scaffold
+      params:
+        - name: integration-type
+          value: $(params.integration-type)
+        - name: flow-name
+          value: $(params.flow-name)
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+        - name: scaffold-source
+          workspace: scaffold-source
+
     {{- if .Values.tekton.approvalEnabled }}
     - name: approve-build
       runAfter:
         - fetch-source
+        - populate-scaffold
+      when:
+        - input: $(params.use-embedded-scaffold)
+          operator: in
+          values: ["false", "", "true"]
       taskRef:
         apiVersion: openshift-pipelines.org/v1alpha1
         kind: ApprovalTask
@@ -73,6 +111,7 @@ spec:
         - approve-build
         {{- else }}
         - fetch-source
+        - populate-scaffold
         {{- end }}
       taskRef:
         resolver: cluster

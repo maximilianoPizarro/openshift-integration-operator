@@ -321,7 +321,7 @@ openshift-integration-operator/
 
 ### Requirements
 
-- JDK 17
+- JDK 17+ (JDK 21 recommended for runtime; bytecode targets Java 17)
 - Maven 3.9+
 - Node.js 18+ (for console plugin)
 - Docker (for container builds)
@@ -353,7 +353,7 @@ npm install
 npm run build
 ```
 
-Or build the container image (nginx on port 9443):
+Or build the container image (Go static server on port 9443):
 
 ```bash
 docker build -f console-plugin/Dockerfile \
@@ -453,6 +453,56 @@ The generated CSV must include these annotations for OperatorHub:
 2. Copy bundle to `operators/openshift-integration-operator/0.2.0/`
 3. Submit PR — CI validates CSV, CRD ownership, RBAC, and metadata
 4. After merge, operator appears on OperatorHub.io within 24h
+
+## Secrets Management
+
+Git credentials should **not** be committed in `values.yaml`. Supported patterns:
+
+| Provider | Helm value | Description |
+|----------|------------|-------------|
+| `values` | `git.password` / `gitea.password` | Dev only — plain env vars |
+| `external-secrets` | `secrets.externalSecrets.enabled: true` | Sync from Vault/AWS/Azure via [External Secrets Operator](https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/security_and_compliance/external-secrets-operator-for-red-hat-openshift) |
+| `sealed-secrets` | Documented in `docs/operations.html` | Encrypt secrets for GitOps repos |
+
+Enable External Secrets:
+
+```yaml
+secrets:
+  provider: external-secrets
+  externalSecrets:
+    enabled: true
+    secretStoreRef: cluster-secret-store
+```
+
+## Multi-namespace Configuration
+
+The operator watches `IntegrationFlow` CRs cluster-wide. Per-CR resources are created in the CR's namespace. Configure platform namespaces via Helm:
+
+```yaml
+namespace: openshift-integration
+sonataflow:
+  namespace: kogito-bpm
+argocd:
+  namespace: openshift-gitops
+operator:
+  watchedNamespaces: []   # optional additional namespaces
+```
+
+Multi-cluster deployment uses Argo CD ApplicationSets with `spec.targeting` on each IntegrationFlow.
+
+## PatternFly / UX Compliance
+
+The console plugin follows [Red Hat PatternFly](https://www.patternfly.org/) guidelines:
+
+- PatternFly 4.x — OpenShift 4.14–4.18
+- PatternFly 5.x — OpenShift 4.15–4.18
+- PatternFly 6.x — OpenShift 4.19+
+
+Use SDK components, prefix CSS with `integration-plugin__`, no Bootstrap/Tailwind.
+
+## Embedded Scaffolds & Worker Images
+
+When `gitRepository` uses a placeholder host (`gitea.example.com`), Tekton builds from embedded scaffold ConfigMaps instead of `git-clone`. Ephemeral workers auto-select the smallest image covering detected Camel components (`core`, `messaging`, `http`, `data`, `cloud`, `ai`, or `full`).
 
 ## License
 

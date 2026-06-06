@@ -45,7 +45,6 @@ func main() {
 		}
 
 		// SPA fallback: serve plugin-manifest.json for unknown paths
-		// (matches nginx try_files behaviour)
 		if !strings.HasPrefix(clean, "/api") {
 			http.ServeFile(w, r, filepath.Join(*staticDir, "plugin-manifest.json"))
 			return

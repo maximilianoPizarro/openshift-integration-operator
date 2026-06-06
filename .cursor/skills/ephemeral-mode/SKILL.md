@@ -45,8 +45,17 @@ ephemeral:
   enabled: true
   defaultTtlSeconds: 3600
   maxTtlSeconds: 86400
-  camelWorkerImage: quay.io/.../camel-yaml-worker:v0.2.0
+  workers:
+    core: quay.io/maximilianopizarro/camel-worker-core:v0.3.0
+    messaging: quay.io/maximilianopizarro/camel-worker-messaging:v0.3.0
+    http: quay.io/maximilianopizarro/camel-worker-http:v0.3.0
+    data: quay.io/maximilianopizarro/camel-worker-data:v0.3.0
+    cloud: quay.io/maximilianopizarro/camel-worker-cloud:v0.3.0
+    ai: quay.io/maximilianopizarro/camel-worker-ai:v0.3.0
+    full: quay.io/maximilianopizarro/camel-worker-full:v0.3.0
 ```
+
+The operator parses `kaotoDesign` URIs via `CamelComponentDetector` and picks the smallest worker image that covers all components (fallback: `full`).
 
 ## REST API
 

@@ -31,6 +31,13 @@ class GitUrlResolverTest {
         assertEquals(url, resolver.resolve(url));
     }
 
+    @Test
+    void detectsPlaceholderHost() {
+        assertTrue(resolver.isPlaceholderOrEmpty("https://gitea.example.com/user1/flow"));
+        assertTrue(resolver.isPlaceholderOrEmpty(""));
+        assertFalse(resolver.isPlaceholderOrEmpty("https://gitea-gitea.apps.demo.example.com/user1/flow"));
+    }
+
     private void setField(String name, String value) throws Exception {
         Field f = GitUrlResolver.class.getDeclaredField(name);
         f.setAccessible(true);
