@@ -49,6 +49,13 @@
       background: var(--accent-soft); color: var(--accent);
     }
 
+    nav.top-nav { padding: 1rem 0; border-bottom: 1px solid var(--border); background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(8px); }
+    nav.top-nav .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    nav.top-nav .logo { font-weight: 700; color: var(--text); font-size: 0.95rem; text-decoration: none; }
+    nav.top-nav ul { list-style: none; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    nav.top-nav a { color: var(--text-muted); font-size: 0.9rem; }
+    nav.top-nav a:hover { color: var(--accent-hover); }
+
     nav.breadcrumb { padding: 1rem 0; color: var(--text-muted); font-size: 0.9rem; }
     nav.breadcrumb a { color: var(--text-muted); }
 
@@ -143,6 +150,21 @@
 </head>
 <body>
 
+<nav class="top-nav">
+  <div class="container">
+    <a href="index.html" class="logo"><img src="images/logo.svg" alt="" width="24" height="24" style="vertical-align: middle; margin-right: 6px;">OpenShift Integration Operator</a>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="architecture.html">Architecture</a></li>
+      <li><a href="quickstart.html">Guide</a></li>
+      <li><a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a></li>
+      <li><a href="operations.html">Operations</a></li>
+      <li><a href="examples-catalog.html">Examples (255)</a></li>
+      <li><a href="ready-flows.html">Ready Flows (120+)</a></li>
+    </ul>
+  </div>
+</nav>
+
 <header>
   <div class="container">
     <h1>IntegrationFlow Examples Catalog</h1>
@@ -197,11 +219,21 @@
 
 <footer>
   <div class="container">
-    <p>OpenShift Integration Operator &mdash; Apache 2.0 License</p>
-    <p style="margin-top:0.25rem">
-      <a href="https://github.com/maximilianopizarro/openshift-integration-operator">GitHub</a> &middot;
-      <a href="index.html">Documentation</a> &middot;
-      <a href="quickstart.html">Quickstart</a>
+    <p style="margin-bottom: 0.5rem;">
+      Built by <a href="https://github.com/maximilianoPizarro" style="font-weight: 600;">maximilianoPizarro</a>
+    </p>
+    <p>
+      <a href="index.html">Home</a>
+      &middot; <a href="architecture.html">Architecture</a>
+      &middot; <a href="quickstart.html">Guide</a>
+      &middot; <a href="operations.html">Operations</a>
+      &middot; <a href="examples-catalog.html">Examples (255)</a>
+      &middot; <a href="ready-flows.html">Ready Flows (120+)</a>
+      &middot; <a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a>
+      &middot; <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>
+    </p>
+    <p style="margin-top: 0.75rem;">
+      Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.
     </p>
   </div>
 </footer>

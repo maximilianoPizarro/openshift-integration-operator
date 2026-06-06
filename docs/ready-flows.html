@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="120+ ready-to-use IntegrationFlow YAML examples with complete Camel route logic organized by pattern category">
+  <meta name="description" content="160+ ready-to-use IntegrationFlow YAML examples with complete Camel route logic organized by pattern category">
   <title>Ready Flows — OpenShift Integration Operator</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <style>
@@ -48,6 +48,13 @@
       padding: 0.3rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
       background: var(--accent-soft); color: var(--accent);
     }
+
+    nav.top-nav { padding: 1rem 0; border-bottom: 1px solid var(--border); background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(8px); }
+    nav.top-nav .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    nav.top-nav .logo { font-weight: 700; color: var(--text); font-size: 0.95rem; text-decoration: none; }
+    nav.top-nav ul { list-style: none; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    nav.top-nav a { color: var(--text-muted); font-size: 0.9rem; }
+    nav.top-nav a:hover { color: var(--accent-hover); }
 
     nav.breadcrumb { padding: 1rem 0; color: var(--text-muted); font-size: 0.9rem; }
     nav.breadcrumb a { color: var(--text-muted); }
@@ -158,6 +165,21 @@
 </head>
 <body>
 
+<nav class="top-nav">
+  <div class="container">
+    <a href="index.html" class="logo"><img src="images/logo.svg" alt="" width="24" height="24" style="vertical-align: middle; margin-right: 6px;">OpenShift Integration Operator</a>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="architecture.html">Architecture</a></li>
+      <li><a href="quickstart.html">Guide</a></li>
+      <li><a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a></li>
+      <li><a href="operations.html">Operations</a></li>
+      <li><a href="examples-catalog.html">Examples (255)</a></li>
+      <li><a href="ready-flows.html">Ready Flows (120+)</a></li>
+    </ul>
+  </div>
+</nav>
+
 <header>
   <div class="container">
     <h1>Ready-to-Use Integration Flows</h1>
@@ -189,6 +211,8 @@
     <button class="filter-btn" data-cat="iot">IoT/Streaming</button>
     <button class="filter-btn" data-cat="orchestration">Orchestration</button>
     <button class="filter-btn" data-cat="hybrid">Hybrid Cloud</button>
+    <button class="filter-btn" data-cat="realworld">Real-World APIs</button>
+    <button class="filter-btn" data-cat="enterprise">Enterprise</button>
     <span class="count-label" id="countLabel">Showing 0 of 0</span>
   </div>
 
@@ -214,11 +238,21 @@
 
 <footer>
   <div class="container">
-    <p>OpenShift Integration Operator &mdash; Apache 2.0 License</p>
-    <p style="margin-top:0.25rem">
-      <a href="https://github.com/maximilianopizarro/openshift-integration-operator">GitHub</a> &middot;
-      <a href="index.html">Documentation</a> &middot;
-      <a href="examples-catalog.html">Examples (255)</a>
+    <p style="margin-bottom: 0.5rem;">
+      Built by <a href="https://github.com/maximilianoPizarro" style="font-weight: 600;">maximilianoPizarro</a>
+    </p>
+    <p>
+      <a href="index.html">Home</a>
+      &middot; <a href="architecture.html">Architecture</a>
+      &middot; <a href="quickstart.html">Guide</a>
+      &middot; <a href="operations.html">Operations</a>
+      &middot; <a href="examples-catalog.html">Examples (255)</a>
+      &middot; <a href="ready-flows.html">Ready Flows (120+)</a>
+      &middot; <a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a>
+      &middot; <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>
+    </p>
+    <p style="margin-top: 0.75rem;">
+      Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.
     </p>
   </div>
 </footer>
@@ -6020,6 +6054,2753 @@ const FLOWS = [
                   message: "Migrated: \${exchangeProperty.objectKey}"
         - log:
             message: "Migration batch completed"`
+      }
+    ]
+  },
+  {
+    id: "realworld", icon: "🌐", title: "Real-World Integrations",
+    flows: [
+      {
+        name: "poll-jsonplaceholder-posts",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, kafka, log",
+        description: "Poll JSONPlaceholder posts API every 60s, transform to JSON, route to Kafka topic",
+        pattern: "REST API Polling + Transform",
+        kaotoDesign: `- route:
+    id: poll-jsonplaceholder-posts
+    from:
+      uri: "timer:pollPosts"
+      parameters:
+        period: "60000"
+      steps:
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://jsonplaceholder.typicode.com/posts?_limit=10"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - split:
+                  expression:
+                    jsonpath: "$[*]"
+                  steps:
+                    - marshal:
+                        json:
+                          library: jackson
+                    - to:
+                        uri: "kafka:jsonplaceholder-posts"
+                        parameters:
+                          brokers: "my-cluster-kafka-bootstrap:9092"
+                    - log:
+                        message: "Published post id=\${body}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Error polling posts API: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "compose-country-weather",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, http, jackson, direct",
+        description: "Compose data from REST Countries and OpenWeatherMap APIs, merge into unified response",
+        pattern: "API Composition",
+        kaotoDesign: `- route:
+    id: compose-country-weather
+    from:
+      uri: "platform-http:/api/country-weather/{country}"
+      parameters:
+        httpMethodRestrict: GET
+      steps:
+        - setProperty:
+            name: countryName
+            simple: "\${header.country}"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - toD:
+                  uri: "https://restcountries.com/v3.1/name/\${exchangeProperty.countryName}?fullText=true"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: countryData
+                  jsonpath: "$[0]"
+              - setProperty:
+                  name: capital
+                  jsonpath: "$[0].capital[0]"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - toD:
+                  uri: "https://api.openweathermap.org/data/2.5/weather?q=\${exchangeProperty.capital}&appid=YOUR_API_KEY&units=metric"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: weatherData
+                  simple: "\${body}"
+              - setBody:
+                  simple: '{"country":"\${exchangeProperty.countryName}","capital":"\${exchangeProperty.capital}","weather":"\${exchangeProperty.weatherData}","population":"\${exchangeProperty.countryData[population]}"}'
+              - marshal:
+                  json:
+                    library: jackson
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setHeader:
+                      name: CamelHttpResponseCode
+                      constant: 502
+                  - setBody:
+                      simple: '{"error":"Failed to compose data","detail":"\${exception.message}"}'`
+      },
+      {
+        name: "webhook-enrich-github",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, http, jackson, log",
+        description: "Receive webhook with GitHub username, enrich with GitHub API profile and repos, respond",
+        pattern: "Webhook Enrichment",
+        kaotoDesign: `- route:
+    id: webhook-enrich-github
+    from:
+      uri: "platform-http:/webhook/enrich-user"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: username
+            jsonpath: "$.username"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - setHeader:
+                  name: User-Agent
+                  constant: "CamelIntegration/1.0"
+              - toD:
+                  uri: "https://api.github.com/users/\${exchangeProperty.username}"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: profile
+                  simple: "\${body}"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - toD:
+                  uri: "https://api.github.com/users/\${exchangeProperty.username}/repos?sort=updated&per_page=5"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: repos
+                  simple: "\${body}"
+              - setBody:
+                  simple: '{"user":"\${exchangeProperty.username}","profile":\${exchangeProperty.profile},"recent_repos":\${exchangeProperty.repos}}'
+              - log:
+                  message: "Enriched user \${exchangeProperty.username}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setHeader:
+                      name: CamelHttpResponseCode
+                      constant: 502
+                  - setBody:
+                      simple: '{"error":"GitHub enrichment failed","detail":"\${exception.message}"}'`
+      },
+      {
+        name: "scheduled-pokemon-cbr",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, log, file",
+        description: "Scheduled collection of Pokemon data with content-based routing by type",
+        pattern: "Scheduled Collection + CBR",
+        kaotoDesign: `- route:
+    id: scheduled-pokemon-cbr
+    from:
+      uri: "timer:pokemonCollector"
+      parameters:
+        period: "300000"
+      steps:
+        - setProperty:
+            name: pokemonId
+            simple: "\${random(1,151)}"
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - toD:
+                  uri: "https://pokeapi.co/api/v2/pokemon/\${exchangeProperty.pokemonId}"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: pokemonName
+                  jsonpath: "$.name"
+              - setProperty:
+                  name: pokemonType
+                  jsonpath: "$.types[0].type.name"
+              - log:
+                  message: "Collected Pokemon: \${exchangeProperty.pokemonName} (type: \${exchangeProperty.pokemonType})"
+              - choice:
+                  when:
+                    - simple: "\${exchangeProperty.pokemonType} == 'fire'"
+                      steps:
+                        - to:
+                            uri: "file:output/pokemon/fire"
+                            parameters:
+                              fileName: "\${exchangeProperty.pokemonName}.json"
+                    - simple: "\${exchangeProperty.pokemonType} == 'water'"
+                      steps:
+                        - to:
+                            uri: "file:output/pokemon/water"
+                            parameters:
+                              fileName: "\${exchangeProperty.pokemonName}.json"
+                    - simple: "\${exchangeProperty.pokemonType} == 'electric'"
+                      steps:
+                        - to:
+                            uri: "file:output/pokemon/electric"
+                            parameters:
+                              fileName: "\${exchangeProperty.pokemonName}.json"
+                  otherwise:
+                    steps:
+                      - to:
+                          uri: "file:output/pokemon/other"
+                          parameters:
+                            fileName: "\${exchangeProperty.pokemonName}.json"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Failed to collect Pokemon data: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "spacex-error-handling",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, kafka, log",
+        description: "Fetch SpaceX launches with comprehensive error handling, retries, and dead-letter routing",
+        pattern: "Error Handling on API Failures",
+        kaotoDesign: `- route:
+    id: spacex-error-handling
+    from:
+      uri: "timer:spacexPoller"
+      parameters:
+        period: "120000"
+      steps:
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "https://api.spacexdata.com/v5/launches/latest"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: launchName
+                  jsonpath: "$.name"
+              - setProperty:
+                  name: launchSuccess
+                  jsonpath: "$.success"
+              - log:
+                  message: "Latest SpaceX launch: \${exchangeProperty.launchName}, success=\${exchangeProperty.launchSuccess}"
+              - marshal:
+                  json:
+                    library: jackson
+              - to:
+                  uri: "kafka:spacex-launches"
+                  parameters:
+                    brokers: "my-cluster-kafka-bootstrap:9092"
+            doCatch:
+              - exception:
+                  - "org.apache.camel.http.base.HttpOperationFailedException"
+                steps:
+                  - log:
+                      message: "HTTP error calling SpaceX API: \${exception.statusCode} - \${exception.message}"
+                      loggingLevel: WARN
+                  - setBody:
+                      simple: '{"error":"http_failure","status":\${exception.statusCode},"timestamp":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+                  - to:
+                      uri: "kafka:spacex-dlq"
+                      parameters:
+                        brokers: "my-cluster-kafka-bootstrap:9092"
+              - exception:
+                  - "java.net.ConnectException"
+                steps:
+                  - log:
+                      message: "Connection failed to SpaceX API — will retry next cycle"
+                      loggingLevel: ERROR
+            doFinally:
+              steps:
+                - log:
+                    message: "SpaceX poll cycle complete"`
+      },
+      {
+        name: "catfact-rate-limited",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, throttle, kafka, log",
+        description: "Collect random cat facts with rate-limiting throttle to respect API limits",
+        pattern: "Rate-Limited API Calling",
+        kaotoDesign: `- route:
+    id: catfact-rate-limited
+    from:
+      uri: "timer:catFactPoller"
+      parameters:
+        period: "5000"
+      steps:
+        - throttle:
+            expression:
+              constant: 10
+            timePeriodMillis: 60000
+            asyncDelayed: true
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - doTry:
+                  steps:
+                    - to:
+                        uri: "https://catfact.ninja/fact"
+                    - unmarshal:
+                        json:
+                          library: jackson
+                    - setProperty:
+                        name: catFact
+                        jsonpath: "$.fact"
+                    - setProperty:
+                        name: factLength
+                        jsonpath: "$.length"
+                    - log:
+                        message: "Cat fact (\${exchangeProperty.factLength} chars): \${exchangeProperty.catFact}"
+                    - marshal:
+                        json:
+                          library: jackson
+                    - to:
+                        uri: "kafka:cat-facts"
+                        parameters:
+                          brokers: "my-cluster-kafka-bootstrap:9092"
+                  doCatch:
+                    - exception:
+                        - "java.lang.Exception"
+                      steps:
+                        - log:
+                            message: "Rate-limited request failed: \${exception.message}"
+                            loggingLevel: WARN`
+      },
+      {
+        name: "github-repos-paginated",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, log, file",
+        description: "Paginated consumption of GitHub org repos using split/aggregate pattern",
+        pattern: "Paginated API Consumption",
+        kaotoDesign: `- route:
+    id: github-repos-paginated
+    from:
+      uri: "timer:githubPaginator"
+      parameters:
+        period: "600000"
+        repeatCount: 1
+      steps:
+        - setProperty:
+            name: currentPage
+            constant: "1"
+        - setProperty:
+            name: orgName
+            constant: "apache"
+        - loopDoWhile:
+            expression:
+              simple: "\${exchangeProperty.hasMore} != 'false'"
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - setHeader:
+                  name: User-Agent
+                  constant: "CamelIntegration/1.0"
+              - doTry:
+                  steps:
+                    - toD:
+                        uri: "https://api.github.com/orgs/\${exchangeProperty.orgName}/repos?page=\${exchangeProperty.currentPage}&per_page=30"
+                    - unmarshal:
+                        json:
+                          library: jackson
+                    - choice:
+                        when:
+                          - jsonpath: "$[0]"
+                            steps:
+                              - split:
+                                  expression:
+                                    jsonpath: "$[*]"
+                                  steps:
+                                    - setBody:
+                                        jsonpath: "$.full_name"
+                                    - log:
+                                        message: "Repo: \${body}"
+                              - setProperty:
+                                  name: currentPage
+                                  simple: "\${exchangeProperty.currentPage}++"
+                        otherwise:
+                          steps:
+                            - setProperty:
+                                name: hasMore
+                                constant: "false"
+                            - log:
+                                message: "Pagination complete at page \${exchangeProperty.currentPage}"
+                  doCatch:
+                    - exception:
+                        - "java.lang.Exception"
+                      steps:
+                        - setProperty:
+                            name: hasMore
+                            constant: "false"
+                        - log:
+                            message: "Pagination error: \${exception.message}"
+                            loggingLevel: ERROR`
+      },
+      {
+        name: "countries-cached-lookup",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, http, jackson, caffeine-cache, log",
+        description: "Country info lookup with Caffeine cache to avoid redundant API calls",
+        pattern: "API Response Caching",
+        kaotoDesign: `- route:
+    id: countries-cached-lookup
+    from:
+      uri: "platform-http:/api/country/{code}"
+      parameters:
+        httpMethodRestrict: GET
+      steps:
+        - setProperty:
+            name: countryCode
+            simple: "\${header.code}"
+        - setHeader:
+            name: CamelCacheAction
+            constant: GET
+        - setHeader:
+            name: CamelCacheKey
+            simple: "country-\${exchangeProperty.countryCode}"
+        - to:
+            uri: "caffeine-cache:countryCache"
+            parameters:
+              maximumSize: 500
+              expireAfterWriteTime: 3600
+        - choice:
+            when:
+              - simple: "\${header.CamelCacheActionHasResult} == true"
+                steps:
+                  - log:
+                      message: "Cache HIT for \${exchangeProperty.countryCode}"
+            otherwise:
+              steps:
+                - log:
+                    message: "Cache MISS for \${exchangeProperty.countryCode} — calling API"
+                - setHeader:
+                    name: CamelHttpMethod
+                    constant: GET
+                - doTry:
+                    steps:
+                      - toD:
+                          uri: "https://restcountries.com/v3.1/alpha/\${exchangeProperty.countryCode}"
+                      - unmarshal:
+                          json:
+                            library: jackson
+                      - setHeader:
+                          name: CamelCacheAction
+                          constant: PUT
+                      - setHeader:
+                          name: CamelCacheKey
+                          simple: "country-\${exchangeProperty.countryCode}"
+                      - to:
+                          uri: "caffeine-cache:countryCache"
+                    doCatch:
+                      - exception:
+                          - "java.lang.Exception"
+                        steps:
+                          - setHeader:
+                              name: CamelHttpResponseCode
+                              constant: 502
+                          - setBody:
+                              simple: '{"error":"Country lookup failed","detail":"\${exception.message}"}'`
+      },
+      {
+        name: "joke-catfact-compare",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, log",
+        description: "Call Joke API and Cat Fact API, compare response times, log the winner",
+        pattern: "Multi-API Comparison",
+        kaotoDesign: `- route:
+    id: joke-catfact-compare
+    from:
+      uri: "timer:apiComparison"
+      parameters:
+        period: "120000"
+      steps:
+        - setProperty:
+            name: startTimeA
+            simple: "\${date:now:SSS}"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "https://official-joke-api.appspot.com/random_joke"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: jokeResult
+                  simple: "\${body}"
+              - setProperty:
+                  name: endTimeA
+                  simple: "\${date:now:SSS}"
+              - setProperty:
+                  name: startTimeB
+                  simple: "\${date:now:SSS}"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "https://catfact.ninja/fact"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: catFactResult
+                  simple: "\${body}"
+              - setProperty:
+                  name: endTimeB
+                  simple: "\${date:now:SSS}"
+              - setBody:
+                  simple: '{"joke_api_ms":\${exchangeProperty.endTimeA}-\${exchangeProperty.startTimeA},"catfact_api_ms":\${exchangeProperty.endTimeB}-\${exchangeProperty.startTimeB},"joke":\${exchangeProperty.jokeResult},"catfact":\${exchangeProperty.catFactResult}}'
+              - log:
+                  message: "API comparison complete: Joke API vs Cat Fact API"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Comparison failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "bitcoin-price-alert",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, log, kafka",
+        description: "Monitor Bitcoin price from CoinDesk API, alert when threshold is crossed",
+        pattern: "Real-Time Price Monitoring",
+        kaotoDesign: `- route:
+    id: bitcoin-price-alert
+    from:
+      uri: "timer:btcMonitor"
+      parameters:
+        period: "30000"
+      steps:
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: btcPriceUSD
+                  jsonpath: "$.bpi.USD.rate_float"
+              - setProperty:
+                  name: lastUpdated
+                  jsonpath: "$.time.updated"
+              - log:
+                  message: "BTC Price: $\${exchangeProperty.btcPriceUSD} as of \${exchangeProperty.lastUpdated}"
+              - choice:
+                  when:
+                    - simple: "\${exchangeProperty.btcPriceUSD} > 100000"
+                      steps:
+                        - setBody:
+                            simple: '{"alert":"HIGH","price":\${exchangeProperty.btcPriceUSD},"threshold":100000,"time":"\${exchangeProperty.lastUpdated}"}'
+                        - to:
+                            uri: "kafka:btc-alerts"
+                            parameters:
+                              brokers: "my-cluster-kafka-bootstrap:9092"
+                        - log:
+                            message: "ALERT: BTC above $100k — $\${exchangeProperty.btcPriceUSD}"
+                            loggingLevel: WARN
+                    - simple: "\${exchangeProperty.btcPriceUSD} < 50000"
+                      steps:
+                        - setBody:
+                            simple: '{"alert":"LOW","price":\${exchangeProperty.btcPriceUSD},"threshold":50000,"time":"\${exchangeProperty.lastUpdated}"}'
+                        - to:
+                            uri: "kafka:btc-alerts"
+                            parameters:
+                              brokers: "my-cluster-kafka-bootstrap:9092"
+                        - log:
+                            message: "ALERT: BTC below $50k — $\${exchangeProperty.btcPriceUSD}"
+                            loggingLevel: WARN
+                  otherwise:
+                    steps:
+                      - log:
+                          message: "BTC price normal: $\${exchangeProperty.btcPriceUSD}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "BTC price check failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "news-aggregator-cbr",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, kafka, log",
+        description: "Aggregate top headlines from NewsAPI with content-based routing by category",
+        pattern: "Scheduled Collection + CBR",
+        kaotoDesign: `- route:
+    id: news-aggregator-cbr
+    from:
+      uri: "timer:newsPoller"
+      parameters:
+        period: "900000"
+      steps:
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://newsapi.org/v2/top-headlines?country=us&apiKey=YOUR_NEWS_API_KEY&pageSize=20"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - split:
+                  expression:
+                    jsonpath: "$.articles[*]"
+                  steps:
+                    - setProperty:
+                        name: articleTitle
+                        jsonpath: "$.title"
+                    - setProperty:
+                        name: articleSource
+                        jsonpath: "$.source.name"
+                    - marshal:
+                        json:
+                          library: jackson
+                    - choice:
+                        when:
+                          - simple: "\${exchangeProperty.articleSource} contains 'CNN' || \${exchangeProperty.articleSource} contains 'BBC'"
+                            steps:
+                              - to:
+                                  uri: "kafka:news-major-outlets"
+                                  parameters:
+                                    brokers: "my-cluster-kafka-bootstrap:9092"
+                          - simple: "\${exchangeProperty.articleSource} contains 'TechCrunch' || \${exchangeProperty.articleSource} contains 'Ars'"
+                            steps:
+                              - to:
+                                  uri: "kafka:news-tech"
+                                  parameters:
+                                    brokers: "my-cluster-kafka-bootstrap:9092"
+                        otherwise:
+                          steps:
+                            - to:
+                                uri: "kafka:news-general"
+                                parameters:
+                                  brokers: "my-cluster-kafka-bootstrap:9092"
+                    - log:
+                        message: "Routed article: \${exchangeProperty.articleTitle} from \${exchangeProperty.articleSource}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "News aggregation failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "spacex-launches-digest",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, log, kafka",
+        description: "Fetch recent SpaceX launches, aggregate stats, produce a digest to Kafka",
+        pattern: "API Composition",
+        kaotoDesign: `- route:
+    id: spacex-launches-digest
+    from:
+      uri: "timer:spacexDigest"
+      parameters:
+        period: "3600000"
+      steps:
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://api.spacexdata.com/v5/launches"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: allLaunches
+                  simple: "\${body}"
+              - setBody:
+                  simple: "\${body.size()}"
+              - setProperty:
+                  name: totalLaunches
+                  simple: "\${body}"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "https://api.spacexdata.com/v5/launches/latest"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: latestName
+                  jsonpath: "$.name"
+              - setProperty:
+                  name: latestDate
+                  jsonpath: "$.date_utc"
+              - setBody:
+                  simple: '{"digest":"spacex","total_launches":"\${exchangeProperty.totalLaunches}","latest_name":"\${exchangeProperty.latestName}","latest_date":"\${exchangeProperty.latestDate}","generated":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+              - to:
+                  uri: "kafka:spacex-digest"
+                  parameters:
+                    brokers: "my-cluster-kafka-bootstrap:9092"
+              - log:
+                  message: "SpaceX digest: \${exchangeProperty.totalLaunches} launches, latest=\${exchangeProperty.latestName}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "SpaceX digest generation failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "pokemon-team-builder",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, http, jackson, log",
+        description: "Webhook to build a random Pokemon team, calling PokeAPI 6 times and merging results",
+        pattern: "API Composition",
+        kaotoDesign: `- route:
+    id: pokemon-team-builder
+    from:
+      uri: "platform-http:/api/pokemon/random-team"
+      parameters:
+        httpMethodRestrict: GET
+      steps:
+        - setBody:
+            constant: '[1,2,3,4,5,6]'
+        - unmarshal:
+            json:
+              library: jackson
+        - split:
+            expression:
+              jsonpath: "$[*]"
+            aggregationStrategy: "#class:org.apache.camel.processor.aggregate.GroupedBodyAggregationStrategy"
+            steps:
+              - setProperty:
+                  name: pokemonId
+                  simple: "\${random(1,898)}"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - doTry:
+                  steps:
+                    - toD:
+                        uri: "https://pokeapi.co/api/v2/pokemon/\${exchangeProperty.pokemonId}"
+                    - unmarshal:
+                        json:
+                          library: jackson
+                    - setBody:
+                        simple: '{"id":\${exchangeProperty.pokemonId},"name":"\${body[name]}","types":"\${body[types]}"}'
+                  doCatch:
+                    - exception:
+                        - "java.lang.Exception"
+                      steps:
+                        - setBody:
+                            simple: '{"id":\${exchangeProperty.pokemonId},"error":"fetch_failed"}'
+        - marshal:
+            json:
+              library: jackson
+        - log:
+            message: "Generated random Pokemon team"`
+      },
+      {
+        name: "webhook-enrich-country",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, http, jackson, log",
+        description: "Receive webhook with country code, enrich with REST Countries data, respond with full info",
+        pattern: "Webhook Enrichment",
+        kaotoDesign: `- route:
+    id: webhook-enrich-country
+    from:
+      uri: "platform-http:/webhook/country-info"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: countryCode
+            jsonpath: "$.code"
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - toD:
+                  uri: "https://restcountries.com/v3.1/alpha/\${exchangeProperty.countryCode}"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: countryName
+                  jsonpath: "$[0].name.common"
+              - setProperty:
+                  name: region
+                  jsonpath: "$[0].region"
+              - setProperty:
+                  name: population
+                  jsonpath: "$[0].population"
+              - setBody:
+                  simple: '{"code":"\${exchangeProperty.countryCode}","name":"\${exchangeProperty.countryName}","region":"\${exchangeProperty.region}","population":\${exchangeProperty.population},"enriched":true}'
+              - log:
+                  message: "Enriched country: \${exchangeProperty.countryName}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setHeader:
+                      name: CamelHttpResponseCode
+                      constant: 502
+                  - setBody:
+                      simple: '{"error":"Country enrichment failed","code":"\${exchangeProperty.countryCode}","detail":"\${exception.message}"}'`
+      },
+      {
+        name: "github-issue-monitor",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, kafka, log",
+        description: "Monitor GitHub repo issues, route new/updated issues to Kafka with label-based routing",
+        pattern: "Scheduled Collection + CBR",
+        kaotoDesign: `- route:
+    id: github-issue-monitor
+    from:
+      uri: "timer:ghIssueMonitor"
+      parameters:
+        period: "300000"
+      steps:
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - setHeader:
+            name: User-Agent
+            constant: "CamelIntegration/1.0"
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://api.github.com/repos/apache/camel/issues?state=open&sort=updated&per_page=10"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - split:
+                  expression:
+                    jsonpath: "$[*]"
+                  steps:
+                    - setProperty:
+                        name: issueTitle
+                        jsonpath: "$.title"
+                    - setProperty:
+                        name: issueNumber
+                        jsonpath: "$.number"
+                    - setProperty:
+                        name: labels
+                        jsonpath: "$.labels[*].name"
+                    - marshal:
+                        json:
+                          library: jackson
+                    - choice:
+                        when:
+                          - simple: "\${exchangeProperty.labels} contains 'bug'"
+                            steps:
+                              - to:
+                                  uri: "kafka:github-bugs"
+                                  parameters:
+                                    brokers: "my-cluster-kafka-bootstrap:9092"
+                          - simple: "\${exchangeProperty.labels} contains 'enhancement'"
+                            steps:
+                              - to:
+                                  uri: "kafka:github-enhancements"
+                                  parameters:
+                                    brokers: "my-cluster-kafka-bootstrap:9092"
+                        otherwise:
+                          steps:
+                            - to:
+                                uri: "kafka:github-issues-other"
+                                parameters:
+                                  brokers: "my-cluster-kafka-bootstrap:9092"
+                    - log:
+                        message: "Processed issue #\${exchangeProperty.issueNumber}: \${exchangeProperty.issueTitle}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "GitHub issue monitoring failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "jokes-to-slack",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, slack, log",
+        description: "Fetch random jokes periodically and post them to a Slack channel",
+        pattern: "REST API Polling + Transform",
+        kaotoDesign: `- route:
+    id: jokes-to-slack
+    from:
+      uri: "timer:jokePoller"
+      parameters:
+        period: "3600000"
+      steps:
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://official-joke-api.appspot.com/random_joke"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: setup
+                  jsonpath: "$.setup"
+              - setProperty:
+                  name: punchline
+                  jsonpath: "$.punchline"
+              - setBody:
+                  simple: "*Joke of the Hour*\\n\\n_\${exchangeProperty.setup}_\\n\\n\${exchangeProperty.punchline}"
+              - to:
+                  uri: "slack:#random"
+                  parameters:
+                    webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+              - log:
+                  message: "Posted joke to Slack: \${exchangeProperty.setup}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Joke posting failed: \${exception.message}"
+                      loggingLevel: WARN`
+      },
+      {
+        name: "multi-api-dashboard",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, log, file",
+        description: "Collect data from BTC, cat facts, and joke APIs into a unified dashboard JSON",
+        pattern: "API Composition",
+        kaotoDesign: `- route:
+    id: multi-api-dashboard
+    from:
+      uri: "timer:dashboardBuilder"
+      parameters:
+        period: "300000"
+      steps:
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - setProperty:
+            name: timestamp
+            simple: "\${date:now:yyyy-MM-dd HH:mm:ss}"
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://api.coindesk.com/v1/bpi/currentprice.json"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: btcPrice
+                  jsonpath: "$.bpi.USD.rate"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setProperty:
+                      name: btcPrice
+                      constant: "unavailable"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "https://catfact.ninja/fact"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: funFact
+                  jsonpath: "$.fact"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setProperty:
+                      name: funFact
+                      constant: "unavailable"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "https://official-joke-api.appspot.com/random_joke"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: joke
+                  simple: "\${body}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setProperty:
+                      name: joke
+                      constant: "unavailable"
+        - setBody:
+            simple: '{"dashboard":{"generated":"\${exchangeProperty.timestamp}","btc_price":"\${exchangeProperty.btcPrice}","fun_fact":"\${exchangeProperty.funFact}","joke":\${exchangeProperty.joke}}}'
+        - marshal:
+            json:
+              library: jackson
+        - to:
+            uri: "file:output/dashboard"
+            parameters:
+              fileName: "dashboard-\${date:now:yyyyMMdd-HHmmss}.json"
+        - log:
+            message: "Dashboard snapshot generated at \${exchangeProperty.timestamp}"`
+      },
+      {
+        name: "todos-to-tasks",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, log, kafka",
+        description: "Fetch JSONPlaceholder todos, filter incomplete, route to Kafka as pending tasks",
+        pattern: "REST API Polling + Transform",
+        kaotoDesign: `- route:
+    id: todos-to-tasks
+    from:
+      uri: "timer:todosPoller"
+      parameters:
+        period: "120000"
+      steps:
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - to:
+                  uri: "https://jsonplaceholder.typicode.com/todos"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - split:
+                  expression:
+                    jsonpath: "$[*]"
+                  steps:
+                    - setProperty:
+                        name: completed
+                        jsonpath: "$.completed"
+                    - choice:
+                        when:
+                          - simple: "\${exchangeProperty.completed} == false"
+                            steps:
+                              - marshal:
+                                  json:
+                                    library: jackson
+                              - to:
+                                  uri: "kafka:pending-tasks"
+                                  parameters:
+                                    brokers: "my-cluster-kafka-bootstrap:9092"
+                              - log:
+                                  message: "Pending task queued: \${body}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Todos fetch failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "users-comments-enrichment",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, http, jackson, log",
+        description: "Enrich JSONPlaceholder user with their comments by calling users and comments APIs",
+        pattern: "Webhook Enrichment",
+        kaotoDesign: `- route:
+    id: users-comments-enrichment
+    from:
+      uri: "platform-http:/api/user-comments/{userId}"
+      parameters:
+        httpMethodRestrict: GET
+      steps:
+        - setProperty:
+            name: userId
+            simple: "\${header.userId}"
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - toD:
+                  uri: "https://jsonplaceholder.typicode.com/users/\${exchangeProperty.userId}"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: userName
+                  jsonpath: "$.name"
+              - setProperty:
+                  name: userEmail
+                  jsonpath: "$.email"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - toD:
+                  uri: "https://jsonplaceholder.typicode.com/comments?email=\${exchangeProperty.userEmail}"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: commentCount
+                  simple: "\${body.size()}"
+              - setBody:
+                  simple: '{"userId":\${exchangeProperty.userId},"name":"\${exchangeProperty.userName}","email":"\${exchangeProperty.userEmail}","comment_count":\${exchangeProperty.commentCount},"comments":\${body}}'
+              - log:
+                  message: "Enriched user \${exchangeProperty.userName} with \${exchangeProperty.commentCount} comments"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setHeader:
+                      name: CamelHttpResponseCode
+                      constant: 502
+                  - setBody:
+                      simple: '{"error":"User-comments enrichment failed","detail":"\${exception.message}"}'`
+      },
+      {
+        name: "weather-multiregion-poll",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, kafka, log",
+        description: "Poll weather for multiple cities via OpenWeatherMap, compare temperatures, publish extremes",
+        pattern: "Scheduled Collection + CBR",
+        kaotoDesign: `- route:
+    id: weather-multiregion-poll
+    from:
+      uri: "timer:weatherMultiPoll"
+      parameters:
+        period: "600000"
+      steps:
+        - setBody:
+            constant: '["London","Tokyo","New York","Sydney","Mumbai"]'
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: hottestTemp
+            constant: "-999"
+        - setProperty:
+            name: coldestTemp
+            constant: "999"
+        - split:
+            expression:
+              jsonpath: "$[*]"
+            steps:
+              - setProperty:
+                  name: cityName
+                  simple: "\${body}"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - doTry:
+                  steps:
+                    - toD:
+                        uri: "https://api.openweathermap.org/data/2.5/weather?q=\${exchangeProperty.cityName}&appid=YOUR_API_KEY&units=metric"
+                    - unmarshal:
+                        json:
+                          library: jackson
+                    - setProperty:
+                        name: currentTemp
+                        jsonpath: "$.main.temp"
+                    - setProperty:
+                        name: conditions
+                        jsonpath: "$.weather[0].description"
+                    - log:
+                        message: "\${exchangeProperty.cityName}: \${exchangeProperty.currentTemp}°C — \${exchangeProperty.conditions}"
+                    - marshal:
+                        json:
+                          library: jackson
+                    - to:
+                        uri: "kafka:weather-readings"
+                        parameters:
+                          brokers: "my-cluster-kafka-bootstrap:9092"
+                  doCatch:
+                    - exception:
+                        - "java.lang.Exception"
+                      steps:
+                        - log:
+                            message: "Weather fetch failed for \${exchangeProperty.cityName}: \${exception.message}"
+                            loggingLevel: WARN
+        - log:
+            message: "Multi-region weather poll complete"`
+      }
+    ]
+  },
+  {
+    id: "enterprise", icon: "🏢", title: "Enterprise Automation",
+    flows: [
+      {
+        name: "lead-enrichment-pipeline",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, http, jackson, kafka, log",
+        description: "Receive lead via webhook, enrich with clearbit-style API, score, route to CRM topic",
+        pattern: "Lead Enrichment",
+        kaotoDesign: `- route:
+    id: lead-enrichment-pipeline
+    from:
+      uri: "platform-http:/webhook/new-lead"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: leadEmail
+            jsonpath: "$.email"
+        - setProperty:
+            name: leadName
+            jsonpath: "$.name"
+        - setProperty:
+            name: leadCompany
+            jsonpath: "$.company"
+        - log:
+            message: "New lead received: \${exchangeProperty.leadName} (\${exchangeProperty.leadEmail})"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - toD:
+                  uri: "https://api.github.com/search/users?q=\${exchangeProperty.leadEmail}"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: githubPresence
+                  jsonpath: "$.total_count"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setProperty:
+                      name: githubPresence
+                      constant: "0"
+        - setProperty:
+            name: leadScore
+            simple: "\${exchangeProperty.githubPresence}"
+        - choice:
+            when:
+              - simple: "\${exchangeProperty.leadScore} > 0"
+                steps:
+                  - setBody:
+                      simple: '{"lead":"\${exchangeProperty.leadName}","email":"\${exchangeProperty.leadEmail}","company":"\${exchangeProperty.leadCompany}","score":"high","github_presence":true}'
+                  - to:
+                      uri: "kafka:crm-high-priority-leads"
+                      parameters:
+                        brokers: "my-cluster-kafka-bootstrap:9092"
+                  - log:
+                      message: "High-score lead routed: \${exchangeProperty.leadName}"
+            otherwise:
+              steps:
+                - setBody:
+                    simple: '{"lead":"\${exchangeProperty.leadName}","email":"\${exchangeProperty.leadEmail}","company":"\${exchangeProperty.leadCompany}","score":"standard","github_presence":false}'
+                - to:
+                    uri: "kafka:crm-standard-leads"
+                    parameters:
+                      brokers: "my-cluster-kafka-bootstrap:9092"
+        - setBody:
+            simple: '{"status":"processed","lead":"\${exchangeProperty.leadName}","score":"\${exchangeProperty.leadScore}"}'`
+      },
+      {
+        name: "invoice-pdf-extraction",
+        type: "CAMEL_ROUTE",
+        components: "file, pdf, jackson, kafka, log",
+        description: "Watch for invoice PDFs, extract text, parse structured data, send to accounting topic",
+        pattern: "Invoice Processing",
+        kaotoDesign: `- route:
+    id: invoice-pdf-extraction
+    from:
+      uri: "file:input/invoices"
+      parameters:
+        include: ".*\\.pdf"
+        move: "processed"
+        moveFailed: "failed"
+      steps:
+        - log:
+            message: "Processing invoice: \${header.CamelFileName}"
+        - doTry:
+            steps:
+              - to:
+                  uri: "pdf:extractText"
+              - setProperty:
+                  name: rawText
+                  simple: "\${body}"
+              - setProperty:
+                  name: fileName
+                  simple: "\${header.CamelFileName}"
+              - setBody:
+                  simple: '{"source":"\${exchangeProperty.fileName}","raw_text":"\${exchangeProperty.rawText}","extracted_at":"\${date:now:yyyy-MM-dd HH:mm:ss}","status":"parsed"}'
+              - marshal:
+                  json:
+                    library: jackson
+              - to:
+                  uri: "kafka:invoices-parsed"
+                  parameters:
+                    brokers: "my-cluster-kafka-bootstrap:9092"
+              - log:
+                  message: "Invoice parsed and sent to accounting: \${exchangeProperty.fileName}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Invoice extraction failed for \${header.CamelFileName}: \${exception.message}"
+                      loggingLevel: ERROR
+                  - setBody:
+                      simple: '{"source":"\${header.CamelFileName}","error":"\${exception.message}","status":"failed"}'
+                  - marshal:
+                      json:
+                        library: jackson
+                  - to:
+                      uri: "kafka:invoices-errors"
+                      parameters:
+                        brokers: "my-cluster-kafka-bootstrap:9092"`
+      },
+      {
+        name: "email-triage-ai",
+        type: "CAMEL_ROUTE",
+        components: "imap, langchain4j-chat, kafka, log",
+        description: "Receive emails via IMAP, classify with AI, route to appropriate team Kafka topic",
+        pattern: "Email Triage",
+        kaotoDesign: `- route:
+    id: email-triage-ai
+    from:
+      uri: "imap:mail.example.com"
+      parameters:
+        username: "support@example.com"
+        password: "{{mail.password}}"
+        unseen: true
+        delay: 30000
+      steps:
+        - setProperty:
+            name: emailSubject
+            simple: "\${header.Subject}"
+        - setProperty:
+            name: emailFrom
+            simple: "\${header.From}"
+        - setProperty:
+            name: emailBody
+            simple: "\${body}"
+        - log:
+            message: "Triaging email from \${exchangeProperty.emailFrom}: \${exchangeProperty.emailSubject}"
+        - doTry:
+            steps:
+              - setBody:
+                  simple: "Classify this email into ONE of these categories: BILLING, TECHNICAL, GENERAL, URGENT.\\n\\nSubject: \${exchangeProperty.emailSubject}\\nBody: \${exchangeProperty.emailBody}\\n\\nRespond with ONLY the category name."
+              - to:
+                  uri: "langchain4j-chat:email-classifier"
+                  parameters:
+                    chatModel: "#openaiModel"
+              - setProperty:
+                  name: category
+                  simple: "\${body.trim()}"
+              - setBody:
+                  simple: '{"from":"\${exchangeProperty.emailFrom}","subject":"\${exchangeProperty.emailSubject}","category":"\${exchangeProperty.category}","classified_at":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+              - choice:
+                  when:
+                    - simple: "\${exchangeProperty.category} == 'URGENT'"
+                      steps:
+                        - to:
+                            uri: "kafka:email-urgent"
+                            parameters:
+                              brokers: "my-cluster-kafka-bootstrap:9092"
+                    - simple: "\${exchangeProperty.category} == 'BILLING'"
+                      steps:
+                        - to:
+                            uri: "kafka:email-billing"
+                            parameters:
+                              brokers: "my-cluster-kafka-bootstrap:9092"
+                    - simple: "\${exchangeProperty.category} == 'TECHNICAL'"
+                      steps:
+                        - to:
+                            uri: "kafka:email-technical"
+                            parameters:
+                              brokers: "my-cluster-kafka-bootstrap:9092"
+                  otherwise:
+                    steps:
+                      - to:
+                          uri: "kafka:email-general"
+                          parameters:
+                            brokers: "my-cluster-kafka-bootstrap:9092"
+              - log:
+                  message: "Email classified as \${exchangeProperty.category}: \${exchangeProperty.emailSubject}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Email triage failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "meeting-transcription-tasks",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, langchain4j-chat, kafka, log",
+        description: "Receive meeting transcript, AI-summarize, extract action items, create task events",
+        pattern: "Meeting Transcription",
+        kaotoDesign: `- route:
+    id: meeting-transcription-tasks
+    from:
+      uri: "platform-http:/webhook/meeting-transcript"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: meetingTitle
+            jsonpath: "$.title"
+        - setProperty:
+            name: transcript
+            jsonpath: "$.transcript"
+        - setProperty:
+            name: attendees
+            jsonpath: "$.attendees"
+        - log:
+            message: "Processing transcript for meeting: \${exchangeProperty.meetingTitle}"
+        - doTry:
+            steps:
+              - setBody:
+                  simple: "Summarize this meeting in 3-5 bullet points:\\n\\n\${exchangeProperty.transcript}"
+              - to:
+                  uri: "langchain4j-chat:summarizer"
+                  parameters:
+                    chatModel: "#openaiModel"
+              - setProperty:
+                  name: summary
+                  simple: "\${body}"
+              - setBody:
+                  simple: "Extract action items from this meeting transcript. For each action item provide: task description, assignee (if mentioned), deadline (if mentioned). Format as JSON array.\\n\\n\${exchangeProperty.transcript}"
+              - to:
+                  uri: "langchain4j-chat:task-extractor"
+                  parameters:
+                    chatModel: "#openaiModel"
+              - setProperty:
+                  name: actionItems
+                  simple: "\${body}"
+              - setBody:
+                  simple: '{"meeting":"\${exchangeProperty.meetingTitle}","summary":"\${exchangeProperty.summary}","action_items":\${exchangeProperty.actionItems},"attendees":"\${exchangeProperty.attendees}","processed_at":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+              - to:
+                  uri: "kafka:meeting-summaries"
+                  parameters:
+                    brokers: "my-cluster-kafka-bootstrap:9092"
+              - log:
+                  message: "Meeting summarized with action items: \${exchangeProperty.meetingTitle}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Meeting processing failed: \${exception.message}"
+                      loggingLevel: ERROR
+                  - setHeader:
+                      name: CamelHttpResponseCode
+                      constant: 500
+                  - setBody:
+                      simple: '{"error":"Processing failed","detail":"\${exception.message}"}'`
+      },
+      {
+        name: "feedback-sentiment-alert",
+        type: "CAMEL_ROUTE",
+        components: "kafka, langchain4j-chat, slack, log",
+        description: "Consume feedback from Kafka, AI sentiment analysis, categorize and alert on negative",
+        pattern: "Customer Feedback Analysis",
+        kaotoDesign: `- route:
+    id: feedback-sentiment-alert
+    from:
+      uri: "kafka:customer-feedback"
+      parameters:
+        brokers: "my-cluster-kafka-bootstrap:9092"
+        groupId: "feedback-sentiment"
+        autoOffsetReset: earliest
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: customerId
+            jsonpath: "$.customer_id"
+        - setProperty:
+            name: feedbackText
+            jsonpath: "$.text"
+        - setProperty:
+            name: channel
+            jsonpath: "$.channel"
+        - doTry:
+            steps:
+              - setBody:
+                  simple: "Analyze the sentiment of this customer feedback. Respond with JSON: {\"sentiment\": \"POSITIVE|NEGATIVE|NEUTRAL\", \"confidence\": 0.0-1.0, \"topics\": [\"topic1\"]}\\n\\nFeedback: \${exchangeProperty.feedbackText}"
+              - to:
+                  uri: "langchain4j-chat:sentiment-analyzer"
+                  parameters:
+                    chatModel: "#openaiModel"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: sentiment
+                  jsonpath: "$.sentiment"
+              - setProperty:
+                  name: confidence
+                  jsonpath: "$.confidence"
+              - choice:
+                  when:
+                    - simple: "\${exchangeProperty.sentiment} == 'NEGATIVE' && \${exchangeProperty.confidence} > 0.7"
+                      steps:
+                        - setBody:
+                            simple: "⚠️ *Negative Feedback Alert*\\nCustomer: \${exchangeProperty.customerId}\\nChannel: \${exchangeProperty.channel}\\nFeedback: \${exchangeProperty.feedbackText}\\nConfidence: \${exchangeProperty.confidence}"
+                        - to:
+                            uri: "slack:#cx-alerts"
+                            parameters:
+                              webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+                        - log:
+                            message: "NEGATIVE feedback alert sent for customer \${exchangeProperty.customerId}"
+                            loggingLevel: WARN
+                  otherwise:
+                    steps:
+                      - log:
+                          message: "Feedback from \${exchangeProperty.customerId}: \${exchangeProperty.sentiment} (confidence: \${exchangeProperty.confidence})"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Sentiment analysis failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "social-crosspost",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, http, jackson, log",
+        description: "Receive content via webhook and cross-post to multiple social platforms via their APIs",
+        pattern: "Social Media Cross-Posting",
+        kaotoDesign: `- route:
+    id: social-crosspost
+    from:
+      uri: "platform-http:/webhook/crosspost"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: content
+            jsonpath: "$.content"
+        - setProperty:
+            name: platforms
+            jsonpath: "$.platforms"
+        - setProperty:
+            name: mediaUrl
+            jsonpath: "$.media_url"
+        - log:
+            message: "Cross-posting to platforms: \${exchangeProperty.platforms}"
+        - multicast:
+            parallelProcessing: true
+            stopOnException: false
+            steps:
+              - pipeline:
+                  steps:
+                    - setBody:
+                        simple: '{"text":"\${exchangeProperty.content}","media":"\${exchangeProperty.mediaUrl}"}'
+                    - doTry:
+                        steps:
+                          - setHeader:
+                              name: CamelHttpMethod
+                              constant: POST
+                          - setHeader:
+                              name: Content-Type
+                              constant: "application/json"
+                          - to:
+                              uri: "https://api.twitter.placeholder.com/v2/tweets"
+                          - log:
+                              message: "Posted to Twitter"
+                        doCatch:
+                          - exception:
+                              - "java.lang.Exception"
+                            steps:
+                              - log:
+                                  message: "Twitter post failed: \${exception.message}"
+                                  loggingLevel: WARN
+              - pipeline:
+                  steps:
+                    - setBody:
+                        simple: '{"message":"\${exchangeProperty.content}","link":"\${exchangeProperty.mediaUrl}"}'
+                    - doTry:
+                        steps:
+                          - setHeader:
+                              name: CamelHttpMethod
+                              constant: POST
+                          - setHeader:
+                              name: Content-Type
+                              constant: "application/json"
+                          - to:
+                              uri: "https://graph.facebook.placeholder.com/v18.0/me/feed"
+                          - log:
+                              message: "Posted to Facebook"
+                        doCatch:
+                          - exception:
+                              - "java.lang.Exception"
+                            steps:
+                              - log:
+                                  message: "Facebook post failed: \${exception.message}"
+                                  loggingLevel: WARN
+              - pipeline:
+                  steps:
+                    - setBody:
+                        simple: '{"text":"\${exchangeProperty.content}","channel":"#marketing"}'
+                    - doTry:
+                        steps:
+                          - to:
+                              uri: "slack:#marketing"
+                              parameters:
+                                webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+                          - log:
+                              message: "Posted to Slack"
+                        doCatch:
+                          - exception:
+                              - "java.lang.Exception"
+                            steps:
+                              - log:
+                                  message: "Slack post failed: \${exception.message}"
+                                  loggingLevel: WARN
+        - setBody:
+            simple: '{"status":"crosspost_complete","platforms_attempted":"\${exchangeProperty.platforms}"}'`
+      },
+      {
+        name: "stripe-payment-notify",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, http, jackson, kafka, slack, log",
+        description: "Receive Stripe webhook, update CRM topic, send Slack notification on payment",
+        pattern: "Payment Event Processing",
+        kaotoDesign: `- route:
+    id: stripe-payment-notify
+    from:
+      uri: "platform-http:/webhook/stripe"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: eventType
+            jsonpath: "$.type"
+        - setProperty:
+            name: amount
+            jsonpath: "$.data.object.amount"
+        - setProperty:
+            name: currency
+            jsonpath: "$.data.object.currency"
+        - setProperty:
+            name: customerEmail
+            jsonpath: "$.data.object.receipt_email"
+        - log:
+            message: "Stripe event: \${exchangeProperty.eventType} — \${exchangeProperty.amount} \${exchangeProperty.currency}"
+        - choice:
+            when:
+              - simple: "\${exchangeProperty.eventType} == 'payment_intent.succeeded'"
+                steps:
+                  - doTry:
+                      steps:
+                        - setBody:
+                            simple: '{"event":"payment_success","email":"\${exchangeProperty.customerEmail}","amount":\${exchangeProperty.amount},"currency":"\${exchangeProperty.currency}","timestamp":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+                        - to:
+                            uri: "kafka:crm-payments"
+                            parameters:
+                              brokers: "my-cluster-kafka-bootstrap:9092"
+                        - setBody:
+                            simple: "💰 *Payment Received*\\nCustomer: \${exchangeProperty.customerEmail}\\nAmount: \${exchangeProperty.amount} \${exchangeProperty.currency}\\nTime: \${date:now:yyyy-MM-dd HH:mm:ss}"
+                        - to:
+                            uri: "slack:#payments"
+                            parameters:
+                              webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+                      doCatch:
+                        - exception:
+                            - "java.lang.Exception"
+                          steps:
+                            - log:
+                                message: "Payment notification failed: \${exception.message}"
+                                loggingLevel: ERROR
+              - simple: "\${exchangeProperty.eventType} == 'payment_intent.payment_failed'"
+                steps:
+                  - setBody:
+                      simple: '{"event":"payment_failed","email":"\${exchangeProperty.customerEmail}","amount":\${exchangeProperty.amount}}'
+                  - to:
+                      uri: "kafka:crm-payment-failures"
+                      parameters:
+                        brokers: "my-cluster-kafka-bootstrap:9092"
+                  - log:
+                      message: "Payment FAILED for \${exchangeProperty.customerEmail}"
+                      loggingLevel: WARN
+        - setBody:
+            simple: '{"received":true}'`
+      },
+      {
+        name: "github-issue-triage-ai",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, langchain4j-chat, http, jackson, log",
+        description: "Receive GitHub issue webhook, AI-label and prioritize, assign via API, notify Slack",
+        pattern: "GitHub Issue Triage",
+        kaotoDesign: `- route:
+    id: github-issue-triage-ai
+    from:
+      uri: "platform-http:/webhook/github-issues"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: action
+            jsonpath: "$.action"
+        - choice:
+            when:
+              - simple: "\${exchangeProperty.action} == 'opened'"
+                steps:
+                  - setProperty:
+                      name: issueTitle
+                      jsonpath: "$.issue.title"
+                  - setProperty:
+                      name: issueBody
+                      jsonpath: "$.issue.body"
+                  - setProperty:
+                      name: issueNumber
+                      jsonpath: "$.issue.number"
+                  - setProperty:
+                      name: repoFullName
+                      jsonpath: "$.repository.full_name"
+                  - doTry:
+                      steps:
+                        - setBody:
+                            simple: "Analyze this GitHub issue and respond with JSON: {\"labels\": [\"bug\"|\"feature\"|\"docs\"|\"question\"], \"priority\": \"P0\"|\"P1\"|\"P2\"|\"P3\", \"assignee_team\": \"backend\"|\"frontend\"|\"devops\"|\"docs\"}\\n\\nTitle: \${exchangeProperty.issueTitle}\\nBody: \${exchangeProperty.issueBody}"
+                        - to:
+                            uri: "langchain4j-chat:issue-triager"
+                            parameters:
+                              chatModel: "#openaiModel"
+                        - unmarshal:
+                            json:
+                              library: jackson
+                        - setProperty:
+                            name: triageResult
+                            simple: "\${body}"
+                        - setProperty:
+                            name: priority
+                            jsonpath: "$.priority"
+                        - setBody:
+                            simple: "🔖 *New Issue Triaged*\\n*Repo:* \${exchangeProperty.repoFullName}\\n*Issue:* #\${exchangeProperty.issueNumber} — \${exchangeProperty.issueTitle}\\n*Priority:* \${exchangeProperty.priority}\\n*Triage:* \${exchangeProperty.triageResult}"
+                        - to:
+                            uri: "slack:#dev-issues"
+                            parameters:
+                              webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+                        - log:
+                            message: "Triaged issue #\${exchangeProperty.issueNumber}: priority=\${exchangeProperty.priority}"
+                      doCatch:
+                        - exception:
+                            - "java.lang.Exception"
+                          steps:
+                            - log:
+                                message: "Issue triage failed for #\${exchangeProperty.issueNumber}: \${exception.message}"
+                                loggingLevel: ERROR
+        - setBody:
+            simple: '{"status":"processed"}'`
+      },
+      {
+        name: "content-repurposing",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, langchain4j-chat, kafka, log",
+        description: "Receive blog post content, AI-generate social posts, email copy, and thread format",
+        pattern: "Content Repurposing",
+        kaotoDesign: `- route:
+    id: content-repurposing
+    from:
+      uri: "platform-http:/webhook/repurpose-content"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: title
+            jsonpath: "$.title"
+        - setProperty:
+            name: blogContent
+            jsonpath: "$.content"
+        - setProperty:
+            name: author
+            jsonpath: "$.author"
+        - log:
+            message: "Repurposing content: \${exchangeProperty.title}"
+        - doTry:
+            steps:
+              - setBody:
+                  simple: "Create a compelling Twitter/X thread (5-8 tweets) from this blog post. Use engaging hooks and thread formatting (1/N).\\n\\nTitle: \${exchangeProperty.title}\\nContent: \${exchangeProperty.blogContent}"
+              - to:
+                  uri: "langchain4j-chat:content-writer"
+                  parameters:
+                    chatModel: "#openaiModel"
+              - setProperty:
+                  name: twitterThread
+                  simple: "\${body}"
+              - setBody:
+                  simple: "Write a professional email newsletter excerpt (150 words max) for this blog post. Include a compelling subject line.\\n\\nTitle: \${exchangeProperty.title}\\nContent: \${exchangeProperty.blogContent}"
+              - to:
+                  uri: "langchain4j-chat:content-writer"
+                  parameters:
+                    chatModel: "#openaiModel"
+              - setProperty:
+                  name: emailCopy
+                  simple: "\${body}"
+              - setBody:
+                  simple: "Write a LinkedIn post (under 300 words) to promote this blog post. Professional tone with a call to action.\\n\\nTitle: \${exchangeProperty.title}\\nContent: \${exchangeProperty.blogContent}"
+              - to:
+                  uri: "langchain4j-chat:content-writer"
+                  parameters:
+                    chatModel: "#openaiModel"
+              - setProperty:
+                  name: linkedinPost
+                  simple: "\${body}"
+              - setBody:
+                  simple: '{"title":"\${exchangeProperty.title}","author":"\${exchangeProperty.author}","twitter_thread":"\${exchangeProperty.twitterThread}","email_copy":"\${exchangeProperty.emailCopy}","linkedin_post":"\${exchangeProperty.linkedinPost}","generated_at":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+              - to:
+                  uri: "kafka:repurposed-content"
+                  parameters:
+                    brokers: "my-cluster-kafka-bootstrap:9092"
+              - log:
+                  message: "Content repurposed into 3 formats for: \${exchangeProperty.title}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Content repurposing failed: \${exception.message}"
+                      loggingLevel: ERROR
+                  - setHeader:
+                      name: CamelHttpResponseCode
+                      constant: 500
+                  - setBody:
+                      simple: '{"error":"Repurposing failed","detail":"\${exception.message}"}'`
+      },
+      {
+        name: "daily-kpi-briefing",
+        type: "CAMEL_ROUTE",
+        components: "cron, http, jackson, slack, log",
+        description: "Daily scheduled KPI collection from multiple endpoints, aggregate and post to Slack",
+        pattern: "Daily KPI Briefing",
+        kaotoDesign: `- route:
+    id: daily-kpi-briefing
+    from:
+      uri: "cron:kpiBriefing"
+      parameters:
+        schedule: "0 8 * * MON-FRI"
+      steps:
+        - log:
+            message: "Starting daily KPI briefing"
+        - setProperty:
+            name: reportDate
+            simple: "\${date:now:yyyy-MM-dd}"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://metrics-api.internal:8080/api/v1/kpi/revenue?period=daily"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: revenue
+                  jsonpath: "$.total"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setProperty:
+                      name: revenue
+                      constant: "N/A"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://metrics-api.internal:8080/api/v1/kpi/active-users?period=daily"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: activeUsers
+                  jsonpath: "$.count"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setProperty:
+                      name: activeUsers
+                      constant: "N/A"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://metrics-api.internal:8080/api/v1/kpi/signups?period=daily"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: newSignups
+                  jsonpath: "$.count"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - setProperty:
+                      name: newSignups
+                      constant: "N/A"
+        - setBody:
+            simple: "📊 *Daily KPI Briefing — \${exchangeProperty.reportDate}*\\n\\n• Revenue: $\${exchangeProperty.revenue}\\n• Active Users: \${exchangeProperty.activeUsers}\\n• New Signups: \${exchangeProperty.newSignups}\\n\\n_Generated automatically at \${date:now:HH:mm}_"
+        - to:
+            uri: "slack:#kpi-daily"
+            parameters:
+              webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+        - log:
+            message: "Daily KPI briefing sent for \${exchangeProperty.reportDate}"`
+      },
+      {
+        name: "churn-prediction-alert",
+        type: "CAMEL_ROUTE",
+        components: "cron, http, jackson, kafka, slack, log",
+        description: "Pull user activity data, compute churn risk score, alert if high risk detected",
+        pattern: "Churn Prediction",
+        kaotoDesign: `- route:
+    id: churn-prediction-alert
+    from:
+      uri: "cron:churnScanner"
+      parameters:
+        schedule: "0 6 * * *"
+      steps:
+        - log:
+            message: "Starting churn prediction scan"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://user-api.internal:8080/api/v1/users?inactive_days_gt=14"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - split:
+                  expression:
+                    jsonpath: "$[*]"
+                  steps:
+                    - setProperty:
+                        name: userId
+                        jsonpath: "$.id"
+                    - setProperty:
+                        name: lastActive
+                        jsonpath: "$.last_active"
+                    - setProperty:
+                        name: planType
+                        jsonpath: "$.plan"
+                    - setProperty:
+                        name: inactiveDays
+                        jsonpath: "$.inactive_days"
+                    - choice:
+                        when:
+                          - simple: "\${exchangeProperty.inactiveDays} > 30 && \${exchangeProperty.planType} == 'premium'"
+                            steps:
+                              - setBody:
+                                  simple: '{"user_id":"\${exchangeProperty.userId}","risk":"CRITICAL","inactive_days":\${exchangeProperty.inactiveDays},"plan":"\${exchangeProperty.planType}"}'
+                              - to:
+                                  uri: "kafka:churn-critical"
+                                  parameters:
+                                    brokers: "my-cluster-kafka-bootstrap:9092"
+                              - setBody:
+                                  simple: "🚨 *Churn Risk: CRITICAL*\\nUser: \${exchangeProperty.userId}\\nPlan: \${exchangeProperty.planType}\\nInactive: \${exchangeProperty.inactiveDays} days"
+                              - to:
+                                  uri: "slack:#customer-success"
+                                  parameters:
+                                    webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+                          - simple: "\${exchangeProperty.inactiveDays} > 14"
+                            steps:
+                              - setBody:
+                                  simple: '{"user_id":"\${exchangeProperty.userId}","risk":"HIGH","inactive_days":\${exchangeProperty.inactiveDays},"plan":"\${exchangeProperty.planType}"}'
+                              - to:
+                                  uri: "kafka:churn-high"
+                                  parameters:
+                                    brokers: "my-cluster-kafka-bootstrap:9092"
+                    - log:
+                        message: "Scored user \${exchangeProperty.userId}: inactive \${exchangeProperty.inactiveDays}d"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Churn prediction failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "expense-categorizer",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, langchain4j-chat, jackson, kafka, log",
+        description: "Receive expense receipt data, AI-classify category, log to accounting topic",
+        pattern: "Expense Categorization",
+        kaotoDesign: `- route:
+    id: expense-categorizer
+    from:
+      uri: "platform-http:/webhook/expense"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: merchant
+            jsonpath: "$.merchant"
+        - setProperty:
+            name: amount
+            jsonpath: "$.amount"
+        - setProperty:
+            name: description
+            jsonpath: "$.description"
+        - setProperty:
+            name: employeeId
+            jsonpath: "$.employee_id"
+        - doTry:
+            steps:
+              - setBody:
+                  simple: "Categorize this expense into ONE of: TRAVEL, MEALS, SOFTWARE, OFFICE_SUPPLIES, EQUIPMENT, PROFESSIONAL_SERVICES, OTHER.\\n\\nMerchant: \${exchangeProperty.merchant}\\nAmount: \${exchangeProperty.amount}\\nDescription: \${exchangeProperty.description}\\n\\nRespond with JSON: {\"category\": \"...\", \"confidence\": 0.0-1.0, \"tax_deductible\": true/false}"
+              - to:
+                  uri: "langchain4j-chat:expense-classifier"
+                  parameters:
+                    chatModel: "#openaiModel"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: category
+                  jsonpath: "$.category"
+              - setProperty:
+                  name: taxDeductible
+                  jsonpath: "$.tax_deductible"
+              - setBody:
+                  simple: '{"employee":"\${exchangeProperty.employeeId}","merchant":"\${exchangeProperty.merchant}","amount":\${exchangeProperty.amount},"category":"\${exchangeProperty.category}","tax_deductible":\${exchangeProperty.taxDeductible},"classified_at":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+              - to:
+                  uri: "kafka:expenses-classified"
+                  parameters:
+                    brokers: "my-cluster-kafka-bootstrap:9092"
+              - log:
+                  message: "Expense categorized: \${exchangeProperty.merchant} → \${exchangeProperty.category}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Expense classification failed: \${exception.message}"
+                      loggingLevel: ERROR
+                  - setHeader:
+                      name: CamelHttpResponseCode
+                      constant: 500
+                  - setBody:
+                      simple: '{"error":"Classification failed","detail":"\${exception.message}"}'`
+      },
+      {
+        name: "onboarding-sequence",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, kafka, timer, smtp, log",
+        description: "New user signup triggers multi-step onboarding: welcome email, day-3 tips, day-7 check-in",
+        pattern: "Onboarding Sequence",
+        kaotoDesign: `- route:
+    id: onboarding-sequence
+    from:
+      uri: "platform-http:/webhook/new-user"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: userEmail
+            jsonpath: "$.email"
+        - setProperty:
+            name: userName
+            jsonpath: "$.name"
+        - setProperty:
+            name: userId
+            jsonpath: "$.user_id"
+        - log:
+            message: "Starting onboarding for \${exchangeProperty.userName} (\${exchangeProperty.userEmail})"
+        - doTry:
+            steps:
+              - setBody:
+                  simple: "Welcome to our platform, \${exchangeProperty.userName}!\\n\\nWe're excited to have you on board. Here's what you can do to get started:\\n\\n1. Complete your profile\\n2. Explore our templates\\n3. Join our community\\n\\nBest regards,\\nThe Team"
+              - setHeader:
+                  name: Subject
+                  simple: "Welcome to the platform, \${exchangeProperty.userName}!"
+              - setHeader:
+                  name: To
+                  simple: "\${exchangeProperty.userEmail}"
+              - to:
+                  uri: "smtp:mail.example.com"
+                  parameters:
+                    username: "onboarding@example.com"
+                    password: "{{smtp.password}}"
+              - log:
+                  message: "Welcome email sent to \${exchangeProperty.userEmail}"
+              - setBody:
+                  simple: '{"user_id":"\${exchangeProperty.userId}","email":"\${exchangeProperty.userEmail}","name":"\${exchangeProperty.userName}","step":"welcome_sent","next_step_at":"\${date:now+3d:yyyy-MM-dd HH:mm:ss}"}'
+              - to:
+                  uri: "kafka:onboarding-events"
+                  parameters:
+                    brokers: "my-cluster-kafka-bootstrap:9092"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Onboarding initiation failed for \${exchangeProperty.userEmail}: \${exception.message}"
+                      loggingLevel: ERROR
+        - setBody:
+            simple: '{"status":"onboarding_started","user":"\${exchangeProperty.userId}"}'`
+      },
+      {
+        name: "review-sentiment-monitor",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, langchain4j-chat, slack, kafka, log",
+        description: "Poll review API, AI-analyze sentiment, alert on negative reviews via Slack",
+        pattern: "Review Monitoring",
+        kaotoDesign: `- route:
+    id: review-sentiment-monitor
+    from:
+      uri: "timer:reviewPoller"
+      parameters:
+        period: "600000"
+      steps:
+        - setHeader:
+            name: CamelHttpMethod
+            constant: GET
+        - doTry:
+            steps:
+              - to:
+                  uri: "http://reviews-api.internal:8080/api/v1/reviews?status=new&limit=20"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - split:
+                  expression:
+                    jsonpath: "$[*]"
+                  steps:
+                    - setProperty:
+                        name: reviewId
+                        jsonpath: "$.id"
+                    - setProperty:
+                        name: reviewText
+                        jsonpath: "$.text"
+                    - setProperty:
+                        name: reviewRating
+                        jsonpath: "$.rating"
+                    - setProperty:
+                        name: reviewAuthor
+                        jsonpath: "$.author"
+                    - setBody:
+                        simple: "Rate the sentiment of this review as POSITIVE, NEGATIVE, or MIXED. Respond with one word only.\\n\\nReview: \${exchangeProperty.reviewText}"
+                    - to:
+                        uri: "langchain4j-chat:sentiment"
+                        parameters:
+                          chatModel: "#openaiModel"
+                    - setProperty:
+                        name: sentiment
+                        simple: "\${body.trim()}"
+                    - choice:
+                        when:
+                          - simple: "\${exchangeProperty.sentiment} == 'NEGATIVE'"
+                            steps:
+                              - setBody:
+                                  simple: "⭐ *Negative Review Alert*\\nRating: \${exchangeProperty.reviewRating}/5\\nAuthor: \${exchangeProperty.reviewAuthor}\\nReview: \${exchangeProperty.reviewText}"
+                              - to:
+                                  uri: "slack:#reviews-alert"
+                                  parameters:
+                                    webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+                    - setBody:
+                        simple: '{"review_id":"\${exchangeProperty.reviewId}","sentiment":"\${exchangeProperty.sentiment}","rating":\${exchangeProperty.reviewRating}}'
+                    - marshal:
+                        json:
+                          library: jackson
+                    - to:
+                        uri: "kafka:reviews-analyzed"
+                        parameters:
+                          brokers: "my-cluster-kafka-bootstrap:9092"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Review monitoring failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "bank-reconciliation",
+        type: "CAMEL_ROUTE",
+        components: "cron, http, jackson, log, kafka",
+        description: "Compare bank records with internal ledger, flag mismatches for review",
+        pattern: "Bank Reconciliation",
+        kaotoDesign: `- route:
+    id: bank-reconciliation
+    from:
+      uri: "cron:bankRecon"
+      parameters:
+        schedule: "0 2 * * *"
+      steps:
+        - log:
+            message: "Starting daily bank reconciliation"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://banking-api.internal:8080/api/v1/transactions?date=yesterday"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: bankTransactions
+                  simple: "\${body}"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://ledger-api.internal:8080/api/v1/entries?date=yesterday"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: ledgerEntries
+                  simple: "\${body}"
+              - setBody:
+                  simple: '{"bank_records":\${exchangeProperty.bankTransactions},"ledger_records":\${exchangeProperty.ledgerEntries},"reconciliation_date":"\${date:now-1d:yyyy-MM-dd}"}'
+              - to:
+                  uri: "http://reconciliation-engine.internal:8080/api/v1/compare"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: mismatches
+                  jsonpath: "$.mismatches"
+              - setProperty:
+                  name: mismatchCount
+                  jsonpath: "$.mismatch_count"
+              - choice:
+                  when:
+                    - simple: "\${exchangeProperty.mismatchCount} > 0"
+                      steps:
+                        - setBody:
+                            simple: '{"alert":"reconciliation_mismatch","count":\${exchangeProperty.mismatchCount},"mismatches":\${exchangeProperty.mismatches},"date":"\${date:now-1d:yyyy-MM-dd}"}'
+                        - to:
+                            uri: "kafka:finance-alerts"
+                            parameters:
+                              brokers: "my-cluster-kafka-bootstrap:9092"
+                        - log:
+                            message: "RECONCILIATION MISMATCH: \${exchangeProperty.mismatchCount} discrepancies found"
+                            loggingLevel: WARN
+                  otherwise:
+                    steps:
+                      - log:
+                          message: "Reconciliation complete: all records match"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Bank reconciliation failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "faq-bot-rag",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, langchain4j-embeddings, qdrant, langchain4j-chat, log",
+        description: "AI-powered FAQ: receive question, RAG lookup in vector DB, generate contextual answer",
+        pattern: "AI-Powered FAQ Bot",
+        kaotoDesign: `- route:
+    id: faq-bot-rag
+    from:
+      uri: "platform-http:/api/faq"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: question
+            jsonpath: "$.question"
+        - setProperty:
+            name: sessionId
+            jsonpath: "$.session_id"
+        - log:
+            message: "FAQ query from session \${exchangeProperty.sessionId}: \${exchangeProperty.question}"
+        - doTry:
+            steps:
+              - setBody:
+                  simple: "\${exchangeProperty.question}"
+              - to:
+                  uri: "langchain4j-embeddings:embed-query"
+                  parameters:
+                    embeddingModel: "#embeddingModel"
+              - setProperty:
+                  name: queryVector
+                  simple: "\${body}"
+              - setBody:
+                  simple: '{"vector":\${exchangeProperty.queryVector},"limit":5,"score_threshold":0.7}'
+              - to:
+                  uri: "qdrant:faq-knowledge-base"
+                  parameters:
+                    host: qdrant-server
+                    port: 6334
+                    action: search
+              - setProperty:
+                  name: relevantDocs
+                  simple: "\${body}"
+              - setBody:
+                  simple: "You are a helpful FAQ assistant. Answer the user's question using ONLY the provided context. If the context doesn't contain the answer, say 'I don't have enough information to answer that.'\\n\\nContext:\\n\${exchangeProperty.relevantDocs}\\n\\nQuestion: \${exchangeProperty.question}\\n\\nAnswer concisely and helpfully."
+              - to:
+                  uri: "langchain4j-chat:faq-bot"
+                  parameters:
+                    chatModel: "#openaiModel"
+              - setProperty:
+                  name: answer
+                  simple: "\${body}"
+              - setBody:
+                  simple: '{"question":"\${exchangeProperty.question}","answer":"\${exchangeProperty.answer}","session_id":"\${exchangeProperty.sessionId}","sources_found":true}'
+              - marshal:
+                  json:
+                    library: jackson
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "FAQ bot error: \${exception.message}"
+                      loggingLevel: ERROR
+                  - setBody:
+                      simple: '{"question":"\${exchangeProperty.question}","answer":"Sorry, I encountered an error processing your question.","error":true}'`
+      },
+      {
+        name: "multi-channel-notify",
+        type: "CAMEL_ROUTE",
+        components: "kafka, slack, smtp, http, jackson, log",
+        description: "Consume notification event from Kafka, fan-out to Slack, email, and SMS channels",
+        pattern: "Multi-Channel Notification",
+        kaotoDesign: `- route:
+    id: multi-channel-notify
+    from:
+      uri: "kafka:notification-events"
+      parameters:
+        brokers: "my-cluster-kafka-bootstrap:9092"
+        groupId: "multi-channel-notifier"
+        autoOffsetReset: latest
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: notifType
+            jsonpath: "$.type"
+        - setProperty:
+            name: message
+            jsonpath: "$.message"
+        - setProperty:
+            name: recipient
+            jsonpath: "$.recipient"
+        - setProperty:
+            name: channels
+            jsonpath: "$.channels"
+        - setProperty:
+            name: urgency
+            jsonpath: "$.urgency"
+        - log:
+            message: "Dispatching \${exchangeProperty.urgency} notification to: \${exchangeProperty.channels}"
+        - multicast:
+            parallelProcessing: true
+            stopOnException: false
+            steps:
+              - pipeline:
+                  steps:
+                    - choice:
+                        when:
+                          - simple: "\${exchangeProperty.channels} contains 'slack'"
+                            steps:
+                              - doTry:
+                                  steps:
+                                    - setBody:
+                                        simple: "[\${exchangeProperty.urgency}] \${exchangeProperty.message}"
+                                    - to:
+                                        uri: "slack:#notifications"
+                                        parameters:
+                                          webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+                                    - log:
+                                        message: "Slack notification sent"
+                                  doCatch:
+                                    - exception:
+                                        - "java.lang.Exception"
+                                      steps:
+                                        - log:
+                                            message: "Slack delivery failed: \${exception.message}"
+                                            loggingLevel: WARN
+              - pipeline:
+                  steps:
+                    - choice:
+                        when:
+                          - simple: "\${exchangeProperty.channels} contains 'email'"
+                            steps:
+                              - doTry:
+                                  steps:
+                                    - setBody:
+                                        simple: "\${exchangeProperty.message}"
+                                    - setHeader:
+                                        name: Subject
+                                        simple: "[\${exchangeProperty.urgency}] Notification"
+                                    - setHeader:
+                                        name: To
+                                        simple: "\${exchangeProperty.recipient}"
+                                    - to:
+                                        uri: "smtp:mail.example.com"
+                                        parameters:
+                                          username: "notifications@example.com"
+                                          password: "{{smtp.password}}"
+                                    - log:
+                                        message: "Email notification sent to \${exchangeProperty.recipient}"
+                                  doCatch:
+                                    - exception:
+                                        - "java.lang.Exception"
+                                      steps:
+                                        - log:
+                                            message: "Email delivery failed: \${exception.message}"
+                                            loggingLevel: WARN
+              - pipeline:
+                  steps:
+                    - choice:
+                        when:
+                          - simple: "\${exchangeProperty.channels} contains 'sms'"
+                            steps:
+                              - doTry:
+                                  steps:
+                                    - setBody:
+                                        simple: '{"to":"\${exchangeProperty.recipient}","body":"[\${exchangeProperty.urgency}] \${exchangeProperty.message}"}'
+                                    - setHeader:
+                                        name: CamelHttpMethod
+                                        constant: POST
+                                    - setHeader:
+                                        name: Content-Type
+                                        constant: "application/json"
+                                    - to:
+                                        uri: "http://sms-gateway.internal:8080/api/v1/send"
+                                    - log:
+                                        message: "SMS notification sent"
+                                  doCatch:
+                                    - exception:
+                                        - "java.lang.Exception"
+                                      steps:
+                                        - log:
+                                            message: "SMS delivery failed: \${exception.message}"
+                                            loggingLevel: WARN`
+      },
+      {
+        name: "data-sync-poller",
+        type: "CAMEL_ROUTE",
+        components: "timer, http, jackson, kafka, log",
+        description: "Poll source system, compare with target, upsert changes, log all modifications",
+        pattern: "Data Synchronization",
+        kaotoDesign: `- route:
+    id: data-sync-poller
+    from:
+      uri: "timer:dataSync"
+      parameters:
+        period: "300000"
+      steps:
+        - log:
+            message: "Starting data sync cycle"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://source-system.internal:8080/api/v1/records?modified_since=last_sync"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: sourceRecords
+                  simple: "\${body}"
+              - setProperty:
+                  name: recordCount
+                  simple: "\${body.size()}"
+              - choice:
+                  when:
+                    - simple: "\${exchangeProperty.recordCount} > 0"
+                      steps:
+                        - split:
+                            expression:
+                              simple: "\${exchangeProperty.sourceRecords}"
+                            steps:
+                              - setProperty:
+                                  name: recordId
+                                  jsonpath: "$.id"
+                              - marshal:
+                                  json:
+                                    library: jackson
+                              - setHeader:
+                                  name: CamelHttpMethod
+                                  constant: PUT
+                              - setHeader:
+                                  name: Content-Type
+                                  constant: "application/json"
+                              - doTry:
+                                  steps:
+                                    - toD:
+                                        uri: "http://target-system.internal:8080/api/v1/records/\${exchangeProperty.recordId}"
+                                    - log:
+                                        message: "Synced record \${exchangeProperty.recordId}"
+                                    - setBody:
+                                        simple: '{"action":"upsert","record_id":"\${exchangeProperty.recordId}","synced_at":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+                                    - to:
+                                        uri: "kafka:sync-audit-log"
+                                        parameters:
+                                          brokers: "my-cluster-kafka-bootstrap:9092"
+                                  doCatch:
+                                    - exception:
+                                        - "java.lang.Exception"
+                                      steps:
+                                        - log:
+                                            message: "Sync failed for record \${exchangeProperty.recordId}: \${exception.message}"
+                                            loggingLevel: ERROR
+                        - log:
+                            message: "Data sync complete: \${exchangeProperty.recordCount} records processed"
+                  otherwise:
+                    steps:
+                      - log:
+                          message: "No new records to sync"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Data sync cycle failed: \${exception.message}"
+                      loggingLevel: ERROR`
+      },
+      {
+        name: "approval-workflow",
+        type: "CAMEL_ROUTE",
+        components: "platform-http, kafka, slack, http, jackson, log",
+        description: "Approval request workflow: receive request, notify approver, wait for decision, proceed",
+        pattern: "Approval Workflow",
+        kaotoDesign: `- route:
+    id: approval-workflow
+    from:
+      uri: "platform-http:/webhook/approval-request"
+      parameters:
+        httpMethodRestrict: POST
+      steps:
+        - unmarshal:
+            json:
+              library: jackson
+        - setProperty:
+            name: requestId
+            simple: "\${exchangeProperty.requestId}-\${date:now:yyyyMMddHHmmss}"
+        - setProperty:
+            name: requestType
+            jsonpath: "$.type"
+        - setProperty:
+            name: requestor
+            jsonpath: "$.requestor"
+        - setProperty:
+            name: approver
+            jsonpath: "$.approver"
+        - setProperty:
+            name: details
+            jsonpath: "$.details"
+        - setProperty:
+            name: amount
+            jsonpath: "$.amount"
+        - log:
+            message: "Approval request \${exchangeProperty.requestId}: \${exchangeProperty.requestType} from \${exchangeProperty.requestor}"
+        - doTry:
+            steps:
+              - setBody:
+                  simple: '{"request_id":"\${exchangeProperty.requestId}","type":"\${exchangeProperty.requestType}","requestor":"\${exchangeProperty.requestor}","approver":"\${exchangeProperty.approver}","amount":\${exchangeProperty.amount},"details":"\${exchangeProperty.details}","status":"PENDING","created_at":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+              - to:
+                  uri: "kafka:approval-requests"
+                  parameters:
+                    brokers: "my-cluster-kafka-bootstrap:9092"
+              - setBody:
+                  simple: "📋 *Approval Required*\\n\\n*Request:* \${exchangeProperty.requestId}\\n*Type:* \${exchangeProperty.requestType}\\n*From:* \${exchangeProperty.requestor}\\n*Amount:* $\${exchangeProperty.amount}\\n*Details:* \${exchangeProperty.details}\\n\\nApprove at: https://app.example.com/approvals/\${exchangeProperty.requestId}"
+              - to:
+                  uri: "slack:#approvals"
+                  parameters:
+                    webhookUrl: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+              - log:
+                  message: "Approval notification sent to \${exchangeProperty.approver}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Approval workflow initiation failed: \${exception.message}"
+                      loggingLevel: ERROR
+        - setBody:
+            simple: '{"request_id":"\${exchangeProperty.requestId}","status":"PENDING"}'`
+      },
+      {
+        name: "report-generation",
+        type: "CAMEL_ROUTE",
+        components: "cron, http, jackson, freemarker, smtp, file, log",
+        description: "Scheduled report: query multiple data sources, format with template, email and archive",
+        pattern: "Report Generation",
+        kaotoDesign: `- route:
+    id: report-generation
+    from:
+      uri: "cron:weeklyReport"
+      parameters:
+        schedule: "0 7 * * MON"
+      steps:
+        - log:
+            message: "Generating weekly report"
+        - setProperty:
+            name: reportWeek
+            simple: "\${date:now:yyyy-'W'ww}"
+        - doTry:
+            steps:
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://analytics-api.internal:8080/api/v1/metrics/weekly"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: metricsData
+                  simple: "\${body}"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://sales-api.internal:8080/api/v1/pipeline/summary"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: salesData
+                  simple: "\${body}"
+              - setHeader:
+                  name: CamelHttpMethod
+                  constant: GET
+              - to:
+                  uri: "http://support-api.internal:8080/api/v1/tickets/summary"
+              - unmarshal:
+                  json:
+                    library: jackson
+              - setProperty:
+                  name: supportData
+                  simple: "\${body}"
+              - setBody:
+                  simple: '{"week":"\${exchangeProperty.reportWeek}","metrics":\${exchangeProperty.metricsData},"sales":\${exchangeProperty.salesData},"support":\${exchangeProperty.supportData},"generated_at":"\${date:now:yyyy-MM-dd HH:mm:ss}"}'
+              - to:
+                  uri: "freemarker:templates/weekly-report.ftl"
+              - setProperty:
+                  name: reportHtml
+                  simple: "\${body}"
+              - to:
+                  uri: "file:output/reports"
+                  parameters:
+                    fileName: "weekly-report-\${exchangeProperty.reportWeek}.html"
+              - setBody:
+                  simple: "\${exchangeProperty.reportHtml}"
+              - setHeader:
+                  name: Subject
+                  simple: "Weekly Report — \${exchangeProperty.reportWeek}"
+              - setHeader:
+                  name: To
+                  constant: "team@example.com"
+              - setHeader:
+                  name: Content-Type
+                  constant: "text/html"
+              - to:
+                  uri: "smtp:mail.example.com"
+                  parameters:
+                    username: "reports@example.com"
+                    password: "{{smtp.password}}"
+              - log:
+                  message: "Weekly report generated and distributed: \${exchangeProperty.reportWeek}"
+            doCatch:
+              - exception:
+                  - "java.lang.Exception"
+                steps:
+                  - log:
+                      message: "Report generation failed: \${exception.message}"
+                      loggingLevel: ERROR`
       }
     ]
   }
