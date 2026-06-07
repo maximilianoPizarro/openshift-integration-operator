@@ -214,10 +214,10 @@
     <button class="filter-btn" data-cat="realworld">Real-World APIs</button>
     <button class="filter-btn" data-cat="enterprise">Enterprise</button>
     <button class="filter-btn" data-cat="publicapi">Public APIs</button>
-    <span class="count-label" id="countLabel">Showing 0 of 0</span>
+    <span class="count-label" id="countLabel">Loading catalog...</span>
   </div>
 
-  <div id="catalog"></div>
+  <div id="catalog"><p style="text-align:center;color:var(--text-muted);padding:3rem;">Loading flow catalog...</p></div>
   <noscript>
     <div style="padding:2rem;text-align:center;color:var(--text-muted);">
       <p>This page requires JavaScript to display the 200+ ready-to-use integration flows.</p>
@@ -266,20 +266,58 @@
 
 <script>let FLOWS = [];
 
+/** Minimal fallback so the UI still renders if flow-catalog.json is missing (404) or blocked. */
+const FALLBACK_CATALOG = [{
+  id: "publicapi",
+  icon: "🌍",
+  title: "Public API Quickstart (fallback sample)",
+  flows: [{
+    name: "rest-to-kafka",
+    type: "CAMEL_ROUTE",
+    components: "platform-http, kafka",
+    description: "REST ingest endpoint forwarding events to Kafka — verify UI works, then fix catalog fetch",
+    pattern: "Request-Reply",
+    kaotoDesign: "- route:\n    id: rest-to-kafka\n    from:\n      uri: \"platform-http:/api/ingest\"\n      steps:\n        - log:\n            message: \"Received: ${body}\"\n        - to:\n            uri: \"kafka:integration-events?brokers=my-cluster-kafka-bootstrap:9092\""
+  }]
+}];
+
+function catalogUrl() {
+  return new URL("flow-catalog.json", window.location.href).href;
+}
+
 function loadCatalog() {
-  document.getElementById("catalog").innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:3rem;">Loading flow catalog...</p>';
-  fetch("flow-catalog.json")
+  const container = document.getElementById("catalog");
+  const countLabel = document.getElementById("countLabel");
+  if (countLabel) countLabel.textContent = "Loading catalog...";
+  if (container) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:3rem;">Loading flow catalog...</p>';
+  }
+
+  fetch(catalogUrl())
     .then(r => {
-      if (!r.ok) throw new Error("HTTP " + r.status);
+      if (!r.ok) throw new Error("HTTP " + r.status + " loading flow-catalog.json");
       return r.json();
     })
     .then(data => {
+      if (!Array.isArray(data) || !data.length || !data[0].flows) {
+        throw new Error("flow-catalog.json has unexpected format (expected array of categories)");
+      }
       FLOWS = data;
       renderCatalog();
     })
     .catch(err => {
-      document.getElementById("catalog").innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:3rem;">Failed to load flow catalog: ' + err.message + '</p>';
-      document.getElementById("countLabel").textContent = "Catalog unavailable";
+      console.error("Ready flows catalog error:", err);
+      FLOWS = FALLBACK_CATALOG;
+      renderCatalog();
+      if (countLabel) {
+        countLabel.textContent = "Showing 1 of 1 (fallback — full catalog failed to load)";
+      }
+      if (container) {
+        const warn = document.createElement("p");
+        warn.style.cssText = "text-align:center;color:#f0883e;padding:0.5rem 0 1rem;font-size:0.9rem;";
+        warn.textContent = "Could not load flow-catalog.json (" + err.message + "). Showing a sample flow only.";
+        container.prepend(warn);
+      }
     });
 }
 
@@ -428,6 +466,14 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") document.getElementById("modal").classList.remove("show");
 });
 
-loadCatalog();</script>
+function initPage() {
+  loadCatalog();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initPage);
+} else {
+  initPage();
+}</script>
 </body>
 </html>

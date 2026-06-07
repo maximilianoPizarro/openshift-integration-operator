@@ -29,9 +29,16 @@ if (html.includes('const FLOWS = [')) {
   console.log('[FAIL] ready-flows.html still contains inline FLOWS array');
   process.exit(1);
 }
-if (!html.includes("fetch(\"flow-catalog.json\")") && !html.includes("fetch('flow-catalog.json')")) {
+if (!html.includes('flow-catalog.json')) {
   console.log('[FAIL] ready-flows.html does not fetch flow-catalog.json');
   process.exit(1);
+}
+if (html.includes('Showing 0 of 0')) {
+  console.log('[FAIL] ready-flows.html still shows static "Showing 0 of 0" before catalog loads');
+  process.exit(1);
+}
+if (!html.includes('FALLBACK_CATALOG')) {
+  console.log('[WARN] ready-flows.html has no FALLBACK_CATALOG for fetch failures');
 }
 console.log('[OK] ready-flows.html fetches flow-catalog.json');
 

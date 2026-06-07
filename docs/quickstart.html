@@ -489,6 +489,7 @@ spec:
                       uri: "sql:INSERT INTO target_table(data, etl_time) VALUES (:#data, NOW())?dataSource=targetDS"</code></pre>
 
         <h3>7. SonataFlow — File Processor Workflow</h3>
+        <p>Uses <strong>CNCF Serverless Workflow 0.8</strong> (<code>id</code>, <code>states</code>, <code>functions</code>) — not Camel route DSL. The operator scaffolds a Quarkus SonataFlow project when <code>engine: SONATAFLOW</code>.</p>
         <pre><code>apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
@@ -547,6 +548,7 @@ spec:
         operation: ".message = \"Error handled\""</code></pre>
 
         <h3>8. SonataFlow — Saga Workflow</h3>
+        <p>Same Serverless Workflow format as example 7. For Camel-native saga EIP, use <code>integrationType: CAMEL_ROUTE</code> with a <code>saga:</code> step instead.</p>
         <pre><code>apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
@@ -630,7 +632,7 @@ spec:
                 message: "Hello from ephemeral Quick Try mode"</code></pre>
         <p>Or use the OpenShift Console <strong>Integration Flows</strong> page with the <strong>Quick Try</strong> toggle enabled when creating a flow.</p>
 
-        <p><h3>Promote Ephemeral to GitOps</h3>
+        <h3>Promote Ephemeral to GitOps</h3>
         <p>When an ephemeral flow is running, click <strong>Promote to GitOps</strong> in the console plugin (or call the REST API). The operator creates a Git repository, pushes the scaffolded source, and converts the CR to <code>deploymentMode: GITOPS</code> — triggering Tekton build and ArgoCD sync automatically.</p>
         <pre><code># REST API equivalent
 curl -X POST "https://&lt;operator&gt;/api/flows/ephemeral-camel-demo/promote-to-gitops"   -H "Content-Type: application/json"   -d '{"gitRepository":"https://gitea.example.com/user1/my-flow","branch":"main"}'</code></pre>

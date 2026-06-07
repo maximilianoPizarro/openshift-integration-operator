@@ -127,6 +127,8 @@ See the full [Architecture Documentation](docs/architecture.html) for CRD detail
 
 ### Install with Helm
 
+> **API note:** Use `spec.targeting.strategy` + `spec.targeting.clusters` (or `clusterSelector` for multicluster). The legacy field `spec.targetClusters` is deprecated — copying old examples will leave flows in `Error` phase.
+
 ```bash
 helm repo add integration-platform \
   https://maximilianopizarro.github.io/openshift-integration-operator/
