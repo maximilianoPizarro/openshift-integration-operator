@@ -62,6 +62,18 @@ spec:
                 type: "string"
               ephemeral:
                 properties:
+                  disableProperties:
+                    description: "Glob patterns to remove from merged properties\
+                      \ (e.g. quarkus.infinispan-client.*)"
+                    items:
+                      type: "string"
+                    type: "array"
+                  properties:
+                    additionalProperties:
+                      type: "string"
+                    description: "User-supplied application.properties overrides\
+                      \ injected into the ephemeral worker"
+                    type: "object"
                   ttlSeconds:
                     type: "integer"
                   workerImage:

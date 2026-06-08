@@ -28,13 +28,18 @@ public class EphemeralRuntimeService {
     public DeployResult deploy(IntegrationType type, String flowName, String namespace,
                                ScaffoldingService.ScaffoldResult scaffold,
                                IntegrationFlowSpec spec, IntegrationFlowStatus status) {
-        String imageOverride = spec.getEphemeral() != null ? spec.getEphemeral().getWorkerImage() : null;
+        var ephemeral = spec.getEphemeral();
+        String imageOverride = ephemeral != null ? ephemeral.getWorkerImage() : null;
+        var secrets = spec.getSecrets();
+        var resilience = spec.getResilience();
+
         String workerRef = switch (type) {
             case CAMEL_ROUTE -> camelRouteDeployer.deploy(flowName, namespace, scaffold,
-                    IntegrationType.CAMEL_ROUTE, imageOverride);
+                    IntegrationType.CAMEL_ROUTE, imageOverride, ephemeral, resilience, secrets);
             case CAMEL_KAMELET, CAMEL_PIPE -> {
                 if (!camelKDeployer.isCamelKAvailable()) {
-                    yield camelRouteDeployer.deploy(flowName, namespace, scaffold, type, imageOverride);
+                    yield camelRouteDeployer.deploy(flowName, namespace, scaffold,
+                            type, imageOverride, ephemeral, resilience, secrets);
                 }
                 yield camelKDeployer.deploy(flowName, namespace, type, spec.getKaotoDesign());
             }
