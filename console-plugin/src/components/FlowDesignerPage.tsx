@@ -51,7 +51,8 @@ interface IntegrationFlow {
     alerting?: { errorRateThreshold?: number; enabled?: boolean };
     owner?: string; editors?: string[]; viewers?: string[];
     deploymentMode?: string;
-    ephemeral?: { ttlSeconds?: number };
+    ephemeral?: { ttlSeconds?: number; properties?: Record<string, string>; disableProperties?: string[] };
+    secrets?: Array<{ name: string; mountPath?: string; envFrom?: boolean; subPath?: string }>;
   };
   status?: {
     phase: string; message?: string; gitCommitHash?: string; argoApplicationName?: string;
@@ -701,13 +702,78 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             </Tab>
 
             <Tab eventKey="spec" title={<TabTitleText>Spec</TabTitleText>}>
-              <pre style={{
-                margin: 0, padding: '16px', overflow: 'auto', minHeight: '300px',
-                fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
-                fontSize: '13px', lineHeight: 1.6,
-                backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
-                color: 'var(--pf-global--Color--light-100, #e0e0e0)',
-              }}>{JSON.stringify(flow.spec, null, 2)}</pre>
+              <div style={{ display: 'flex', minHeight: '300px' }}>
+                <pre style={{
+                  flex: 1, margin: 0, padding: '16px', overflow: 'auto',
+                  fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
+                  fontSize: '13px', lineHeight: 1.6,
+                  backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
+                  color: 'var(--pf-global--Color--light-100, #e0e0e0)',
+                }}>{JSON.stringify(flow.spec, null, 2)}</pre>
+                {isEphemeral && (
+                  <div style={{
+                    width: '320px', borderLeft: '1px solid var(--pf-global--BorderColor--100, #3c3f42)',
+                    padding: '16px', overflow: 'auto',
+                    backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
+                    color: 'var(--pf-global--Color--light-100, #e0e0e0)',
+                  }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: '#2b9af3' }}>
+                      {'\u2699'} Ephemeral Properties Guide
+                    </div>
+                    <div style={{ fontSize: '11px', lineHeight: 1.6, color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '12px' }}>
+                      Configure <code>spec.ephemeral.properties</code> in the CR to inject
+                      <code> application.properties</code> into the worker. Properties are auto-detected
+                      from Camel components (Kafka, SQL, FHIR, etc.) and merged with your overrides.
+                    </div>
+
+                    <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Add properties via CR:</div>
+                    <pre style={{
+                      fontSize: '10px', lineHeight: 1.5, padding: '8px', borderRadius: '4px',
+                      backgroundColor: 'rgba(0,0,0,0.3)', color: '#79c0ff', marginBottom: '12px',
+                      fontFamily: 'monospace', overflow: 'auto',
+                    }}>{`spec:
+  ephemeral:
+    properties:
+      camel.component.kafka.brokers: "kafka:9092"
+      quarkus.datasource.jdbc.url: "jdbc:postgresql://db:5432/mydb"
+    disableProperties:
+      - "quarkus.infinispan-client.*"`}</pre>
+
+                    <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Mount secrets:</div>
+                    <pre style={{
+                      fontSize: '10px', lineHeight: 1.5, padding: '8px', borderRadius: '4px',
+                      backgroundColor: 'rgba(0,0,0,0.3)', color: '#79c0ff', marginBottom: '12px',
+                      fontFamily: 'monospace', overflow: 'auto',
+                    }}>{`spec:
+  secrets:
+    - name: my-db-credentials
+      envFrom: true
+    - name: my-tls-cert
+      mountPath: /etc/certs`}</pre>
+
+                    <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Auto-detected components:</div>
+                    <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', lineHeight: 1.6 }}>
+                      <div><code>kafka</code> {'\u2192'} broker URL</div>
+                      <div><code>sql</code>, <code>jdbc</code> {'\u2192'} datasource config</div>
+                      <div><code>mongodb</code> {'\u2192'} host/port</div>
+                      <div><code>fhir</code> {'\u2192'} FHIR server URL</div>
+                      <div><code>aws2-s3</code>, <code>aws2-sqs</code> {'\u2192'} region</div>
+                      <div><code>amqp</code>, <code>activemq</code> {'\u2192'} broker URL</div>
+                      <div><code>spring-redis</code> {'\u2192'} Infinispan config</div>
+                      <div style={{ marginTop: '4px', fontStyle: 'italic' }}>
+                        Values use <code>{'${ENV_VAR:fallback}'}</code> syntax.
+                        Supply real values via <code>spec.secrets[].envFrom</code>.
+                      </div>
+                    </div>
+
+                    <Button variant="link" isInline component="a"
+                      href={`/k8s/ns/${NAMESPACE}/platform.io~v1alpha1~IntegrationFlow/${flowName}/yaml`}
+                      style={{ fontSize: '12px', marginTop: '12px', display: 'block' }}>
+                      {'\u270E'} Edit CR to add properties
+                    </Button>
+                  </div>
+                )}
+              </div>
             </Tab>
 
             <Tab eventKey="logs" title={<TabTitleText>Logs</TabTitleText>}>
@@ -852,6 +918,23 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                 </DescriptionListGroup>
               )}
 
+              {isEphemeral && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>IntegrationFlow CR</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <Button variant="link" isInline component="a"
+                      href={`/k8s/ns/${NAMESPACE}/platform.io~v1alpha1~IntegrationFlow/${flowName}`}>
+                      <span style={{ color: '#2b9af3' }}>{'\u2699'}</span> View CR YAML
+                    </Button>
+                    <Button variant="link" isInline component="a"
+                      href={`/k8s/ns/${NAMESPACE}/platform.io~v1alpha1~IntegrationFlow/${flowName}/yaml`}
+                      style={{ display: 'block', marginTop: '2px' }}>
+                      <span style={{ color: '#8476d1' }}>{'\u270E'}</span> Edit CR YAML
+                    </Button>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
+
               {isEphemeral && flow.status?.ephemeralWorkerRef && (
                 <DescriptionListGroup>
                   <DescriptionListTerm>Ephemeral Worker</DescriptionListTerm>
@@ -866,6 +949,31 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                   <DescriptionListTerm>Expires At</DescriptionListTerm>
                   <DescriptionListDescription>
                     <span style={{ fontSize: '12px' }}>{new Date(flow.status.ephemeralExpiresAt).toLocaleString()}</span>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              )}
+
+              {isEphemeral && (
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Properties</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {flow.spec.ephemeral?.properties && Object.keys(flow.spec.ephemeral.properties).length > 0 ? (
+                      <div style={{ fontSize: '11px' }}>
+                        <span style={{ color: '#3e8635' }}>{'\u2713'}</span> {Object.keys(flow.spec.ephemeral.properties).length} custom properties
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>None configured</span>
+                    )}
+                    {flow.spec.secrets && flow.spec.secrets.length > 0 && (
+                      <div style={{ fontSize: '11px', marginTop: '2px' }}>
+                        <span style={{ color: '#f0ab00' }}>{'\uD83D\uDD12'}</span> {flow.spec.secrets.length} secret{flow.spec.secrets.length > 1 ? 's' : ''} mounted
+                      </div>
+                    )}
+                    <Button variant="link" isInline
+                      onClick={() => { setActiveTab('spec'); syncTabToUrl('spec'); }}
+                      style={{ fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                      Configure properties {'\u2192'}
+                    </Button>
                   </DescriptionListDescription>
                 </DescriptionListGroup>
               )}
