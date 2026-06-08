@@ -456,6 +456,7 @@ spec:
                 secret:
                   secretName: openshift-integration-operator-serving-cert
                   defaultMode: 420
+                  optional: true
       - label:
           app: integration-console-plugin
           app.kubernetes.io/part-of: integration-platform
@@ -497,6 +498,7 @@ spec:
                 secret:
                   secretName: integration-console-plugin-cert
                   defaultMode: 420
+                  optional: true
     strategy: deployment
   installModes:
   - supported: true
