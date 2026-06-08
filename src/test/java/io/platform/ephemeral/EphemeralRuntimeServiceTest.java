@@ -35,7 +35,7 @@ class EphemeralRuntimeServiceTest {
 
     @Test
     void deployCamelRouteReturnsWorkerRef() {
-        when(camelRouteDeployer.deploy(anyString(), anyString(), any()))
+        when(camelRouteDeployer.deploy(anyString(), anyString(), any(), any(), any()))
                 .thenReturn("deployment/iflow-demo-worker");
 
         var scaffold = new ScaffoldingService.ScaffoldResult(
@@ -53,7 +53,8 @@ class EphemeralRuntimeServiceTest {
 
         assertTrue(result.success());
         assertEquals("deployment/iflow-demo-worker", result.workerRef());
-        verify(camelRouteDeployer).deploy(eq("demo"), eq("openshift-integration"), eq(scaffold));
+        verify(camelRouteDeployer).deploy(eq("demo"), eq("openshift-integration"), eq(scaffold),
+                eq(IntegrationType.CAMEL_ROUTE), isNull());
     }
 
     @Test

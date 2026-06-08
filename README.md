@@ -50,15 +50,15 @@
 
 | Integration Flows | Visual Diagram | Kaoto Designer |
 |---|---|---|
-| ![Flows](docs/images/console-plugin.png) | ![Visualizer](docs/images/console-plugin-saga.png) | ![Kaoto](docs/images/console-plugin-kaoto.png) |
+| ![Integration Flows list with search bar, type and phase filters, pagination, and resource links to Pods and Pipelines](docs/images/console-plugin.png) | ![Visual SVG flow diagram with saga branching logic and click-to-YAML node highlighting](docs/images/console-plugin-saga.png) | ![Kaoto drag-and-drop visual route designer with component palette and property editor](docs/images/console-plugin-kaoto.png) |
 
 | YAML Editor | Spec & Status | Platform Status |
 |---|---|---|
-| ![Editor](docs/images/console-plugin-editor.png) | ![Spec](docs/images/console-plugin-spec.png) | ![Status](docs/images/console-plugin-status.png) |
+| ![YAML editor showing kaotoDesign Camel route with syntax highlighting and Git sync](docs/images/console-plugin-editor.png) | ![Spec and status panel with deployment mode, resilience settings, and lifecycle controls](docs/images/console-plugin-spec.png) | ![Platform Status dashboard with health indicators for Operator, Kaoto, Gitea, ArgoCD, Tekton, OTel](docs/images/console-plugin-status.png) |
 
 | Flow Overview | Flow Logs | Lifecycle Controls |
 |---|---|---|
-| ![Overview](docs/images/console-plugin-overview.png) | ![Logs](docs/images/console-plugin-logs.png) | ![Pause](docs/images/console-plugin-pause-flow.png) |
+| ![Overview dashboard with KPI cards, distribution charts by type, and recent builds](docs/images/console-plugin-overview.png) | ![Flow Logs with live pod streaming, container selector, tail lines, and follow mode](docs/images/console-plugin-logs.png) | ![Lifecycle Controls with Pause, Resume, Stop actions and confirmation modal](docs/images/console-plugin-pause-flow.png) |
 
 ## Architecture Overview
 
@@ -157,8 +157,8 @@ Pre-built examples in `k8s/examples/` exercise the full pipeline (Gitea → Tekt
 | `04-error-handling-dlq.yaml` | error-handling-dlq | Camel Route |
 | `05-s3-to-db-kamelet.yaml` | s3-to-db-kamelet | Kamelet |
 | `06-etl-pipe.yaml` | etl-pipe | Pipe |
-| `07-file-processor-workflow.yaml` | file-processor-workflow | SonataFlow |
-| `08-saga-workflow.yaml` | saga-workflow | SonataFlow |
+| `07-file-processor-workflow.yaml` | file-processor-workflow | Camel Route |
+| `08-saga-workflow.yaml` | saga-workflow | Camel Route |
 
 Apply sequentially (~12s between flows to avoid Gitea contention):
 
@@ -262,7 +262,7 @@ spec:
 EOF
 ```
 
-### Example: SonataFlow Workflow
+### Example: Camel Route — File Processor with CSV + CBR
 
 ```bash
 oc apply -f - <<'EOF'
@@ -273,8 +273,8 @@ metadata:
   namespace: openshift-integration
 spec:
   deploymentMode: GITOPS
-  integrationType: SONATAFLOW
-  engine: SONATAFLOW
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
   gitRepository: https://gitea.example.com/user1/file-processor-workflow
   branch: main
   targeting:
@@ -282,47 +282,37 @@ spec:
     clusters:
       - local
   kaotoDesign: |
-    id: file-processor-workflow
-    version: "1.0"
-    specVersion: "0.8"
-    name: File Processor Workflow
-    start: InitState
-    states:
-      - name: InitState
-        type: operation
-        actions:
-          - functionRef:
-              refName: processAction
-        transition: CheckResult
-      - name: CheckResult
-        type: switch
-        dataConditions:
-          - condition: "${ .result == true }"
-            transition: SuccessState
-        defaultCondition:
-          transition: ErrorState
-      - name: SuccessState
-        type: operation
-        actions:
-          - functionRef:
-              refName: notifySuccess
-        end: true
-      - name: ErrorState
-        type: operation
-        actions:
-          - functionRef:
-              refName: handleError
-        end: true
-    functions:
-      - name: processAction
-        type: expression
-        operation: ".result = true"
-      - name: notifySuccess
-        type: expression
-        operation: ".message = \"Success\""
-      - name: handleError
-        type: expression
-        operation: ".message = \"Error handled\""
+    - route:
+        id: file-processor-workflow
+        from:
+          uri: "file:/data/inbox?noop=true&include=.*\\.csv"
+          steps:
+            - unmarshal:
+                csv:
+                  useMaps: true
+            - split:
+                simple: "${body}"
+                steps:
+                  - choice:
+                      when:
+                        - simple: "${body[status]} == 'ACTIVE'"
+                          steps:
+                            - log:
+                                message: "Active record: ${body[id]} — ${body[name]}"
+                            - to:
+                                uri: "direct:process-active"
+                        - simple: "${body[status]} == 'PENDING'"
+                          steps:
+                            - log:
+                                message: "Pending record: ${body[id]} — queued for review"
+                            - to:
+                                uri: "direct:queue-review"
+                      otherwise:
+                        steps:
+                          - log:
+                              message: "Skipping inactive record: ${body[id]}"
+                          - to:
+                              uri: "file:/data/archive"
 EOF
 ```
 
@@ -374,6 +364,20 @@ Ephemeral flows auto-select the optimal worker image based on detected Camel com
 | `camel-worker-cloud` | + aws2-s3/sqs/sns, azure, google |
 | `camel-worker-ai` | + langchain4j-chat, djl |
 | `camel-worker-full` | 80+ extensions (fallback for multi-domain) |
+
+**How auto-selection works:** The `EphemeralWorkerImageResolver` parses the `kaotoDesign` YAML to extract all `uri:` component schemes (e.g. `kafka`, `platform-http`, `sql`). It then iterates through tiers from smallest (core) to largest, picking the first tier whose component set covers all detected schemes. If components span multiple domains (e.g. kafka + sql), it falls back to `camel-worker-full`.
+
+**Override auto-selection:** Set `spec.ephemeral.workerImage` to force a specific image:
+
+```yaml
+spec:
+  deploymentMode: EPHEMERAL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.3.0
+```
+
+This is useful when you know the target domain or want to pin a specific image version. Set `ephemeral.preferFullWorker: true` in operator config to always use the full image globally.
 
 ## Project Structure
 

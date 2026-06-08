@@ -64,6 +64,8 @@ spec:
                 properties:
                   ttlSeconds:
                     type: "integer"
+                  workerImage:
+                    type: "string"
                 type: "object"
               gitCredentialsSecret:
                 type: "string"

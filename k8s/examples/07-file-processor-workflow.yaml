@@ -4,52 +4,42 @@ metadata:
   name: file-processor-workflow
   namespace: openshift-integration
 spec:
-  integrationType: SONATAFLOW
-  engine: SONATAFLOW
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
   gitRepository: https://gitea.example.com/user1/file-processor-workflow
   branch: main
   targeting:
     strategy: explicit
     clusters: [local]
   kaotoDesign: |
-    id: file-processor-workflow
-    version: "1.0"
-    specVersion: "0.8"
-    name: File Processor Workflow
-    start: InitState
-    states:
-      - name: InitState
-        type: operation
-        actions:
-          - functionRef:
-              refName: processAction
-        transition: CheckResult
-      - name: CheckResult
-        type: switch
-        dataConditions:
-          - condition: "${ .result == true }"
-            transition: SuccessState
-        defaultCondition:
-          transition: ErrorState
-      - name: SuccessState
-        type: operation
-        actions:
-          - functionRef:
-              refName: notifySuccess
-        end: true
-      - name: ErrorState
-        type: operation
-        actions:
-          - functionRef:
-              refName: handleError
-        end: true
-    functions:
-      - name: processAction
-        type: expression
-        operation: ".result = true"
-      - name: notifySuccess
-        type: expression
-        operation: ".message = \"Success\""
-      - name: handleError
-        type: expression
-        operation: ".message = \"Error handled\""
+    - route:
+        id: file-processor-workflow
+        from:
+          uri: "file:/data/inbox?noop=true&include=.*\\.csv"
+          steps:
+            - unmarshal:
+                csv:
+                  useMaps: true
+            - split:
+                simple: "${body}"
+                steps:
+                  - choice:
+                      when:
+                        - simple: "${body[status]} == 'ACTIVE'"
+                          steps:
+                            - log:
+                                message: "Active record: ${body[id]} — ${body[name]}"
+                            - to:
+                                uri: "direct:process-active"
+                        - simple: "${body[status]} == 'PENDING'"
+                          steps:
+                            - log:
+                                message: "Pending record: ${body[id]} — queued for review"
+                            - to:
+                                uri: "direct:queue-review"
+                      otherwise:
+                        steps:
+                          - log:
+                              message: "Skipping inactive record: ${body[id]}"
+                          - to:
+                              uri: "file:/data/archive"

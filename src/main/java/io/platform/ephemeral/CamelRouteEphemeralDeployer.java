@@ -1,6 +1,5 @@
 package io.platform.ephemeral;
 
-import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.DeploymentSpecBuilder;
@@ -13,7 +12,6 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
@@ -36,11 +34,22 @@ public class CamelRouteEphemeralDeployer {
 
     public String deploy(String flowName, String namespace, ScaffoldingService.ScaffoldResult scaffold,
                          IntegrationType integrationType) {
-        var components = scaffold.detectedComponents() != null && !scaffold.detectedComponents().isEmpty()
-                ? scaffold.detectedComponents()
-                : componentDetector.detectComponents(scaffold.workflowDefinition());
-        String workerImage = imageResolver.resolveWorkerImage(components, integrationType);
-        LOG.infof("Ephemeral worker for %s: image=%s components=%s", flowName, workerImage, components);
+        return deploy(flowName, namespace, scaffold, integrationType, null);
+    }
+
+    public String deploy(String flowName, String namespace, ScaffoldingService.ScaffoldResult scaffold,
+                         IntegrationType integrationType, String workerImageOverride) {
+        String workerImage;
+        if (workerImageOverride != null && !workerImageOverride.isBlank()) {
+            workerImage = workerImageOverride;
+            LOG.infof("Ephemeral worker for %s: using explicit workerImage=%s", flowName, workerImage);
+        } else {
+            var components = scaffold.detectedComponents() != null && !scaffold.detectedComponents().isEmpty()
+                    ? scaffold.detectedComponents()
+                    : componentDetector.detectComponents(scaffold.workflowDefinition());
+            workerImage = imageResolver.resolveWorkerImage(components, integrationType);
+            LOG.infof("Ephemeral worker for %s: image=%s components=%s", flowName, workerImage, components);
+        }
         String cmName = "iflow-" + flowName + "-sources";
         String deployName = "iflow-" + flowName + "-worker";
         String svcName = "iflow-" + flowName;
