@@ -15,7 +15,7 @@ consolePlugin:
   enabled: true
   image:
     repository: quay.io/maximilianopizarro/integration-console-plugin
-    tag: latest   # CI updates on every main push; v0.3.0 may lag
+    tag: latest   # CI updates on every main push; v0.4.0 may lag
 ```
 
 Verify on cluster:

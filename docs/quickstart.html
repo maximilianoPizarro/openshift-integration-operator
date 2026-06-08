@@ -174,7 +174,7 @@
 <body>
   <nav class="top-nav">
     <div class="container">
-      <a href="index.html" class="logo"><img src="images/logo.svg" alt="" width="24" height="24" style="vertical-align: middle; margin-right: 6px;">OpenShift Integration Operator</a>
+      <a href="index.html" class="logo"><img src="assets/logo.png" alt="" width="24" height="24" style="vertical-align: middle; margin-right: 6px;">OpenShift Integration Operator</a>
       <ul>
         <li><a href="index.html">Home</a></li>
         <li><a href="architecture.html">Architecture</a></li>
@@ -234,7 +234,7 @@ helm repo update</code></pre>
   integration-platform/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.3.0 \
+  --set operator.image.tag=v0.4.0 \
   --set gitea.password='your-gitea-password' \
   --set tekton.approvalEnabled=false \
   --set workers.maxReplicas=20</code></pre>

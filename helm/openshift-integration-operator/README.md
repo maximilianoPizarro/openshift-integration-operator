@@ -131,7 +131,7 @@ helm uninstall integration-operator --namespace openshift-integration
 | Parameter | Description | Default |
 |---|---|---|
 | `operator.image.repository` | Operator container image | `quay.io/maximilianopizarro/openshift-integration-operator` |
-| `operator.image.tag` | Image tag | `v0.3.0` (use `latest` from CI on dev clusters) |
+| `operator.image.tag` | Image tag | `v0.4.0` (use `latest` from CI on dev clusters) |
 | `operator.image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `operator.replicas` | Number of operator replicas | `1` |
 | `operator.resources.requests.cpu` | CPU request | `250m` |
@@ -201,7 +201,7 @@ helm uninstall integration-operator --namespace openshift-integration
 |---|---|---|
 | `consolePlugin.enabled` | Deploy the OpenShift Console Dynamic Plugin | `true` |
 | `consolePlugin.image.repository` | Console plugin container image | `quay.io/maximilianopizarro/integration-console-plugin` |
-| `consolePlugin.image.tag` | Console plugin image tag | `v0.3.0` (use `latest` from CI) |
+| `consolePlugin.image.tag` | Console plugin image tag | `v0.4.0` (use `latest` from CI) |
 | `consolePlugin.replicas` | Console plugin replicas | `1` |
 
 ### SonataFlow
@@ -223,9 +223,9 @@ helm uninstall integration-operator --namespace openshift-integration
 | `ephemeral.defaultTtlSeconds` | Default TTL when not specified in CR | `3600` |
 | `ephemeral.maxTtlSeconds` | Maximum TTL for extend API | `86400` |
 | `ephemeral.preferFullWorker` | Use full worker for all ephemeral routes | `false` |
-| `ephemeral.camelWorkerImage` | Core tier worker image | `quay.io/.../camel-worker-core:v0.3.0` |
-| `ephemeral.camelWorkerHttpImage` | HTTP tier (http, https, jsonpath, jackson) | `quay.io/.../camel-worker-http:v0.3.0` |
-| `ephemeral.camelTestImage` | Ephemeral Camel test jobs | `quay.io/.../camel-test-runner:v0.3.0` |
+| `ephemeral.camelWorkerImage` | Core tier worker image | `quay.io/.../camel-worker-core:v0.4.0` |
+| `ephemeral.camelWorkerHttpImage` | HTTP tier (http, https, jsonpath, jackson) | `quay.io/.../camel-worker-http:v0.4.0` |
+| `ephemeral.camelTestImage` | Ephemeral Camel test jobs | `quay.io/.../camel-test-runner:v0.4.0` |
 | `ephemeral.camelK.detect` | Auto-detect Camel K for Kamelet/Pipe ephemeral deploys | `true` |
 
 ### Tekton

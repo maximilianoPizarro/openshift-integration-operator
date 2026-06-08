@@ -94,9 +94,9 @@ entries:
                           message: "Hello from IntegrationFlow"
       artifacthub.io/images: |
         - name: operator
-          image: quay.io/maximilianopizarro/openshift-integration-operator:v0.3.0
+          image: quay.io/maximilianopizarro/openshift-integration-operator:v0.4.0
         - name: console-plugin
-          image: quay.io/maximilianopizarro/integration-console-plugin:v0.3.0
+          image: quay.io/maximilianopizarro/integration-console-plugin:v0.4.0
       artifacthub.io/license: Apache-2.0
       artifacthub.io/links: |
         - name: Documentation

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/logo.svg" alt="OpenShift Integration Operator" width="120" height="120">
+  <img src="docs/assets/logo.png" alt="OpenShift Integration Operator" width="120" height="120">
 </p>
 
 <h1 align="center">OpenShift Integration Operator</h1>
@@ -374,7 +374,7 @@ spec:
   deploymentMode: EPHEMERAL
   ephemeral:
     ttlSeconds: 3600
-    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.3.0
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.4.0
 ```
 
 This is useful when you know the target domain or want to pin a specific image version. Set `ephemeral.preferFullWorker: true` in operator config to always use the full image globally.
@@ -533,7 +533,7 @@ quay.io/maximilianopizarro/integration-console-plugin:latest
 quay.io/maximilianopizarro/camel-worker-{core,messaging,http,data,cloud,ai,full}:latest
 ```
 
-Version tags (`v0.3.0`) are added on git tag push. Validate flow catalog locally before push:
+Version tags (`v0.4.0`) are added on git tag push. Validate flow catalog locally before push:
 
 ```bash
 node scripts/validate-ready-flows.js

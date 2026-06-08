@@ -270,7 +270,7 @@
 <body>
   <nav class="top-nav">
     <div class="container">
-      <a href="index.html" class="logo"><img src="images/logo.svg" alt="" width="24" height="24" style="vertical-align: middle; margin-right: 6px;">OpenShift Integration Operator</a>
+      <a href="index.html" class="logo"><img src="assets/logo.png" alt="" width="24" height="24" style="vertical-align: middle; margin-right: 6px;">OpenShift Integration Operator</a>
       <ul>
         <li><a href="#features">Features</a></li>
         <li><a href="#screenshots">Screenshots</a></li>
@@ -486,22 +486,22 @@ oc get crd integrationflows.platform.io</code></pre>
           then selects the smallest tier image whose extension set covers all detected components. If components span multiple domains, it falls back to <code>camel-worker-full</code>.
           Override with <code>spec.ephemeral.workerImage</code> to pin a specific image.</p>
         <pre><code><span class="comment"># Default (all domains — 80+ extensions)</span>
-quay.io/maximilianopizarro/camel-worker-full:v0.3.0
+quay.io/maximilianopizarro/camel-worker-full:v0.4.0
 
 <span class="comment"># Domain-specific (smaller, faster startup)</span>
-quay.io/maximilianopizarro/camel-worker-core:v0.3.0        <span class="comment"># timer, log, direct, seda, bean</span>
-quay.io/maximilianopizarro/camel-worker-messaging:v0.3.0   <span class="comment"># kafka, amqp, jms, mqtt, nats</span>
-quay.io/maximilianopizarro/camel-worker-http:v0.3.0        <span class="comment"># platform-http, rest, graphql, grpc</span>
-quay.io/maximilianopizarro/camel-worker-data:v0.3.0        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
-quay.io/maximilianopizarro/camel-worker-cloud:v0.3.0       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
-quay.io/maximilianopizarro/camel-worker-ai:v0.3.0          <span class="comment"># langchain4j-chat, djl</span></code></pre>
+quay.io/maximilianopizarro/camel-worker-core:v0.4.0        <span class="comment"># timer, log, direct, seda, bean</span>
+quay.io/maximilianopizarro/camel-worker-messaging:v0.4.0   <span class="comment"># kafka, amqp, jms, mqtt, nats</span>
+quay.io/maximilianopizarro/camel-worker-http:v0.4.0        <span class="comment"># platform-http, rest, graphql, grpc</span>
+quay.io/maximilianopizarro/camel-worker-data:v0.4.0        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
+quay.io/maximilianopizarro/camel-worker-cloud:v0.4.0       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
+quay.io/maximilianopizarro/camel-worker-ai:v0.4.0          <span class="comment"># langchain4j-chat, djl</span></code></pre>
         <h4 style="margin-top: 1.5rem; color: var(--accent-hover);">Override auto-selection</h4>
         <pre><code><span class="comment"># Force a specific worker image instead of auto-detection</span>
 spec:
   deploymentMode: EPHEMERAL
   ephemeral:
     ttlSeconds: 3600
-    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.3.0</code></pre>
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.4.0</code></pre>
 
         <h3 style="margin-top: 2rem;">Full Worker — Included Extensions</h3>
         <p style="color: var(--text-muted); margin: 0.75rem 0 1rem;">
