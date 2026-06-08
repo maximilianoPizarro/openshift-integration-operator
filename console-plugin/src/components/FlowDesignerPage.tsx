@@ -85,11 +85,11 @@ const phaseDot: Record<string, string> = {
   Deploying: '#0066cc', PartiallyHealthy: '#f0ab00', Error: '#c9190b',
 };
 
-type LabelColor = 'blue' | 'cyan' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'gold';
+type LabelColor = 'blue' | 'teal' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'yellow';
 
 const phaseToLabelColor: Record<string, LabelColor> = {
   Running: 'green',
-  Building: 'gold',
+  Building: 'yellow',
   Scaffolding: 'purple',
   Deploying: 'blue',
   PartiallyHealthy: 'orange',
@@ -561,7 +561,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                           <>
                             <span style={{ fontSize: '12px', fontWeight: 600, color: '#009596' }}>{sfName}</span>
                             <span style={{ fontSize: '11px', color: '#6a6e73' }}>in {sfNs}</span>
-                            <Label color={sfReady === 'True' ? 'green' : 'gold'} isCompact>
+                            <Label color={sfReady === 'True' ? 'green' : 'yellow'} isCompact>
                               {sfReady === 'True' ? '\u2713 Ready' : '\u29D7 Deploying'}
                             </Label>
                             <Button variant="link" isInline component="a"
@@ -806,7 +806,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
               <DescriptionListGroup>
                 <DescriptionListTerm>State</DescriptionListTerm>
                 <DescriptionListDescription>
-                  <Label color={currentState === 'running' ? 'green' : currentState === 'paused' ? 'gold' : 'red'} isCompact>
+                  <Label color={currentState === 'running' ? 'green' : currentState === 'paused' ? 'yellow' : 'red'} isCompact>
                     {currentState}
                   </Label>
                 </DescriptionListDescription>
@@ -816,7 +816,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                 <DescriptionListGroup>
                   <DescriptionListTerm>Circuit Breaker</DescriptionListTerm>
                   <DescriptionListDescription>
-                    <Label color={circuitState === 'open' ? 'red' : circuitState === 'half-open' ? 'gold' : 'green'} isCompact>
+                    <Label color={circuitState === 'open' ? 'red' : circuitState === 'half-open' ? 'yellow' : 'green'} isCompact>
                       {circuitState === 'open' ? '\u26A0' : circuitState === 'half-open' ? '\u29D7' : '\u2713'} {circuitState}
                     </Label>
                   </DescriptionListDescription>

@@ -5,8 +5,6 @@ import {
   Button,
   EmptyState,
   EmptyStateBody,
-  EmptyStateHeader,
-  EmptyStateIcon,
   FormSelect,
   FormSelectOption,
   Label,
@@ -136,19 +134,19 @@ const phaseMeta: Record<string, { color: string; icon: string }> = {
   Pending: { color: '#6a6e73', icon: '\u25CB' },
 };
 
-type LabelColor = 'blue' | 'cyan' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'gold';
+type LabelColor = 'blue' | 'teal' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'yellow';
 
 const typeToLabelColor: Record<string, LabelColor> = {
-  CAMEL_ROUTE: 'gold',
+  CAMEL_ROUTE: 'yellow',
   CAMEL_KAMELET: 'purple',
   CAMEL_PIPE: 'blue',
   CAMEL_TEST: 'green',
-  SONATAFLOW: 'cyan',
+  SONATAFLOW: 'teal',
 };
 
 const phaseToLabelColor: Record<string, LabelColor> = {
   Running: 'green',
-  Building: 'gold',
+  Building: 'yellow',
   Scaffolding: 'purple',
   Deploying: 'blue',
   PartiallyHealthy: 'orange',
@@ -572,12 +570,12 @@ const IntegrationFlowPage: React.FC = () => {
           <Spinner size="lg" aria-label="Loading flows" />
         </div>
       ) : paged.length === 0 ? (
-        <EmptyState variant="full">
-          <EmptyStateHeader
-            titleText={flows.length === 0 ? 'No IntegrationFlows found' : 'No flows match filters'}
-            headingLevel="h2"
-            icon={<EmptyStateIcon icon={flows.length === 0 ? CubesIcon : SearchIcon} />}
-          />
+        <EmptyState
+          variant="full"
+          titleText={flows.length === 0 ? 'No IntegrationFlows found' : 'No flows match filters'}
+          headingLevel="h2"
+          icon={flows.length === 0 ? CubesIcon : SearchIcon}
+        >
           <EmptyStateBody>
             {flows.length === 0 ? 'Click Create Flow to get started' : 'Try adjusting your search or filters'}
           </EmptyStateBody>

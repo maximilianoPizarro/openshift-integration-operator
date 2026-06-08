@@ -36,7 +36,7 @@ interface PodInfo {
   labels: Record<string, string>;
 }
 
-type LabelColor = 'blue' | 'cyan' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'gold';
+type LabelColor = 'blue' | 'teal' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'yellow';
 
 const statusLabelColor: Record<string, LabelColor> = {
   healthy: 'green',

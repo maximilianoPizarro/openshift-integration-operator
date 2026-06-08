@@ -4,7 +4,9 @@ import {
   Form,
   FormGroup,
   Modal,
-  ModalVariant,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   TextInput,
 } from '@patternfly/react-core';
 
@@ -45,15 +47,21 @@ export const ExtendTtlModal: React.FC<ExtendTtlModalProps> = ({ flowName, isOpen
   };
 
   return (
-    <Modal variant={ModalVariant.small} title="Extend ephemeral TTL" isOpen={isOpen} onClose={onClose}>
-      <Form>
-        <FormGroup label="Additional hours" fieldId="extend-hours">
-          <TextInput id="extend-hours" type="number" value={hours} onChange={(_e, v) => setHours(v)} />
-        </FormGroup>
+    <Modal variant="small" isOpen={isOpen} onClose={onClose} aria-label="Extend ephemeral TTL">
+      <ModalHeader title="Extend ephemeral TTL" />
+      <ModalBody>
+        <Form>
+          <FormGroup label="Additional hours" fieldId="extend-hours">
+            <TextInput id="extend-hours" type="number" value={hours} onChange={(_e, v) => setHours(v)} />
+          </FormGroup>
+        </Form>
+      </ModalBody>
+      <ModalFooter>
         <Button variant="primary" onClick={handleExtend} isDisabled={loading}>
           {loading ? 'Extending...' : 'Extend TTL'}
         </Button>
-      </Form>
+        <Button variant="link" onClick={onClose}>Cancel</Button>
+      </ModalFooter>
     </Modal>
   );
 };

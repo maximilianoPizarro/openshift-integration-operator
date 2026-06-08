@@ -4,7 +4,9 @@ import {
   Form,
   FormGroup,
   Modal,
-  ModalVariant,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   TextInput,
 } from '@patternfly/react-core';
 
@@ -57,23 +59,29 @@ export const PromoteToGitOpsModal: React.FC<PromoteToGitOpsModalProps> = ({
   };
 
   return (
-    <Modal variant={ModalVariant.medium} title="Promote to GitOps" isOpen={isOpen} onClose={onClose}>
-      <Form>
-        <FormGroup label="Git repository URL" fieldId="promote-repo" isRequired>
-          <TextInput
-            id="promote-repo"
-            value={gitRepository}
-            onChange={(_e, v) => setGitRepository(v)}
-            placeholder="https://gitea.example.com/org/repo"
-          />
-        </FormGroup>
-        <FormGroup label="Branch" fieldId="promote-branch">
-          <TextInput id="promote-branch" value={branch} onChange={(_e, v) => setBranch(v)} />
-        </FormGroup>
+    <Modal variant="medium" isOpen={isOpen} onClose={onClose} aria-label="Promote to GitOps">
+      <ModalHeader title="Promote to GitOps" />
+      <ModalBody>
+        <Form>
+          <FormGroup label="Git repository URL" fieldId="promote-repo" isRequired>
+            <TextInput
+              id="promote-repo"
+              value={gitRepository}
+              onChange={(_e, v) => setGitRepository(v)}
+              placeholder="https://gitea.example.com/org/repo"
+            />
+          </FormGroup>
+          <FormGroup label="Branch" fieldId="promote-branch">
+            <TextInput id="promote-branch" value={branch} onChange={(_e, v) => setBranch(v)} />
+          </FormGroup>
+        </Form>
+      </ModalBody>
+      <ModalFooter>
         <Button variant="primary" onClick={handlePromote} isDisabled={loading}>
           {loading ? 'Promoting...' : 'Promote to GitOps'}
         </Button>
-      </Form>
+        <Button variant="link" onClick={onClose}>Cancel</Button>
+      </ModalFooter>
     </Modal>
   );
 };

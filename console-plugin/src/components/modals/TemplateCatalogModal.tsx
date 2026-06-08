@@ -3,7 +3,9 @@ import {
   Alert,
   Button,
   Modal,
-  ModalVariant,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   SearchInput,
   Spinner,
   Title,
@@ -114,129 +116,132 @@ const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
 
   return (
     <Modal
-      variant={ModalVariant.large}
-      title="Browse Flow Templates"
+      variant="large"
       isOpen={isOpen}
       onClose={onClose}
-      actions={[
-        <Button key="close" variant="link" onClick={onClose}>Cancel</Button>,
-      ]}
+      aria-label="Browse Flow Templates"
       style={{ maxWidth: '960px' }}
     >
-      <p style={{ marginBottom: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', fontSize: '13px' }}>
-        Templates are starting points — select one, customize the route, then click Create.
-        Your flow is fully independent after creation.
-      </p>
+      <ModalHeader title="Browse Flow Templates" />
+      <ModalBody>
+        <p style={{ marginBottom: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', fontSize: '13px' }}>
+          Templates are starting points — select one, customize the route, then click Create.
+          Your flow is fully independent after creation.
+        </p>
 
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
-        <SearchInput
-          placeholder="Search templates..."
-          value={search}
-          onChange={(_e, v) => setSearch(v)}
-          onClear={() => setSearch('')}
-          style={{ flex: 1, minWidth: '200px' }}
-        />
-        <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-          {loading ? 'Loading...' : `Showing ${totalVisible} of ${totalFlows}`}
-        </span>
-      </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
+          <SearchInput
+            placeholder="Search templates..."
+            value={search}
+            onChange={(_e, v) => setSearch(v)}
+            onClear={() => setSearch('')}
+            style={{ flex: 1, minWidth: '200px' }}
+          />
+          <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+            {loading ? 'Loading...' : `Showing ${totalVisible} of ${totalFlows}`}
+          </span>
+        </div>
 
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
-        <Button
-          variant={categoryFilter === 'all' ? 'primary' : 'secondary'}
-          size="sm"
-          onClick={() => setCategoryFilter('all')}
-        >
-          All
-        </Button>
-        {catalog.map(cat => (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
           <Button
-            key={cat.id}
-            variant={categoryFilter === cat.id ? 'primary' : 'secondary'}
+            variant={categoryFilter === 'all' ? 'primary' : 'secondary'}
             size="sm"
-            onClick={() => setCategoryFilter(cat.id)}
+            onClick={() => setCategoryFilter('all')}
           >
-            {cat.icon} {cat.title}
+            All
           </Button>
-        ))}
-      </div>
-
-      {error && (
-        <Alert variant="danger" isInline title={`Failed to load catalog: ${error}`} style={{ marginBottom: '12px' }} />
-      )}
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <Spinner size="lg" aria-label="Loading templates" />
+          {catalog.map(cat => (
+            <Button
+              key={cat.id}
+              variant={categoryFilter === cat.id ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setCategoryFilter(cat.id)}
+            >
+              {cat.icon} {cat.title}
+            </Button>
+          ))}
         </div>
-      ) : (
-        <div style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: '4px' }}>
-          {filtered.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--pf-global--Color--200, #6a6e73)', padding: '24px' }}>
-              No templates match your search.
-            </p>
-          ) : (
-            filtered.map(cat => (
-              <div key={cat.id} style={{ marginBottom: '20px' }}>
-                <Title headingLevel="h4" size="md" style={{ marginBottom: '8px' }}>
-                  {cat.icon} {cat.title} ({cat.flows.length})
-                </Title>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                  gap: '8px',
-                }}>
-                  {cat.flows.map(flow => (
-                    <div
-                      key={flow.name}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleSelect(cat, flow)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(cat, flow); }}
-                      style={{
-                        border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)',
-                        borderRadius: '6px',
-                        padding: '10px',
-                        cursor: 'pointer',
-                        background: 'var(--pf-global--BackgroundColor--100, #fff)',
-                        transition: 'border-color 0.15s',
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--pf-global--active-color--100, #2b9af3)'; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--pf-global--BorderColor--100, #d2d2d2)'; }}
-                    >
-                      <div style={{ fontSize: '11px', color: 'var(--pf-global--active-color--100, #2b9af3)', fontWeight: 600, marginBottom: '4px' }}>
-                        {flow.pattern}
-                      </div>
-                      <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>{flow.name}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '6px', lineHeight: 1.4 }}>
-                        {flow.description}
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        <span style={{
-                          fontSize: '10px', padding: '1px 6px', borderRadius: '999px',
-                          background: 'var(--pf-global--BackgroundColor--200, #f0f0f0)',
-                          fontWeight: 600,
-                        }}>
-                          {flow.type}
-                        </span>
-                        {flow.components.split(', ').slice(0, 3).map(c => (
-                          <span key={c} style={{
+
+        {error && (
+          <Alert variant="danger" isInline title={`Failed to load catalog: ${error}`} style={{ marginBottom: '12px' }} />
+        )}
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <Spinner size="lg" aria-label="Loading templates" />
+          </div>
+        ) : (
+          <div style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: '4px' }}>
+            {filtered.length === 0 ? (
+              <p style={{ textAlign: 'center', color: 'var(--pf-global--Color--200, #6a6e73)', padding: '24px' }}>
+                No templates match your search.
+              </p>
+            ) : (
+              filtered.map(cat => (
+                <div key={cat.id} style={{ marginBottom: '20px' }}>
+                  <Title headingLevel="h4" size="md" style={{ marginBottom: '8px' }}>
+                    {cat.icon} {cat.title} ({cat.flows.length})
+                  </Title>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                    gap: '8px',
+                  }}>
+                    {cat.flows.map(flow => (
+                      <div
+                        key={flow.name}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleSelect(cat, flow)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(cat, flow); }}
+                        style={{
+                          border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)',
+                          borderRadius: '6px',
+                          padding: '10px',
+                          cursor: 'pointer',
+                          background: 'var(--pf-global--BackgroundColor--100, #fff)',
+                          transition: 'border-color 0.15s',
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--pf-global--active-color--100, #2b9af3)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--pf-global--BorderColor--100, #d2d2d2)'; }}
+                      >
+                        <div style={{ fontSize: '11px', color: 'var(--pf-global--active-color--100, #2b9af3)', fontWeight: 600, marginBottom: '4px' }}>
+                          {flow.pattern}
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>{flow.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '6px', lineHeight: 1.4 }}>
+                          {flow.description}
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          <span style={{
                             fontSize: '10px', padding: '1px 6px', borderRadius: '999px',
-                            background: 'var(--pf-global--palette--blue-50, #e7f1fa)',
-                            color: 'var(--pf-global--palette--blue-600, #004368)',
+                            background: 'var(--pf-global--BackgroundColor--200, #f0f0f0)',
+                            fontWeight: 600,
                           }}>
-                            {c}
+                            {flow.type}
                           </span>
-                        ))}
+                          {flow.components.split(', ').slice(0, 3).map(c => (
+                            <span key={c} style={{
+                              fontSize: '10px', padding: '1px 6px', borderRadius: '999px',
+                              background: 'var(--pf-global--palette--blue-50, #e7f1fa)',
+                              color: 'var(--pf-global--palette--blue-600, #004368)',
+                            }}>
+                              {c}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+              ))
+            )}
+          </div>
+        )}
+      </ModalBody>
+      <ModalFooter>
+        <Button key="close" variant="link" onClick={onClose}>Cancel</Button>
+      </ModalFooter>
     </Modal>
   );
 };

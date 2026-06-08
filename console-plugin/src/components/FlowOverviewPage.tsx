@@ -27,19 +27,19 @@ interface PipelineRun {
   status?: { conditions?: Array<{ type: string; status: string; reason?: string }>; completionTime?: string; startTime?: string };
 }
 
-type LabelColor = 'blue' | 'cyan' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'gold';
+type LabelColor = 'blue' | 'teal' | 'green' | 'orange' | 'purple' | 'red' | 'grey' | 'yellow';
 
 const TYPES = [
-  { value: 'CAMEL_ROUTE', label: 'Camel Route', color: '#f0ab00', labelColor: 'gold' as LabelColor },
+  { value: 'CAMEL_ROUTE', label: 'Camel Route', color: '#f0ab00', labelColor: 'yellow' as LabelColor },
   { value: 'CAMEL_KAMELET', label: 'Kamelet', color: '#8476d1', labelColor: 'purple' as LabelColor },
   { value: 'CAMEL_PIPE', label: 'Pipe', color: '#2b9af3', labelColor: 'blue' as LabelColor },
   { value: 'CAMEL_TEST', label: 'Test', color: '#3e8635', labelColor: 'green' as LabelColor },
-  { value: 'SONATAFLOW', label: 'SonataFlow', color: '#009596', labelColor: 'cyan' as LabelColor },
+  { value: 'SONATAFLOW', label: 'SonataFlow', color: '#009596', labelColor: 'teal' as LabelColor },
 ];
 
 const PHASES = [
   { value: 'Running', color: '#3e8635', labelColor: 'green' as LabelColor },
-  { value: 'Building', color: '#f0ab00', labelColor: 'gold' as LabelColor },
+  { value: 'Building', color: '#f0ab00', labelColor: 'yellow' as LabelColor },
   { value: 'Deploying', color: '#0066cc', labelColor: 'blue' as LabelColor },
   { value: 'Scaffolding', color: '#8476d1', labelColor: 'purple' as LabelColor },
   { value: 'Paused', color: '#f0ab00', labelColor: 'orange' as LabelColor },
@@ -434,7 +434,7 @@ const FlowOverviewPage: React.FC = () => {
               const flowLabel = pr.metadata.labels?.['platform.io/flow-name'] || 'unknown';
               const succeeded = (pr.status?.conditions || []).find(c => c.type === 'Succeeded');
               const prStatus = succeeded?.status === 'True' ? 'Succeeded' : succeeded?.status === 'False' ? 'Failed' : 'Running';
-              const prLabelColor: LabelColor = prStatus === 'Succeeded' ? 'green' : prStatus === 'Failed' ? 'red' : 'gold';
+              const prLabelColor: LabelColor = prStatus === 'Succeeded' ? 'green' : prStatus === 'Failed' ? 'red' : 'yellow';
               return (
                 <div key={pr.metadata.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
                   <div>

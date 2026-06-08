@@ -127,7 +127,7 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowName }) => {
               onChange={(_e, checked) => setFollow(checked)}
             />
           </ToolbarItem>
-          <ToolbarItem align={{ default: 'alignRight' }}>
+          <ToolbarItem align={{ default: 'alignEnd' }}>
             <Button variant="secondary" onClick={fetchLogs}>Refresh</Button>
           </ToolbarItem>
         </ToolbarContent>

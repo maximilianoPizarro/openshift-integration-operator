@@ -24,8 +24,7 @@ export const EphemeralModeToggle: React.FC<EphemeralModeToggleProps> = ({
     <FormGroup label="Deployment mode" fieldId="deployment-mode">
       <Switch
         id="deployment-mode"
-        label="Quick Try (ephemeral — no Git or ArgoCD)"
-        labelOff="GitOps (production pipeline)"
+        label={ephemeral ? 'Quick Try (ephemeral — no Git or ArgoCD)' : 'GitOps (production pipeline)'}
         isChecked={ephemeral}
         onChange={(_e, checked) => onChange(checked)}
       />
