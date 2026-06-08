@@ -1,16 +1,4 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path');
-
-// Fix Windows path separators in PF5 dynamic module maps (backslashes break module resolution)
-const dynamicModuleParser = require('@openshift-console/dynamic-plugin-sdk-webpack/lib/utils/dynamic-module-parser');
-const originalGetDynamicModuleMap = dynamicModuleParser.getDynamicModuleMap;
-dynamicModuleParser.getDynamicModuleMap = (...args: any[]) => {
-  const result = originalGetDynamicModuleMap(...args);
-  return Object.fromEntries(
-    Object.entries(result).map(([key, value]) => [key, (value as string).replace(/\\/g, '/')])
-  );
-};
-
 const { ConsoleRemotePlugin } = require('@openshift-console/dynamic-plugin-sdk-webpack');
 
 module.exports = {
@@ -24,7 +12,10 @@ module.exports = {
       { test: /\.css$/, use: ['style-loader', 'css-loader'] },
     ],
   },
-  plugins: [new ConsoleRemotePlugin({ validateExtensionProperties: false, validateExtensionIntegrity: false } as any)],
+  plugins: [new ConsoleRemotePlugin({
+    validateExtensionProperties: false,
+    validateExtensionIntegrity: false,
+  })],
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name]-bundle.js',

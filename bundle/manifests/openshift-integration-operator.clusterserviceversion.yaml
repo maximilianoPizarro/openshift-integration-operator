@@ -1,0 +1,527 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "platform.io/v1alpha1",
+          "kind": "IntegrationFlow",
+          "metadata": {
+            "name": "sample-camel-route"
+          },
+          "spec": {
+            "engine": "CAMEL",
+            "integrationType": "CAMEL_ROUTE",
+            "gitRepository": "https://gitea.example.com/user1/sample-camel-worker.git",
+            "branch": "main",
+            "targeting": {
+              "strategy": "explicit",
+              "clusters": ["local"]
+            },
+            "kaotoDesign": "- route:\n    id: sample-route\n    from:\n      uri: \"timer:tick\"\n      parameters:\n        period: 5000\n      steps:\n        - log:\n            message: \"Hello from IntegrationFlow\"\n"
+          }
+        },
+        {
+          "apiVersion": "platform.io/v1alpha1",
+          "kind": "IntegrationFlow",
+          "metadata": {
+            "name": "sample-ephemeral"
+          },
+          "spec": {
+            "engine": "CAMEL",
+            "integrationType": "CAMEL_ROUTE",
+            "deploymentMode": "EPHEMERAL",
+            "kaotoDesign": "- route:\n    id: quick-try\n    from:\n      uri: \"timer:tick\"\n      parameters:\n        period: 10000\n      steps:\n        - log:\n            message: \"Ephemeral quick-try flow\"\n",
+            "ephemeral": {
+              "ttlSeconds": 3600
+            }
+          }
+        },
+        {
+          "apiVersion": "platform.io/v1alpha1",
+          "kind": "IntegrationFlow",
+          "metadata": {
+            "name": "sample-sonataflow"
+          },
+          "spec": {
+            "engine": "SONATAFLOW",
+            "integrationType": "SONATAFLOW",
+            "gitRepository": "https://gitea.example.com/user1/sample-sonataflow.git",
+            "branch": "main",
+            "targeting": {
+              "strategy": "explicit",
+              "clusters": ["local"]
+            },
+            "kaotoDesign": "id: greeting\nversion: '1.0'\nspecVersion: '0.8'\nname: Greeting Workflow\nstart: GreetPerson\nstates:\n  - name: GreetPerson\n    type: operation\n    actions:\n      - name: greetAction\n        functionRef:\n          refName: greetFunction\n          arguments:\n            name: .name\n    end: true\nfunctions:\n  - name: greetFunction\n    operation: sysout\n    type: custom\n"
+          }
+        }
+      ]
+    capabilities: Basic Install
+    categories: Integration & Delivery
+    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.3.0
+    createdAt: "2026-06-08T18:00:00Z"
+    description: Real-Time Integration & Orchestration Platform for OpenShift — Apache Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and OpenTelemetry observability
+    operators.operatorframework.io/builder: operator-sdk-v1.40.0
+    operators.operatorframework.io/project_layout: quarkus.javaoperatorsdk.io/v1-alpha
+    repository: https://github.com/maximilianoPizarro/openshift-integration-operator
+    support: Community
+    console.openshift.io/plugins: '["integration-console-plugin"]'
+  name: openshift-integration-operator.v0.3.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: IntegrationFlow defines an integration workflow using Apache Camel
+        or SonataFlow engine with visual Kaoto design, GitOps deployment via Tekton
+        and ArgoCD, ephemeral Quick Try mode, and OpenTelemetry observability.
+      displayName: Integration Flow
+      kind: IntegrationFlow
+      name: integrationflows.platform.io
+      version: v1alpha1
+      specDescriptors:
+      - description: Integration engine type (CAMEL or SONATAFLOW)
+        displayName: Engine
+        path: engine
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:select:CAMEL
+        - urn:alm:descriptor:com.tectonic.ui:select:SONATAFLOW
+      - description: Integration sub-type (CAMEL_ROUTE, CAMEL_KAMELET, CAMEL_PIPE, CAMEL_TEST, SONATAFLOW)
+        displayName: Integration Type
+        path: integrationType
+      - description: Git repository URL containing the integration source
+        displayName: Git Repository
+        path: gitRepository
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Git branch
+        displayName: Branch
+        path: branch
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      - description: Deployment mode (GITOPS for full pipeline, EPHEMERAL for quick try)
+        displayName: Deployment Mode
+        path: deploymentMode
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:select:GITOPS
+        - urn:alm:descriptor:com.tectonic.ui:select:EPHEMERAL
+      - description: Kaoto visual design definition in YAML
+        displayName: Kaoto Design
+        path: kaotoDesign
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:text
+      statusDescriptors:
+      - description: Current phase of the integration flow lifecycle
+        displayName: Phase
+        path: phase
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.phase
+      - description: Human-readable status message
+        displayName: Message
+        path: message
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.phase:reason
+      - description: The latest Git commit hash for this flow
+        displayName: Git Commit
+        path: gitCommitHash
+      - description: ArgoCD ApplicationSet name
+        displayName: ApplicationSet
+        path: applicationSetName
+  description: |
+    ## OpenShift Integration Operator
+
+    Real-Time Integration & Orchestration Platform for OpenShift that brings
+    **Apache Camel** and **SonataFlow** workflows together with a visual
+    **Kaoto** designer, **GitOps** deployment (Tekton + ArgoCD), **MCP/AI**
+    integration, and **OpenTelemetry** observability.
+
+    ### Features
+
+    * **Single CRD** — `IntegrationFlow` manages the full lifecycle of
+      integration workflows across engines and deployment modes
+    * **Five integration types** — Camel Route, Kamelet, Pipe, Test,
+      and SonataFlow
+    * **Ephemeral Quick Try** — deploy flows instantly without Git using
+      domain-specific worker images with configurable TTL
+    * **GitOps pipeline** — automated scaffolding, Tekton builds, and
+      ArgoCD multi-cluster deployment
+    * **Visual design** — embedded Kaoto designer for drag-and-drop
+      flow creation
+    * **OpenShift Console plugin** — integrated dashboard for flow
+      management, live logs, and telemetry
+    * **MCP Bridge** — AI tool discovery and invocation for integration
+      flows
+    * **Resilience** — declarative retry policies and circuit breaker
+      configuration
+    * **Observability** — OpenTelemetry tracing/metrics and
+      PrometheusRule auto-generation
+
+    ### Prerequisites
+
+    * OpenShift 4.19+
+    * Red Hat OpenShift Pipelines (Tekton)
+    * Red Hat OpenShift GitOps (ArgoCD)
+    * Camel K Operator (optional, for Kamelet/Pipe types)
+    * OpenShift Serverless Logic (optional, for SonataFlow types)
+
+    ### Getting Started
+
+    1. Install the operator from OperatorHub
+    2. Create an IntegrationFlow CR with your Camel or SonataFlow design
+    3. The operator scaffolds, builds, and deploys your integration automatically
+    4. Monitor via the OpenShift Console plugin or `oc get integrationflows`
+
+    ### Quick Try (Ephemeral Mode)
+
+    ```yaml
+    apiVersion: platform.io/v1alpha1
+    kind: IntegrationFlow
+    metadata:
+      name: quick-try-demo
+    spec:
+      engine: CAMEL
+      deploymentMode: EPHEMERAL
+      kaotoDesign: |
+        - route:
+            from:
+              uri: "timer:tick"
+              parameters:
+                period: 5000
+              steps:
+                - log:
+                    message: "Hello from Quick Try!"
+      ephemeral:
+        ttlSeconds: 3600
+    ```
+  displayName: OpenShift Integration Operator
+  icon:
+  - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQtbWFpbiIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNFRTAwMDAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjRjRBMTAwIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLWNhbWVsIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSI4MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjRUUwMDAwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNzAlIiBzdG9wLWNvbG9yPSIjRjRBMTAwIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLWNpcmN1aXQiIHgxPSIwJSIgeTE9IjUwJSIgeDI9IjEwMCUiIHkyPSI1MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjRUUwMDAwIiBzdG9wLW9wYWNpdHk9IjAuNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNGNEExMDAiIHN0b3Atb3BhY2l0eT0iMC4zIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KCiAgPCEtLSBCYWNrZ3JvdW5kIGNpcmNsZSAtLT4KICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjI0OCIgZmlsbD0iIzFBMUExQSIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMjM4IiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjZ3JhZC1tYWluKSIgc3Ryb2tlLXdpZHRoPSIzIiBvcGFjaXR5PSIwLjQiLz4KCiAgPCEtLSBDaXJjdWl0L2Nvbm5lY3Rpb24gbGluZXMgLSBsZWZ0IHNpZGUgLS0+CiAgPGxpbmUgeDE9IjQ4IiB5MT0iMjAwIiB4Mj0iMTMwIiB5Mj0iMjQwIiBzdHJva2U9InVybCgjZ3JhZC1jaXJjdWl0KSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8bGluZSB4MT0iNTUiIHkxPSIyODAiIHgyPSIxNDAiIHkyPSIyOTAiIHN0cm9rZT0idXJsKCNncmFkLWNpcmN1aXQpIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxsaW5lIHgxPSI3MCIgeTE9IjM1MCIgeDI9IjE1NSIgeTI9IjMyMCIgc3Ryb2tlPSJ1cmwoI2dyYWQtY2lyY3VpdCkiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIG9wYWNpdHk9IjAuNSIvPgogIDxsaW5lIHgxPSI2MCIgeTE9IjE1MCIgeDI9IjE0NSIgeTI9IjE5NSIgc3Ryb2tlPSJ1cmwoI2dyYWQtY2lyY3VpdCkiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIG9wYWNpdHk9IjAuNSIvPgoKICA8IS0tIENpcmN1aXQvY29ubmVjdGlvbiBsaW5lcyAtIHJpZ2h0IHNpZGUgLS0+CiAgPGxpbmUgeDE9IjM4MCIgeTE9IjIyMCIgeDI9IjQ1NSIgeTI9IjE4MCIgc3Ryb2tlPSJ1cmwoI2dyYWQtY2lyY3VpdCkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGxpbmUgeDE9IjM5MCIgeTE9IjI2MCIgeDI9IjQ2MCIgeTI9IjI2MCIgc3Ryb2tlPSJ1cmwoI2dyYWQtY2lyY3VpdCkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGxpbmUgeDE9IjM3NSIgeTE9IjMwMCIgeDI9IjQ1MCIgeTI9IjMzMCIgc3Ryb2tlPSJ1cmwoI2dyYWQtY2lyY3VpdCkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGxpbmUgeDE9IjM2NSIgeTE9IjM0MCIgeDI9IjQ0MCIgeTI9IjM4MCIgc3Ryb2tlPSJ1cmwoI2dyYWQtY2lyY3VpdCkiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIG9wYWNpdHk9IjAuNSIvPgoKICA8IS0tIENvbm5lY3Rpb24gbm9kZXMgLSBsZWZ0IC0tPgogIDxjaXJjbGUgY3g9IjQ4IiBjeT0iMjAwIiByPSI1IiBmaWxsPSIjRUUwMDAwIiBvcGFjaXR5PSIwLjciLz4KICA8Y2lyY2xlIGN4PSI1NSIgY3k9IjI4MCIgcj0iNSIgZmlsbD0iI0VFMDAwMCIgb3BhY2l0eT0iMC43Ii8+CiAgPGNpcmNsZSBjeD0iNzAiIGN5PSIzNTAiIHI9IjQiIGZpbGw9IiNFRTAwMDAiIG9wYWNpdHk9IjAuNSIvPgogIDxjaXJjbGUgY3g9IjYwIiBjeT0iMTUwIiByPSI0IiBmaWxsPSIjRUUwMDAwIiBvcGFjaXR5PSIwLjUiLz4KCiAgPCEtLSBDb25uZWN0aW9uIG5vZGVzIC0gcmlnaHQgLS0+CiAgPGNpcmNsZSBjeD0iNDU1IiBjeT0iMTgwIiByPSI1IiBmaWxsPSIjRjRBMTAwIiBvcGFjaXR5PSIwLjciLz4KICA8Y2lyY2xlIGN4PSI0NjAiIGN5PSIyNjAiIHI9IjUiIGZpbGw9IiNGNEExMDAiIG9wYWNpdHk9IjAuNyIvPgogIDxjaXJjbGUgY3g9IjQ1MCIgY3k9IjMzMCIgcj0iNSIgZmlsbD0iI0Y0QTEwMCIgb3BhY2l0eT0iMC43Ii8+CiAgPGNpcmNsZSBjeD0iNDQwIiBjeT0iMzgwIiByPSI0IiBmaWxsPSIjRjRBMTAwIiBvcGFjaXR5PSIwLjUiLz4KCiAgPCEtLSBIdWIgY29ubmVjdG9yIHJpbmcgLS0+CiAgPGNpcmNsZSBjeD0iMjU2IiBjeT0iMjY4IiByPSIxNDUiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNncmFkLW1haW4pIiBzdHJva2Utd2lkdGg9IjEuNSIgb3BhY2l0eT0iMC4yIiBzdHJva2UtZGFzaGFycmF5PSI4IDYiLz4KCiAgPCEtLSBTdHlsaXplZCBnZW9tZXRyaWMgY2FtZWwgLSB3YWxraW5nIHBvc2UsIGZhY2luZyByaWdodCAtLT4KICA8cGF0aCBkPSIKICAgIE0gMTY4IDI4MAogICAgQyAxNjggMjYwLCAxNzUgMjQ1LCAxODUgMjM1CiAgICBDIDE5MiAyMjgsIDE5OCAyMjIsIDIwMCAyMTIKICAgIEMgMjAyIDIwNSwgMjA4IDE5OCwgMjE4IDE5NQogICAgQyAyMjUgMTkzLCAyMzIgMTk2LCAyMzUgMjAyCiAgICBMIDIzOCAyMTAKICAgIEMgMjQwIDIwNSwgMjQ4IDE5NSwgMjU4IDE5MAogICAgQyAyNjUgMTg3LCAyNzUgMTg1LCAyODIgMTg4CiAgICBDIDI5MCAxOTEsIDI5NSAxOTgsIDI5NSAyMDgKICAgIEMgMjk1IDIxNSwgMjkwIDIyMiwgMjg1IDIyNgogICAgTCAyOTUgMjI4CiAgICBDIDMwNSAyMjUsIDMxOCAyMjIsIDMzMCAyMjQKICAgIEMgMzQ1IDIyNywgMzU1IDIzNSwgMzYwIDI0OAogICAgQyAzNjUgMjYwLCAzNjIgMjcyLCAzNTggMjgwCiAgICBDIDM1NCAyOTAsIDM0OCAyOTgsIDM0MCAzMDQKICAgIEwgMzQyIDMyMAogICAgQyAzNDQgMzI4LCAzNDUgMzM4LCAzNDQgMzQ4CiAgICBMIDM0NCAzNjgKICAgIEwgMzMyIDM2OAogICAgTCAzMzIgMzQ4CiAgICBDIDMzMiAzNDAsIDMzMCAzMzIsIDMyOCAzMjUKICAgIEwgMzIwIDMwOAogICAgQyAzMDUgMzEyLCAyODUgMzE0LCAyNjggMzEyCiAgICBMIDI1OCAzMjgKICAgIEMgMjU2IDMzOCwgMjU1IDM0OCwgMjU0IDM1OAogICAgTCAyNTQgMzY4CiAgICBMIDI0MiAzNjgKICAgIEwgMjQyIDM1NQogICAgQyAyNDMgMzQ1LCAyNDQgMzM1LCAyNDYgMzI2CiAgICBMIDIzOCAzMTIKICAgIEMgMjI1IDMxNCwgMjEwIDMxMiwgMjAwIDMwOAogICAgTCAxOTUgMzI1CiAgICBDIDE5MyAzMzUsIDE5MiAzNDUsIDE5MiAzNTUKICAgIEwgMTkyIDM2OAogICAgTCAxODAgMzY4CiAgICBMIDE4MCAzNTIKICAgIEMgMTgwIDM0MiwgMTgyIDMzMiwgMTg0IDMyMgogICAgTCAxNzggMzA4CiAgICBDIDE3MiAzMDAsIDE2OCAyOTAsIDE2OCAyODAKICAgIFoiCiAgICBmaWxsPSJ1cmwoI2dyYWQtY2FtZWwpIi8+CgogIDwhLS0gQ2FtZWwgaGVhZCBkZXRhaWwgLS0+CiAgPHBhdGggZD0iCiAgICBNIDM0NSAyMzUKICAgIEMgMzUyIDIzMCwgMzYyIDIyOCwgMzcwIDIzMAogICAgQyAzNzggMjMyLCAzODQgMjM4LCAzODUgMjQ1CiAgICBDIDM4NiAyNTAsIDM4NCAyNTUsIDM4MCAyNTgKICAgIEMgMzc1IDI2MiwgMzY4IDI2MiwgMzYyIDI2MAogICAgTCAzNTggMjU1CiAgICBDIDM1NSAyNDgsIDM1MCAyNDIsIDM0NSAyMzgKICAgIFoiCiAgICBmaWxsPSJ1cmwoI2dyYWQtY2FtZWwpIi8+CgogIDwhLS0gQ2FtZWwgZXllIC0tPgogIDxjaXJjbGUgY3g9IjM3MiIgY3k9IjI0MiIgcj0iMy41IiBmaWxsPSIjMUExQTFBIi8+CgogIDwhLS0gQ2FtZWwgZWFyIC0tPgogIDxwYXRoIGQ9Ik0gMzY1IDIyOCBDIDM2OCAyMjIsIDM3NCAyMjAsIDM3OCAyMjMgQyAzNzYgMjI2LCAzNzIgMjI5LCAzNjggMjMwIFoiIGZpbGw9IiNFRTAwMDAiIG9wYWNpdHk9IjAuOCIvPgoKICA8IS0tIE1vdGlvbiBsaW5lcyBiZWhpbmQgY2FtZWwgLS0+CiAgPGxpbmUgeDE9IjEzNSIgeTE9IjI2NSIgeDI9IjE1OCIgeTI9IjI2NSIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC41Ii8+CiAgPGxpbmUgeDE9IjE0MCIgeTE9IjI3OCIgeDI9IjE2MCIgeTI9IjI3OCIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjM1Ii8+CiAgPGxpbmUgeDE9IjE0NSIgeTE9IjI1MiIgeDI9IjE2MiIgeTI9IjI1MiIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjM1Ii8+CgogIDwhLS0gSW50ZWdyYXRpb24gYXJyb3cgZmxvd2luZyB0aHJvdWdoIGNhbWVsIC0tPgogIDxwYXRoIGQ9Ik0gMTMwIDI2OCBMIDE1NSAyNjgiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC42Ii8+CiAgPHBhdGggZD0iTSAzOTAgMjUyIEwgNDIwIDI1MiBMIDQxNCAyNDYgTSA0MjAgMjUyIEwgNDE0IDI1OCIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjciLz4KCiAgPCEtLSBTbWFsbCBjb25uZWN0b3IgZG90cyBvbiB0aGUgY2FtZWwgYm9keSAtLT4KICA8Y2lyY2xlIGN4PSIyMjAiIGN5PSIyNDUiIHI9IjMiIGZpbGw9IiNGRkZGRkYiIG9wYWNpdHk9IjAuNiIvPgogIDxjaXJjbGUgY3g9IjI2MCIgY3k9IjI0MCIgcj0iMyIgZmlsbD0iI0ZGRkZGRiIgb3BhY2l0eT0iMC42Ii8+CiAgPGNpcmNsZSBjeD0iMzAwIiBjeT0iMjQ4IiByPSIzIiBmaWxsPSIjRkZGRkZGIiBvcGFjaXR5PSIwLjYiLz4KICA8Y2lyY2xlIGN4PSIzMzUiIGN5PSIyNTUiIHI9IjMiIGZpbGw9IiNGRkZGRkYiIG9wYWNpdHk9IjAuNiIvPgoKICA8IS0tIFRoaW4gY29ubmVjdGlvbiBsaW5lcyBiZXR3ZWVuIGJvZHkgZG90cyAtLT4KICA8bGluZSB4MT0iMjIzIiB5MT0iMjQ1IiB4Mj0iMjU3IiB5Mj0iMjQwIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjQiLz4KICA8bGluZSB4MT0iMjYzIiB5MT0iMjQwIiB4Mj0iMjk3IiB5Mj0iMjQ4IiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjQiLz4KICA8bGluZSB4MT0iMzAzIiB5MT0iMjQ4IiB4Mj0iMzMyIiB5Mj0iMjU1IiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjQiLz4KPC9zdmc+Cg==
+    mediatype: image/svg+xml
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - platform.io
+          resources:
+          - integrationflows
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - platform.io
+          resources:
+          - integrationflows/status
+          - integrationflows/finalizers
+          verbs:
+          - get
+          - update
+          - patch
+        - apiGroups:
+          - tekton.dev
+          resources:
+          - pipelineruns
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - services
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - pods/log
+          verbs:
+          - get
+        - apiGroups:
+          - apiextensions.k8s.io
+          resources:
+          - customresourcedefinitions
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - argoproj.io
+          resources:
+          - applications
+          - applicationsets
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheusrules
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - batch
+          resources:
+          - cronjobs
+          - jobs
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - camel.apache.org
+          resources:
+          - kamelets
+          - pipes
+          - integrations
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - sonataflow.org
+          resources:
+          - sonataflows
+          - sonataflows/status
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consoleplugins
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        serviceAccountName: openshift-integration-operator
+      deployments:
+      - label:
+          app.kubernetes.io/name: openshift-integration-operator
+          app.kubernetes.io/part-of: integration-platform
+          app.kubernetes.io/managed-by: olm
+        name: openshift-integration-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: openshift-integration-operator
+          template:
+            metadata:
+              labels:
+                app.kubernetes.io/name: openshift-integration-operator
+                app.kubernetes.io/part-of: integration-platform
+                app.openshift.io/runtime: quarkus
+            spec:
+              serviceAccountName: openshift-integration-operator
+              containers:
+              - name: operator
+                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.3.0
+                imagePullPolicy: IfNotPresent
+                ports:
+                - containerPort: 8080
+                  name: http
+                  protocol: TCP
+                env:
+                - name: KUBERNETES_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_INTEGRATIONFLOWRECONCILER_NAMESPACES
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: "metadata.annotations['olm.targetNamespaces']"
+                resources:
+                  requests:
+                    cpu: 250m
+                    memory: 512Mi
+                  limits:
+                    cpu: "1"
+                    memory: 1Gi
+                livenessProbe:
+                  httpGet:
+                    path: /q/health/live
+                    port: http
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                readinessProbe:
+                  httpGet:
+                    path: /q/health/ready
+                    port: http
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+      - label:
+          app: integration-console-plugin
+          app.kubernetes.io/part-of: integration-platform
+          app.kubernetes.io/managed-by: olm
+        name: integration-console-plugin
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: integration-console-plugin
+          template:
+            metadata:
+              labels:
+                app: integration-console-plugin
+                app.kubernetes.io/part-of: integration-platform
+                app.openshift.io/runtime: golang
+            spec:
+              containers:
+              - name: console-plugin
+                image: quay.io/maximilianopizarro/integration-console-plugin:v0.3.0
+                imagePullPolicy: IfNotPresent
+                ports:
+                - containerPort: 9443
+                  name: https
+                  protocol: TCP
+                volumeMounts:
+                - name: plugin-serving-cert
+                  readOnly: true
+                  mountPath: /var/serving-cert
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+                  limits:
+                    cpu: 200m
+                    memory: 128Mi
+              volumes:
+              - name: plugin-serving-cert
+                secret:
+                  secretName: integration-console-plugin-cert
+                  defaultMode: 420
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - integration
+  - camel
+  - apache-camel
+  - sonataflow
+  - kaoto
+  - workflow
+  - gitops
+  - openshift
+  - tekton
+  - argocd
+  - mcp
+  - opentelemetry
+  links:
+  - name: Documentation
+    url: https://maximilianopizarro.github.io/openshift-integration-operator/
+  - name: Source Code
+    url: https://github.com/maximilianoPizarro/openshift-integration-operator
+  - name: Helm Chart
+    url: https://maximilianopizarro.github.io/openshift-integration-operator/
+  maintainers:
+  - email: maximiliano.pizarro.5@gmail.com
+    name: Maximiliano Pizarro
+  maturity: alpha
+  minKubeVersion: 1.32.0
+  provider:
+    name: maximilianoPizarro
+    url: https://github.com/maximilianoPizarro
+  version: 0.3.0
+  relatedImages:
+  - name: operator
+    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.3.0
+  - name: console-plugin
+    image: quay.io/maximilianopizarro/integration-console-plugin:v0.3.0
+  - name: camel-worker-core
+    image: quay.io/maximilianopizarro/camel-worker-core:v0.3.0
+  - name: camel-worker-full
+    image: quay.io/maximilianopizarro/camel-worker-full:v0.3.0

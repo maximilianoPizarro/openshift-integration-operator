@@ -1,0 +1,28 @@
+apiVersion: console.openshift.io/v1
+kind: ConsolePlugin
+metadata:
+  name: integration-console-plugin
+  annotations:
+    console.openshift.io/description: "Real-Time Integration & Orchestration Platform — Apache Camel + SonataFlow with Kaoto designer"
+  labels:
+    app.kubernetes.io/name: integration-console-plugin
+    app.kubernetes.io/version: "0.3.0"
+    app.kubernetes.io/part-of: openshift-integration-operator
+spec:
+  displayName: "Integration Platform"
+  proxy:
+    - alias: backend
+      authorization: UserToken
+      endpoint:
+        type: Service
+        service:
+          name: openshift-integration-operator
+          namespace: openshift-integration
+          port: 8080
+  backend:
+    type: Service
+    service:
+      name: integration-console-plugin
+      namespace: openshift-integration
+      port: 9443
+      basePath: /
