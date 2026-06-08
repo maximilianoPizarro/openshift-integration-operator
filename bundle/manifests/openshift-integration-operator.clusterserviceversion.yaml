@@ -59,7 +59,7 @@ metadata:
       ]
     capabilities: Basic Install
     categories: Integration & Delivery
-    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.3.0
+    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.4.0
     createdAt: "2026-06-08T18:00:00Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift — Apache Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and OpenTelemetry observability
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
@@ -67,7 +67,7 @@ metadata:
     repository: https://github.com/maximilianoPizarro/openshift-integration-operator
     support: Community
     console.openshift.io/plugins: '["integration-console-plugin"]'
-  name: openshift-integration-operator.v0.3.0
+  name: openshift-integration-operator.v0.4.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -402,11 +402,14 @@ spec:
               serviceAccountName: openshift-integration-operator
               containers:
               - name: operator
-                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.3.0
+                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.4.0
                 imagePullPolicy: IfNotPresent
                 ports:
                 - containerPort: 8080
                   name: http
+                  protocol: TCP
+                - containerPort: 8443
+                  name: https
                   protocol: TCP
                 env:
                 - name: KUBERNETES_NAMESPACE
@@ -417,6 +420,18 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: "metadata.annotations['olm.targetNamespaces']"
+                - name: QUARKUS_HTTP_SSL_PORT
+                  value: "8443"
+                - name: QUARKUS_HTTP_SSL_CERTIFICATE_FILES
+                  value: /etc/tls/tls.crt
+                - name: QUARKUS_HTTP_SSL_CERTIFICATE_KEY_FILES
+                  value: /etc/tls/tls.key
+                - name: QUARKUS_HTTP_INSECURE_REQUESTS
+                  value: enabled
+                volumeMounts:
+                - name: tls-certs
+                  mountPath: /etc/tls
+                  readOnly: true
                 resources:
                   requests:
                     cpu: 250m
@@ -436,6 +451,11 @@ spec:
                     port: http
                   initialDelaySeconds: 5
                   periodSeconds: 10
+              volumes:
+              - name: tls-certs
+                secret:
+                  secretName: openshift-integration-operator-serving-cert
+                  defaultMode: 420
       - label:
           app: integration-console-plugin
           app.kubernetes.io/part-of: integration-platform
@@ -455,7 +475,7 @@ spec:
             spec:
               containers:
               - name: console-plugin
-                image: quay.io/maximilianopizarro/integration-console-plugin:v0.3.0
+                image: quay.io/maximilianopizarro/integration-console-plugin:v0.4.0
                 imagePullPolicy: IfNotPresent
                 ports:
                 - containerPort: 9443
@@ -515,13 +535,13 @@ spec:
   provider:
     name: maximilianoPizarro
     url: https://github.com/maximilianoPizarro
-  version: 0.3.0
+  version: 0.4.0
   relatedImages:
   - name: operator
-    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.3.0
+    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.4.0
   - name: console-plugin
-    image: quay.io/maximilianopizarro/integration-console-plugin:v0.3.0
+    image: quay.io/maximilianopizarro/integration-console-plugin:v0.4.0
   - name: camel-worker-core
-    image: quay.io/maximilianopizarro/camel-worker-core:v0.3.0
+    image: quay.io/maximilianopizarro/camel-worker-core:v0.4.0
   - name: camel-worker-full
-    image: quay.io/maximilianopizarro/camel-worker-full:v0.3.0
+    image: quay.io/maximilianopizarro/camel-worker-full:v0.4.0
