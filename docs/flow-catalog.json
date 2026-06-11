@@ -1735,6 +1735,15 @@
         "description": "HTTP GET /api/spacex/latest — returns latest SpaceX launch as JSON",
         "pattern": "HTTP Invoke + JSON Response",
         "kaotoDesign": "- route:\n    id: publicapi-http-spacex-latest\n    from:\n      uri: \"platform-http:/api/spacex/latest\"\n      parameters:\n        httpMethodRestrict: GET\n      steps:\n        - to:\n            uri: \"https://api.spacexdata.com/v5/launches/latest\"\n        - unmarshal:\n            json: {}\n        - marshal:\n            json: {}\n        - setHeader:\n            name: Content-Type\n            constant: \"application/json\""
+      },
+      {
+        "name": "publicapi-open-meteo-weather",
+        "owner": "maximilianoPizarro",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, jsonpath, choice, doTry",
+        "description": "Polls Open-Meteo every 2 min for Madrid weather — logs heat alert when temperature exceeds 30°C (no API key)",
+        "pattern": "Scheduled Public API Poll",
+        "kaotoDesign": "- route:\n    id: open-meteo-weather-poll\n    from:\n      uri: \"timer:meteoPoll\"\n      parameters:\n        period: \"120000\"\n      steps:\n        - doTry:\n            steps:\n              - setHeader:\n                  name: CamelHttpMethod\n                  constant: GET\n              - to:\n                  uri: \"https://api.open-meteo.com/v1/forecast?latitude=40.42&longitude=-3.70&current=temperature_2m,wind_speed_10m\"\n              - unmarshal:\n                  json: {}\n              - setProperty:\n                  name: temperature\n                  jsonpath:\n                    expression: \"$.current.temperature_2m\"\n              - setProperty:\n                  name: windSpeed\n                  jsonpath:\n                    expression: \"$.current.wind_speed_10m\"\n              - choice:\n                  when:\n                    - simple: \"${exchangeProperty.temperature} > 30\"\n                      steps:\n                        - log:\n                            message: \"HEAT ALERT: ${exchangeProperty.temperature}°C, wind ${exchangeProperty.windSpeed} km/h (Madrid)\"\n                  otherwise:\n                    steps:\n                      - log:\n                          message: \"Weather OK: ${exchangeProperty.temperature}°C, wind ${exchangeProperty.windSpeed} km/h (Madrid)\"\n            doCatch:\n              - exception:\n                  - \"java.lang.Exception\"\n                steps:\n                  - log:\n                      message: \"Open-Meteo API error: ${exception.message}\""
       }
     ]
   }

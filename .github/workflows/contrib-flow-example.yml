@@ -1,0 +1,62 @@
+name: Contribute flow example (Open-Meteo PR)
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: 'GitHub username of the flow contributor (without @)'
+        required: true
+        default: 'maximilianoPizarro'
+        type: string
+      dry_run:
+        description: 'Validate only, do not open PR'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  propose-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Stamp owner on catalog entry
+        run: bash scripts/prepare-flow-contribution.sh --owner "${{ inputs.owner }}"
+
+      - name: Ensure example flow artifacts exist
+        run: bash scripts/prepare-flow-contribution.sh --check
+
+      - name: Validate catalog
+        run: bash scripts/prepare-flow-contribution.sh
+
+      - name: Create Pull Request
+        if: ${{ !inputs.dry_run }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: contrib/automation/open-meteo-weather-${{ inputs.owner }}
+          title: 'contrib(flow): add Open-Meteo weather monitor by @${{ inputs.owner }}'
+          commit-message: 'contrib(flow): Open-Meteo weather monitor by @${{ inputs.owner }}'
+          body: |
+            ## Summary
+            Community flow contribution by **@${{ inputs.owner }}**.
+            After merge, `flow-catalog.json` is published via GitHub Pages to **all OpenShift clusters**
+            with the operator installed — **no operator RC or Helm upgrade required**.
+
+            ## Owner
+            - Catalog field: `owner: ${{ inputs.owner }}`
+            - YAML label: `platform.io/flow-owner: ${{ inputs.owner }}`
+
+            ## Files
+            - `docs/flow-catalog.json` — `publicapi-open-meteo-weather`
+            - `k8s/examples/22-ephemeral-open-meteo-weather.yaml`
+
+            ## Test plan
+            - [x] `bash scripts/prepare-flow-contribution.sh`
+            - [ ] `oc apply -f k8s/examples/22-ephemeral-open-meteo-weather.yaml`
+            - [ ] `oc logs -f deploy/iflow-ephemeral-open-meteo-weather-worker -n openshift-integration`
+            - [ ] Post-merge: verify entry in published catalog URL

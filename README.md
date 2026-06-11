@@ -24,7 +24,8 @@
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/architecture.html">Architecture</a> ·
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html">Quick Start</a> ·
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html">Ready Flows (200+)</a> ·
-  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/examples-catalog.html">Examples (255)</a>
+  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/examples-catalog.html">Examples (255)</a> ·
+  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/contributing.html">Contribute Flows</a>
 </p>
 
 ---
@@ -329,7 +330,7 @@ oc get integrationflow ephemeral-camel-demo -w
 # POST /api/flows/ephemeral-camel-demo/promote-to-gitops
 ```
 
-The platform ships **29 pre-built examples** in `k8s/examples/` — eight GitOps catalog flows (`01`–`08`), one ephemeral demo (`09`), and twenty public-API Quick Try flows (`10`–`21`). Browse online:
+The platform ships **30 pre-built examples** in `k8s/examples/` — eight GitOps catalog flows (`01`–`08`), one ephemeral demo (`09`), twenty public-API Quick Try flows (`10`–`21`), and the community Open-Meteo sample (`22`). Browse online:
 
 - **[Ready Flows (200+)](https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html)** — Complete IntegrationFlow CRs with full Camel route logic, organized by pattern (AI/LLM, Saga, Circuit Breaker, Decision, Event-Driven, API Gateway, ETL, IoT, Orchestration, Hybrid Cloud & Multi-Cloud SaaS for ROSA/ARO/GCP, Public APIs, Enterprise Automation)
 - **[Examples Catalog (255)](https://maximilianopizarro.github.io/openshift-integration-operator/examples-catalog.html)** — Component-focused examples spanning 15 categories and 310 Apache Camel Quarkus components
@@ -546,9 +547,42 @@ Helm charts are served from GitHub Pages:
 https://maximilianopizarro.github.io/openshift-integration-operator/
 ```
 
-## Contributing
+## Contributing Integration Flows
 
-Contributions are welcome! To get started:
+Share a ready-to-use IntegrationFlow with **every OpenShift cluster** that runs the operator. When your PR merges to `main`, GitHub Pages republishes [`docs/flow-catalog.json`](docs/flow-catalog.json) — the console plugin loads it from the published URL. **No operator RC or Helm upgrade** is required for catalog-only contributions.
+
+**Full guide:** [Contribute Flows (GitHub Pages)](https://maximilianopizarro.github.io/openshift-integration-operator/contributing.html)
+
+### Quick steps
+
+1. Fork [maximilianoPizarro/openshift-integration-operator](https://github.com/maximilianoPizarro/openshift-integration-operator)
+2. Add your flow to `docs/flow-catalog.json` (category `publicapi`) with `owner: your-github-username`
+3. Add a runnable YAML under `k8s/examples/` (e.g. `22-ephemeral-open-meteo-weather.yaml`)
+4. Register the flow name in `REQUIRES_OWNER` inside `scripts/validate-ready-flows.js`
+5. Validate: `bash scripts/prepare-flow-contribution.sh`
+6. Open a PR — do **not** modify `src/`, `pom.xml`, `bundle/`, or `helm/openshift-integration-operator/`
+
+### Reference example (Open-Meteo, public API)
+
+```bash
+oc apply -f k8s/examples/22-ephemeral-open-meteo-weather.yaml
+oc logs -f deploy/iflow-ephemeral-open-meteo-weather-worker -n openshift-integration
+```
+
+Automate validation + PR creation: run the **Contribute flow example (Open-Meteo PR)** workflow (`workflow_dispatch`) with your `owner` username. See [`.github/workflows/contrib-flow-example.yml`](.github/workflows/contrib-flow-example.yml).
+
+### After a successful merge
+
+```bash
+curl -s https://maximilianopizarro.github.io/openshift-integration-operator/flow-catalog.json \
+  | grep -o '"name": "publicapi-open-meteo-weather"'
+```
+
+Your template appears in the console **Browse templates** modal on all clusters without redeploying the operator.
+
+## Contributing operator code
+
+For Java operator, CRD, or Helm changes:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/my-change`)

@@ -1,0 +1,52 @@
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-open-meteo-weather
+  namespace: openshift-integration
+  labels:
+    platform.io/flow-owner: maximilianoPizarro
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+  kaotoDesign: |
+    - route:
+        id: open-meteo-weather-poll
+        from:
+          uri: "timer:meteoPoll"
+          parameters:
+            period: "120000"
+          steps:
+            - doTry:
+                steps:
+                  - setHeader:
+                      name: CamelHttpMethod
+                      constant: GET
+                  - to:
+                      uri: "https://api.open-meteo.com/v1/forecast?latitude=40.42&longitude=-3.70&current=temperature_2m,wind_speed_10m"
+                  - unmarshal:
+                      json: {}
+                  - setProperty:
+                      name: temperature
+                      jsonpath: "$.current.temperature_2m"
+                  - setProperty:
+                      name: windSpeed
+                      jsonpath: "$.current.wind_speed_10m"
+                  - choice:
+                      when:
+                        - simple: "${exchangeProperty.temperature} > 30"
+                          steps:
+                            - log:
+                                message: "HEAT ALERT: ${exchangeProperty.temperature}°C, wind ${exchangeProperty.windSpeed} km/h (Madrid)"
+                      otherwise:
+                        steps:
+                          - log:
+                              message: "Weather OK: ${exchangeProperty.temperature}°C, wind ${exchangeProperty.windSpeed} km/h (Madrid)"
+                doCatch:
+                  - exception:
+                      - java.lang.Exception
+                    steps:
+                      - log:
+                          message: "Open-Meteo API error: ${exception.message}"

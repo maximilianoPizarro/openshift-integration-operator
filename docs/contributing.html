@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Contribute IntegrationFlows to the global template catalog — OpenShift Integration Operator">
+  <title>Contribute Flows | OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/patternfly.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatText/RedHatText.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatDisplay/RedHatDisplay.css">
+  <link rel="stylesheet" href="assets/site.css">
+  <script defer src="assets/site.js"></script>
+</head>
+<body class="site-page site-page--doc">
+  <div id="site-masthead"></div>
+
+  <header class="page-header">
+    <div class="container container--narrow">
+      <a href="index.html" class="back-link">&larr; Back to Home</a>
+      <h1>Contribute Integration Flows</h1>
+      <p>Share a ready-to-use flow with every OpenShift cluster running the operator — no operator release required.</p>
+    </div>
+  </header>
+
+  <main class="site-main site-main--compact">
+    <div class="container container--narrow">
+
+      <section class="doc-section" id="why">
+        <h2>Why contribute?</h2>
+        <p>
+          When your pull request merges to
+          <a href="https://github.com/maximilianoPizarro/openshift-integration-operator">maximilianoPizarro/openshift-integration-operator</a>,
+          GitHub Pages republishes <code>docs/flow-catalog.json</code> within minutes. Every cluster with the
+          operator installed loads that catalog from:
+        </p>
+        <pre><code>https://maximilianopizarro.github.io/openshift-integration-operator/flow-catalog.json</code></pre>
+        <p>
+          Users see your template in <strong>Integration Platform &rarr; Create IntegrationFlow &rarr; Browse templates</strong>
+          after refreshing the modal. No Helm upgrade, no operator RC, no console-plugin image rebuild is required for catalog-only changes.
+        </p>
+        <div class="note">
+          <strong>Multi-cluster reach:</strong> ROSA, ARO, on-prem OpenShift — any environment that already runs the operator
+          receives your flow globally via the shared GitHub Pages URL.
+        </div>
+      </section>
+
+      <section class="doc-section" id="what">
+        <h2>What to contribute</h2>
+        <table>
+          <thead>
+            <tr><th>Artifact</th><th>Purpose</th><th>Visible in cluster</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>docs/flow-catalog.json</code></td>
+              <td>Template catalog entry (console create form + <a href="ready-flows.html">Ready Flows</a>)</td>
+              <td>After GitHub Pages deploy</td>
+            </tr>
+            <tr>
+              <td><code>k8s/examples/NN-*.yaml</code></td>
+              <td>Runnable <code>IntegrationFlow</code> CR for Quick Try</td>
+              <td>After <code>oc apply</code></td>
+            </tr>
+            <tr>
+              <td>Both (recommended)</td>
+              <td>Template + one-click YAML for docs and CI</td>
+              <td>Catalog + manual apply</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="doc-section" id="requirements">
+        <h2>Flow requirements</h2>
+        <ul>
+          <li><code>deploymentMode: EPHEMERAL</code> for public-API demos (no Git, Tekton, or secrets)</li>
+          <li>Public HTTP APIs only — no API keys in the repository</li>
+          <li>Camel components covered by <code>camel-worker-http</code> or <code>camel-worker-full</code></li>
+          <li>Community flows in <code>publicapi</code> category must include an <code>owner</code> field (GitHub username)</li>
+        </ul>
+        <h3>Catalog entry fields</h3>
+        <table>
+          <thead>
+            <tr><th>Field</th><th>Required</th><th>Example</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>Yes</td><td><code>publicapi-open-meteo-weather</code></td></tr>
+            <tr><td><code>owner</code></td><td>Yes (community)</td><td><code>your-github-username</code></td></tr>
+            <tr><td><code>type</code></td><td>Yes</td><td><code>CAMEL_ROUTE</code></td></tr>
+            <tr><td><code>pattern</code></td><td>Yes</td><td><code>Scheduled Public API Poll</code></td></tr>
+            <tr><td><code>components</code></td><td>Yes</td><td><code>timer, https, jsonpath, choice</code></td></tr>
+            <tr><td><code>description</code></td><td>Yes</td><td>One-line summary</td></tr>
+            <tr><td><code>kaotoDesign</code></td><td>Yes</td><td>YAML route body (escaped in JSON)</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="doc-section" id="steps">
+        <h2>Step-by-step PR workflow</h2>
+        <ol class="steps">
+          <li>
+            <strong>Fork and branch</strong>
+            <pre><code>git clone https://github.com/&lt;your-user&gt;/openshift-integration-operator.git
+cd openshift-integration-operator
+git checkout -b contrib/my-public-api-flow</code></pre>
+          </li>
+          <li>
+            <strong>Add catalog entry</strong> — append to the <code>publicapi</code> category in
+            <code>docs/flow-catalog.json</code> with your <code>owner</code> field.
+          </li>
+          <li>
+            <strong>Add runnable YAML</strong> — e.g. <code>k8s/examples/22-ephemeral-open-meteo-weather.yaml</code>
+            with label <code>platform.io/flow-owner: &lt;owner&gt;</code>.
+          </li>
+          <li>
+            <strong>Register validation</strong> — add your flow <code>name</code> to <code>REQUIRES_OWNER</code> in
+            <code>scripts/validate-ready-flows.js</code> (same PR).
+          </li>
+          <li>
+            <strong>Validate locally</strong>
+            <pre><code>bash scripts/prepare-flow-contribution.sh
+# or individually:
+node scripts/validate-ready-flows.js
+python3 scripts/validate-catalog.py</code></pre>
+          </li>
+          <li>
+            <strong>Open PR</strong> to <code>main</code> with checklist below and your GitHub username in the description.
+          </li>
+        </ol>
+        <h3>PR checklist</h3>
+        <ul class="checklist">
+          <li><strong>No operator RC</strong> — PR must not modify <code>src/</code>, <code>pom.xml</code>, <code>bundle/</code>, or <code>helm/openshift-integration-operator/</code></li>
+          <li><strong>Owner set</strong> — <code>owner</code> in JSON and <code>platform.io/flow-owner</code> label in YAML</li>
+          <li><strong>Validation passes</strong> — <code>bash scripts/prepare-flow-contribution.sh</code> exits 0</li>
+          <li><strong>Public API only</strong> — no secrets, tokens, or private endpoints</li>
+        </ul>
+      </section>
+
+      <section class="doc-section" id="example">
+        <h2>Reference example: Open-Meteo weather</h2>
+        <p>
+          The repository includes a complete community contribution you can copy:
+          <code>publicapi-open-meteo-weather</code> polls
+          <a href="https://open-meteo.com/">Open-Meteo</a> (no API key) every 2 minutes and logs temperature alerts for Madrid.
+        </p>
+        <pre><code>oc apply -f k8s/examples/22-ephemeral-open-meteo-weather.yaml
+oc logs -f deploy/iflow-ephemeral-open-meteo-weather-worker -n openshift-integration</code></pre>
+        <p>Browse the template on <a href="ready-flows.html">Ready Flows</a> — look for the <span class="tag owner-tag">@owner</span> badge.</p>
+      </section>
+
+      <section class="doc-section" id="automation">
+        <h2>Automate with GitHub Actions</h2>
+        <p>
+          Workflow <code>Contribute flow example (Open-Meteo PR)</code> demonstrates validation and PR creation.
+          Run it manually from <strong>Actions</strong> &rarr; <strong>workflow_dispatch</strong>:
+        </p>
+        <ul>
+          <li><strong>owner</strong> — your GitHub username (required)</li>
+          <li><strong>dry_run</strong> — <code>true</code> to validate only, <code>false</code> to open a PR</li>
+        </ul>
+        <pre><code># Local equivalent
+bash scripts/prepare-flow-contribution.sh --owner your-github-username
+bash scripts/prepare-flow-contribution.sh</code></pre>
+        <p>
+          See <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/blob/main/.github/workflows/contrib-flow-example.yml">.github/workflows/contrib-flow-example.yml</a>.
+          Forks can copy this workflow; upstream PRs are typically opened manually from your fork.
+        </p>
+      </section>
+
+      <section class="doc-section" id="after-merge">
+        <h2>After a successful merge</h2>
+        <p>Document and verify the publication path:</p>
+        <ol>
+          <li>GitHub Pages workflow deploys <code>docs/</code> (usually within 2–5 minutes)</li>
+          <li>Confirm the catalog contains your flow:
+            <pre><code>curl -s https://maximilianopizarro.github.io/openshift-integration-operator/flow-catalog.json \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); \
+f=[x for c in d if c['id']=='publicapi' for x in c['flows'] if x['name']=='publicapi-open-meteo-weather']; \
+print(f[0]['owner'] if f else 'NOT FOUND')"</code></pre>
+          </li>
+          <li>In OpenShift Console: <strong>Integration Platform &rarr; Integration Flows &rarr; Create</strong> &rarr; <strong>Browse templates</strong> &rarr; search your flow name</li>
+          <li>Optional cluster test: <code>oc apply -f k8s/examples/22-ephemeral-open-meteo-weather.yaml</code></li>
+        </ol>
+        <div class="note">
+          <strong>Success criteria:</strong> flow visible in published JSON + searchable in console template modal + worker pod reaches <code>Running</code> phase — all without upgrading the operator Helm release.
+        </div>
+      </section>
+
+      <section class="doc-section" id="operator-code">
+        <h2>Contributing operator code</h2>
+        <p>
+          Changes to the Java operator, CRDs, or Helm chart follow a separate process (fork, <code>mvn test</code>, PR).
+          Those changes <em>do</em> require a new operator image release. Flow catalog contributions do not.
+        </p>
+        <p>See the <a href="https://github.com/maximilianoPizarro/openshift-integration-operator#contributing">README Contributing section</a> for operator development.</p>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+</body>
+</html>

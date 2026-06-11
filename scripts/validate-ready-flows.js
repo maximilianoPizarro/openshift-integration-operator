@@ -49,6 +49,8 @@ deadAPIs.forEach(api => {
   if (catalogText.includes(api)) console.log(`[WARN] Dead API reference: ${api}`);
 });
 
+const GITHUB_USER_RE = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+
 // Check all flows have required fields
 let missing = [];
 FLOWS.forEach(cat => {
@@ -62,6 +64,14 @@ FLOWS.forEach(cat => {
     if (!flow.description) missing.push(`${cat.id}/${flow.name}: missing description`);
     if (!flow.type) missing.push(`${cat.id}/${flow.name}: missing type`);
     if (!flow.pattern) missing.push(`${cat.id}/${flow.name}: missing pattern`);
+    if (flow.owner && !GITHUB_USER_RE.test(flow.owner)) {
+      missing.push(`${cat.id}/${flow.name}: invalid owner username "${flow.owner}"`);
+    }
+    // Community flows (new contributions) must declare owner; legacy publicapi-* entries remain valid without it.
+    const REQUIRES_OWNER = new Set(['publicapi-open-meteo-weather']);
+    if (flow.name && REQUIRES_OWNER.has(flow.name) && !flow.owner) {
+      missing.push(`${cat.id}/${flow.name}: missing owner (required for community flow contributions)`);
+    }
   });
 });
 if (missing.length > 0) {

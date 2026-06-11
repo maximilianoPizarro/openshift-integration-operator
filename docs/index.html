@@ -7,285 +7,16 @@
   <title>OpenShift Integration Operator</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
-  <style>
-    :root {
-      --bg: #0d1117;
-      --bg-elevated: #161b22;
-      --bg-card: #1c2128;
-      --border: #30363d;
-      --text: #e6edf3;
-      --text-muted: #8b949e;
-      --accent: #388bfd;
-      --accent-hover: #58a6ff;
-      --accent-soft: rgba(56, 139, 253, 0.12);
-      --gradient: linear-gradient(135deg, #388bfd 0%, #1f6feb 50%, #8957e5 100%);
-      --radius: 12px;
-      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-      --max-width: 1120px;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      min-height: 100vh;
-    }
-
-    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
-    a:hover { color: var(--accent-hover); }
-
-    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 1.5rem; }
-
-    /* Header / Hero */
-    header {
-      padding: 4rem 0 3rem;
-      text-align: center;
-      border-bottom: 1px solid var(--border);
-      background:
-        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(56, 139, 253, 0.18), transparent),
-        var(--bg);
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 0.35rem 0.85rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      background: var(--accent-soft);
-      color: var(--accent-hover);
-      border: 1px solid rgba(56, 139, 253, 0.3);
-      margin-bottom: 1.25rem;
-    }
-
-    h1 {
-      font-size: clamp(2rem, 5vw, 3rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.75rem;
-      background: var(--gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .subtitle {
-      font-size: clamp(1.1rem, 2.5vw, 1.35rem);
-      color: var(--text-muted);
-      font-weight: 400;
-      margin-bottom: 1.5rem;
-    }
-
-    .description {
-      max-width: 720px;
-      margin: 0 auto 2rem;
-      font-size: 1.05rem;
-      color: var(--text-muted);
-    }
-
-    .hero-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      justify-content: center;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-    }
-
-    .btn-primary:hover {
-      background: var(--accent-hover);
-      color: #fff;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(56, 139, 253, 0.35);
-    }
-
-    .btn-secondary {
-      background: var(--bg-card);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .btn-secondary:hover {
-      border-color: var(--accent);
-      color: var(--accent-hover);
-    }
-
-    /* Sections */
-    section { padding: 4rem 0; }
-    section:nth-child(even) { background: var(--bg-elevated); }
-
-    h2 {
-      font-size: 1.75rem;
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.01em;
-    }
-
-    .section-lead {
-      color: var(--text-muted);
-      margin-bottom: 2rem;
-      max-width: 640px;
-    }
-
-    /* Feature cards */
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-
-    .card:hover {
-      border-color: rgba(56, 139, 253, 0.45);
-      transform: translateY(-2px);
-    }
-
-    .card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: var(--accent-soft);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .card h3 {
-      font-size: 1.05rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .card p {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-
-    /* Code blocks */
-    pre {
-      background: #010409;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem 1.5rem;
-      overflow-x: auto;
-      font-size: 0.875rem;
-      line-height: 1.7;
-      box-shadow: var(--shadow);
-    }
-
-    code {
-      font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
-      color: #79c0ff;
-    }
-
-    pre code { color: var(--text); }
-    .comment { color: #8b949e; }
-
-    /* Architecture teaser */
-    .arch-teaser {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 2rem;
-      align-items: center;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 2rem;
-    }
-
-    @media (max-width: 768px) {
-      .arch-teaser { grid-template-columns: 1fr; }
-    }
-
-    /* Footer */
-    footer {
-      padding: 2.5rem 0;
-      border-top: 1px solid var(--border);
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.875rem;
-    }
-
-    footer a { color: var(--text-muted); }
-    footer a:hover { color: var(--accent-hover); }
-
-    nav.top-nav {
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--border);
-      background: rgba(13, 17, 23, 0.85);
-      backdrop-filter: blur(8px);
-    }
-
-    nav.top-nav .container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    nav.top-nav .logo {
-      font-weight: 700;
-      color: var(--text);
-      font-size: 0.95rem;
-    }
-
-    nav.top-nav ul {
-      list-style: none;
-      display: flex;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-    }
-
-    nav.top-nav a { color: var(--text-muted); font-size: 0.9rem; }
-    nav.top-nav a:hover { color: var(--accent-hover); }
-  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/patternfly.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatText/RedHatText.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatDisplay/RedHatDisplay.css">
+  <link rel="stylesheet" href="assets/site.css">
+  <script defer src="assets/site.js"></script>
 </head>
-<body>
-  <nav class="top-nav">
-    <div class="container">
-      <a href="index.html" class="logo"><img src="assets/logo.png" alt="" width="24" height="24" style="vertical-align: middle; margin-right: 6px;">OpenShift Integration Operator</a>
-      <ul>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#screenshots">Screenshots</a></li>
-        <li><a href="architecture.html">Architecture</a></li>
-        <li><a href="quickstart.html">Guide</a></li>
-        <li><a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a></li>
-        <li><a href="operations.html">Operations</a></li>
-        <li><a href="examples-catalog.html">Examples (255)</a></li>
-        <li><a href="ready-flows.html">Ready Flows (200+)</a></li>
-      </ul>
-    </div>
-  </nav>
+<body class="site-page">
+  <div id="site-masthead"></div>
 
-  <header>
+  <header class="site-hero">
     <div class="container">
       <span class="badge">Apache 2.0 · Open Source</span>
       <h1>OpenShift Integration Operator</h1>
@@ -296,13 +27,14 @@
       </p>
       <div class="hero-links">
         <a class="btn btn-primary" href="quickstart.html">Get Started</a>
+        <a class="btn btn-secondary" href="contributing.html">Contribute a Flow</a>
         <a class="btn btn-secondary" href="https://github.com/maximilianoPizarro/openshift-integration-operator">View on GitHub</a>
         <a class="btn btn-secondary" href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>
       </div>
     </div>
   </header>
 
-  <main>
+  <main class="site-main">
     <section id="features">
       <div class="container">
         <h2>Features</h2>
@@ -381,7 +113,7 @@ helm install integration-operator \
 <span class="comment"># Verify the deployment</span>
 oc get pods -n openshift-integration
 oc get crd integrationflows.platform.io</code></pre>
-        <p style="margin-top: 1.25rem; color: var(--text-muted);">
+        <p>
           See the full <a href="quickstart.html">Quick Start Guide</a> for all 9 IntegrationFlow examples (including ephemeral Quick Try), embedded flow logs, and console plugin access.
           Browse the <a href="examples-catalog.html"><strong>255 Examples Catalog</strong></a> covering 310 Apache Camel Quarkus components across 15 categories.
         </p>
@@ -392,69 +124,60 @@ oc get crd integrationflows.platform.io</code></pre>
       <div class="container">
         <h2>Console Plugin</h2>
         <p class="section-lead">Integration Platform embedded in the OpenShift Console — manage flows, monitor services, and design workflows visually.</p>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
-          <figure style="margin: 0;">
+        <div class="screenshot-grid">
+          <figure>
             <a href="images/console-plugin.png" target="_blank">
-              <img src="images/console-plugin.png" alt="Integration Flows list page with search bar, integration type filter dropdown, phase filter badges, pagination controls, and direct resource links to Pods and Tekton Pipelines" loading="lazy"
-                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+              <img src="images/console-plugin.png" alt="Integration Flows list page with search bar, integration type filter dropdown, phase filter badges, pagination controls, and direct resource links to Pods and Tekton Pipelines" loading="lazy">
             </a>
-            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Integration Flows — search, type/phase filters, Pods &amp; Pipeline links</figcaption>
+            <figcaption>Integration Flows — search, type/phase filters, Pods &amp; Pipeline links</figcaption>
           </figure>
-          <figure style="margin: 0;">
+          <figure>
             <a href="images/console-plugin-saga.png" target="_blank">
-              <img src="images/console-plugin-saga.png" alt="Visual SVG flow diagram showing saga orchestration with branching logic, choice nodes, parallel multicast, and click-to-YAML node highlighting" loading="lazy"
-                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+              <img src="images/console-plugin-saga.png" alt="Visual SVG flow diagram showing saga orchestration with branching logic, choice nodes, parallel multicast, and click-to-YAML node highlighting" loading="lazy">
             </a>
-            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Visual Flow Diagram — branching logic, click-to-YAML highlighting</figcaption>
+            <figcaption>Visual Flow Diagram — branching logic, click-to-YAML highlighting</figcaption>
           </figure>
-          <figure style="margin: 0;">
+          <figure>
             <a href="images/console-plugin-kaoto.png" target="_blank">
-              <img src="images/console-plugin-kaoto.png" alt="Kaoto drag-and-drop visual route designer embedded in OpenShift Console with component palette, canvas nodes, and property editor panel" loading="lazy"
-                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+              <img src="images/console-plugin-kaoto.png" alt="Kaoto drag-and-drop visual route designer embedded in OpenShift Console with component palette, canvas nodes, and property editor panel" loading="lazy">
             </a>
-            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Kaoto Designer — visual Camel route editor embedded in the console</figcaption>
+            <figcaption>Kaoto Designer — visual Camel route editor embedded in the console</figcaption>
           </figure>
-          <figure style="margin: 0;">
+          <figure>
             <a href="images/console-plugin-editor.png" target="_blank">
-              <img src="images/console-plugin-editor.png" alt="YAML editor showing kaotoDesign Camel route definition with syntax highlighting and automatic Git sync to configured repository" loading="lazy"
-                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+              <img src="images/console-plugin-editor.png" alt="YAML editor showing kaotoDesign Camel route definition with syntax highlighting and automatic Git sync to configured repository" loading="lazy">
             </a>
-            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">YAML Editor — edit and save with automatic Git sync</figcaption>
+            <figcaption>YAML Editor — edit and save with automatic Git sync</figcaption>
           </figure>
-          <figure style="margin: 0;">
+          <figure>
             <a href="images/console-plugin-spec.png" target="_blank">
-              <img src="images/console-plugin-spec.png" alt="IntegrationFlow spec and status panel showing deployment mode, engine type, targeting strategy, resilience settings, circuit breaker state, and lifecycle controls" loading="lazy"
-                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+              <img src="images/console-plugin-spec.png" alt="IntegrationFlow spec and status panel showing deployment mode, engine type, targeting strategy, resilience settings, circuit breaker state, and lifecycle controls" loading="lazy">
             </a>
-            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Spec &amp; Status — lifecycle controls, circuit breaker, RBAC, alerting</figcaption>
+            <figcaption>Spec &amp; Status — lifecycle controls, circuit breaker, RBAC, alerting</figcaption>
           </figure>
-          <figure style="margin: 0;">
+          <figure>
             <a href="images/console-plugin-status.png" target="_blank">
-              <img src="images/console-plugin-status.png" alt="Platform Status dashboard with real-time health indicators for Operator API, Kaoto Designer, Gitea, ArgoCD, Tekton Pipelines, and OpenTelemetry Collector" loading="lazy"
-                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+              <img src="images/console-plugin-status.png" alt="Platform Status dashboard with real-time health indicators for Operator API, Kaoto Designer, Gitea, ArgoCD, Tekton Pipelines, and OpenTelemetry Collector" loading="lazy">
             </a>
-            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Platform Status — real-time health checks for all external services</figcaption>
+            <figcaption>Platform Status — real-time health checks for all external services</figcaption>
           </figure>
-          <figure style="margin: 0;">
+          <figure>
             <a href="images/console-plugin-overview.png" target="_blank">
-              <img src="images/console-plugin-overview.png" alt="Flow Overview dashboard with KPI summary cards for total flows, running count, error rate, and distribution charts by integration type and deployment mode" loading="lazy"
-                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+              <img src="images/console-plugin-overview.png" alt="Flow Overview dashboard with KPI summary cards for total flows, running count, error rate, and distribution charts by integration type and deployment mode" loading="lazy">
             </a>
-            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Flow Overview — KPI cards, distribution charts, recent builds</figcaption>
+            <figcaption>Flow Overview — KPI cards, distribution charts, recent builds</figcaption>
           </figure>
-          <figure style="margin: 0;">
+          <figure>
             <a href="images/console-plugin-logs.png" target="_blank">
-              <img src="images/console-plugin-logs.png" alt="Flow Logs tab with live worker pod log streaming, container selector dropdown, configurable tail lines, and follow mode toggle" loading="lazy"
-                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+              <img src="images/console-plugin-logs.png" alt="Flow Logs tab with live worker pod log streaming, container selector dropdown, configurable tail lines, and follow mode toggle" loading="lazy">
             </a>
-            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Flow Logs — live worker pod logs streamed via operator API</figcaption>
+            <figcaption>Flow Logs — live worker pod logs streamed via operator API</figcaption>
           </figure>
-          <figure style="margin: 0;">
+          <figure>
             <a href="images/console-plugin-pause-flow.png" target="_blank">
-              <img src="images/console-plugin-pause-flow.png" alt="Lifecycle Controls showing Pause, Resume, and Stop actions with confirmation modal dialog and current flow phase indicator" loading="lazy"
-                style="width: 100%; border-radius: 8px; border: 1px solid var(--border);">
+              <img src="images/console-plugin-pause-flow.png" alt="Lifecycle Controls showing Pause, Resume, and Stop actions with confirmation modal dialog and current flow phase indicator" loading="lazy">
             </a>
-            <figcaption style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">Lifecycle Controls — pause, resume, stop flows with confirmation modals</figcaption>
+            <figcaption>Lifecycle Controls — pause, resume, stop flows with confirmation modals</figcaption>
           </figure>
         </div>
       </div>
@@ -481,8 +204,8 @@ oc get crd integrationflows.platform.io</code></pre>
             <p>When your flow is ready, promote it with one click. The operator scaffolds a Git repo, triggers Tekton, and ArgoCD takes over.</p>
           </article>
         </div>
-        <h3 style="margin-top: 2rem;">Precompiled Worker Images</h3>
-        <p style="color: var(--text-muted); margin: 0.75rem 0;">All images are published to <a href="https://quay.io/organization/maximilianopizarro">Quay.io</a> and auto-selected based on detected Camel components.
+        <h3>Precompiled Worker Images</h3>
+        <p>All images are published to <a href="https://quay.io/organization/maximilianopizarro">Quay.io</a> and auto-selected based on detected Camel components.
           The operator parses your <code>kaotoDesign</code> YAML to extract all <code>uri:</code> component schemes (e.g. <code>kafka</code>, <code>platform-http</code>, <code>sql</code>),
           then selects the smallest tier image whose extension set covers all detected components. If components span multiple domains, it falls back to <code>camel-worker-full</code>.
           Override with <code>spec.ephemeral.workerImage</code> to pin a specific image.</p>
@@ -496,7 +219,7 @@ quay.io/maximilianopizarro/camel-worker-http:v0.4.1        <span class="comment"
 quay.io/maximilianopizarro/camel-worker-data:v0.4.1        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
 quay.io/maximilianopizarro/camel-worker-cloud:v0.4.1       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
 quay.io/maximilianopizarro/camel-worker-ai:v0.4.1          <span class="comment"># langchain4j-chat, djl</span></code></pre>
-        <h4 style="margin-top: 1.5rem; color: var(--accent-hover);">Override auto-selection</h4>
+        <h4>Override auto-selection</h4>
         <pre><code><span class="comment"># Force a specific worker image instead of auto-detection</span>
 spec:
   deploymentMode: EPHEMERAL
@@ -504,8 +227,8 @@ spec:
     ttlSeconds: 3600
     workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.4.1</code></pre>
 
-        <h3 style="margin-top: 2rem;">Full Worker — Included Extensions</h3>
-        <p style="color: var(--text-muted); margin: 0.75rem 0 1rem;">
+        <h3>Full Worker — Included Extensions</h3>
+        <p>
           Core &amp; EIP: timer, log, direct, seda, bean, mock, quartz, cron, exec, controlbus, scheduler<br>
           Messaging: kafka, amqp, jms, activemq, mqtt5, nats, pulsar, stomp, sjms2, azure-servicebus, google-pubsub, knative<br>
           HTTP/API: platform-http, http, rest, rest-openapi, vertx-http, netty-http, graphql, grpc, websocket, coap<br>
@@ -526,7 +249,7 @@ spec:
         <p class="section-lead">A Kubernetes-native platform that connects visual design, GitOps, and runtime observability.</p>
         <div class="arch-teaser">
           <div>
-            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+            <p>
               The operator reconciles <code>IntegrationFlow</code> custom resources through scaffolding, Git push,
               Tekton builds, and ArgoCD deployment. The console plugin embeds Kaoto and streams live telemetry
               over SSE to color canvas nodes in real time.
@@ -538,25 +261,6 @@ spec:
     </section>
   </main>
 
-  <footer>
-    <div class="container">
-      <p style="margin-bottom: 0.5rem;">
-        Built by <a href="https://github.com/maximilianoPizarro" style="font-weight: 600;">maximilianoPizarro</a>
-      </p>
-      <p>
-        <a href="index.html">Home</a>
-        · <a href="architecture.html">Architecture</a>
-        · <a href="quickstart.html">Guide</a>
-        · <a href="operations.html">Operations</a>
-        · <a href="examples-catalog.html">Examples (255)</a>
-        · <a href="ready-flows.html">Ready Flows (200+)</a>
-        · <a href="https://github.com/maximilianoPizarro/openshift-integration-operator">GitHub</a>
-        · <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>
-      </p>
-      <p style="margin-top: 0.75rem;">
-        Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.
-      </p>
-    </div>
-  </footer>
+  <div id="site-footer"></div>
 </body>
 </html>
