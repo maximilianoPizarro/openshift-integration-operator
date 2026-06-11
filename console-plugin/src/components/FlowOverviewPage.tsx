@@ -48,6 +48,8 @@ const PHASES = [
   { value: 'Stopped', color: '#6a6e73', labelColor: 'grey' as LabelColor },
 ];
 
+const CARD_CLASS = 'integration-card';
+
 const ONBOARDING_STEPS = [
   {
     step: 1,
@@ -215,7 +217,7 @@ const FlowOverviewPage: React.FC = () => {
       )}
 
       {/* Getting Started */}
-      <Card isCompact style={{ marginBottom: '24px', borderLeft: '3px solid #2b9af3' }}>
+      <Card isCompact className={CARD_CLASS} style={{ marginBottom: '24px', borderLeft: '3px solid #2b9af3' }}>
         <CardTitle>Getting Started</CardTitle>
         <CardBody>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', marginBottom: '16px' }}>
@@ -271,26 +273,26 @@ const FlowOverviewPage: React.FC = () => {
       {/* KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '24px' }}>
         <a href="/integration-flows" style={{ textDecoration: 'none' }}>
-          <Card isCompact isFullHeight style={{ borderLeft: '3px solid #2b9af3' }}>
+          <Card isCompact isFullHeight className={CARD_CLASS} style={{ borderLeft: '3px solid #2b9af3' }}>
             <CardBody>
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#2b9af3' }}>{flows.length}</div>
               <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Total Flows</div>
             </CardBody>
           </Card>
         </a>
-        <Card isCompact style={{ borderLeft: '3px solid #3e8635' }}>
+        <Card isCompact className={CARD_CLASS} style={{ borderLeft: '3px solid #3e8635' }}>
           <CardBody>
             <div style={{ fontSize: '32px', fontWeight: 700, color: '#3e8635' }}>{runningFlows.length}</div>
             <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Running</div>
           </CardBody>
         </Card>
-        <Card isCompact style={{ borderLeft: `3px solid ${errorFlows.length > 0 ? '#c9190b' : '#3e8635'}` }}>
+        <Card isCompact className={CARD_CLASS} style={{ borderLeft: `3px solid ${errorFlows.length > 0 ? '#c9190b' : '#3e8635'}` }}>
           <CardBody>
             <div style={{ fontSize: '32px', fontWeight: 700, color: errorFlows.length > 0 ? '#c9190b' : '#3e8635' }}>{errorFlows.length}</div>
             <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Errors</div>
           </CardBody>
         </Card>
-        <Card isCompact style={{ borderLeft: '3px solid #f0ab00' }}>
+        <Card isCompact className={CARD_CLASS} style={{ borderLeft: '3px solid #f0ab00' }}>
           <CardBody>
             <div style={{ fontSize: '32px', fontWeight: 700, color: '#f0ab00' }}>{pipelineRuns.length}</div>
             <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Builds</div>
@@ -300,7 +302,7 @@ const FlowOverviewPage: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
         {/* By Type */}
-        <Card isCompact>
+        <Card isCompact className={CARD_CLASS}>
           <CardTitle>Flows by Type</CardTitle>
           <CardBody>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -324,7 +326,7 @@ const FlowOverviewPage: React.FC = () => {
         </Card>
 
         {/* By Phase */}
-        <Card isCompact>
+        <Card isCompact className={CARD_CLASS}>
           <CardTitle>Flows by Phase</CardTitle>
           <CardBody>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -350,7 +352,7 @@ const FlowOverviewPage: React.FC = () => {
 
       {/* Documentation & References */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-        <Card isCompact>
+        <Card isCompact className={CARD_CLASS}>
           <CardTitle>Platform Documentation</CardTitle>
           <CardBody>
             <p style={{ fontSize: '12px', color: 'var(--integration-text-subtle)', marginBottom: '12px', lineHeight: 1.5 }}>
@@ -364,7 +366,7 @@ const FlowOverviewPage: React.FC = () => {
           </CardBody>
         </Card>
 
-        <Card isCompact>
+        <Card isCompact className={CARD_CLASS}>
           <CardTitle>Technology References</CardTitle>
           <CardBody>
             <p style={{ fontSize: '12px', color: 'var(--integration-text-subtle)', marginBottom: '12px', lineHeight: 1.5 }}>
@@ -381,7 +383,7 @@ const FlowOverviewPage: React.FC = () => {
 
       {/* Error Flows */}
       {errorFlows.length > 0 && (
-        <Card isCompact style={{ borderLeft: '3px solid #c9190b', marginBottom: '20px' }}>
+        <Card isCompact className={CARD_CLASS} style={{ borderLeft: '3px solid #c9190b', marginBottom: '20px' }}>
           <CardTitle style={{ color: '#c9190b' }}>
             {'\u26A0'} Flows with Errors ({errorFlows.length})
           </CardTitle>
@@ -403,7 +405,7 @@ const FlowOverviewPage: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         {/* Recent Flows */}
-        <Card isCompact>
+        <Card isCompact className={CARD_CLASS}>
           <CardTitle>Recently Created Flows</CardTitle>
           <CardBody>
             {recentFlows.length === 0 ? (
@@ -426,7 +428,7 @@ const FlowOverviewPage: React.FC = () => {
         </Card>
 
         {/* Recent Pipeline Runs */}
-        <Card isCompact>
+        <Card isCompact className={CARD_CLASS}>
           <CardTitle>Recent Builds</CardTitle>
           <CardBody>
             {recentPRs.length === 0 ? (

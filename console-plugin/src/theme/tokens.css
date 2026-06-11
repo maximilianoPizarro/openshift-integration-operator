@@ -1,12 +1,31 @@
 :root {
-  --integration-text-primary: var(--pf-t--global--text--color--regular, var(--pf-global--Color--100));
-  --integration-text-subtle: var(--pf-t--global--text--color--subtle, var(--pf-global--Color--200, #6a6e73));
-  --integration-text-muted: var(--pf-t--global--text--color--nonstatus--on-default, var(--pf-global--Color--200, #8a8d90));
-  --integration-bg-primary: var(--pf-t--global--background--color--primary--default, var(--pf-global--BackgroundColor--100));
-  --integration-bg-secondary: var(--pf-t--global--background--color--secondary--default, var(--pf-global--BackgroundColor--200));
-  --integration-bg-surface: var(--pf-t--global--background--color--secondary--default, var(--pf-global--BackgroundColor--200));
-  --integration-bg-dark: var(--pf-t--global--background--color--secondary--default, var(--pf-global--BackgroundColor--dark-300));
-  --integration-border: var(--pf-t--global--border--color--default, var(--pf-global--BorderColor--100, #3c3f42));
-  --integration-link: var(--pf-t--global--text--color--link--default, var(--pf-global--link--Color, #2b9af3));
-  --integration-success: var(--pf-t--global--icon--color--status--success--default, #3e8635);
+  --integration-text-primary: var(--pf-t--global--text--color--regular);
+  --integration-text-subtle: var(--pf-t--global--text--color--subtle);
+  --integration-text-muted: var(--pf-t--global--text--color--nonstatus--on-default);
+  --integration-bg-primary: var(--pf-t--global--background--color--primary--default);
+  --integration-bg-secondary: var(--pf-t--global--background--color--secondary--default);
+  --integration-bg-surface: var(--pf-t--global--background--color--secondary--default);
+  --integration-bg-dark: var(--pf-t--global--background--color--secondary--default);
+  --integration-border: var(--pf-t--global--border--color--default);
+  --integration-link: var(--pf-t--global--text--color--link--default);
+  --integration-success: var(--pf-t--global--icon--color--status--success--default);
+}
+
+/* OpenShift console applies pf-theme-dark / pf-v6-theme-dark on html */
+.pf-theme-dark,
+.pf-v6-theme-dark {
+  --integration-text-primary: var(--pf-t--global--text--color--regular, #e0e0e0);
+  --integration-text-subtle: var(--pf-t--global--text--color--subtle, #acacac);
+  --integration-bg-primary: var(--pf-t--global--background--color--primary--default, #1b1d21);
+  --integration-bg-secondary: var(--pf-t--global--background--color--secondary--default, #212427);
+  --integration-bg-surface: var(--pf-t--global--background--color--secondary--default, #2d2f31);
+  --integration-border: var(--pf-t--global--border--color--default, #3c3f42);
+  --integration-link: var(--pf-t--global--text--color--link--default, #73bcf7);
+}
+
+.pf-theme-dark .integration-card,
+.pf-v6-theme-dark .integration-card {
+  --pf-v6-c-card--BackgroundColor: var(--integration-bg-primary);
+  --pf-v6-c-card__title-text--Color: var(--integration-text-primary);
+  color: var(--integration-text-primary);
 }
