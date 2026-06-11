@@ -19,6 +19,10 @@ env:
   IMAGE_NAME: openshift-integration-operator
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+concurrency:
+  group: build-push-quay-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -350,6 +354,9 @@ jobs:
   helm-publish:
     runs-on: ubuntu-latest
     needs: [build-jvm, build-console-plugin]
+    concurrency:
+      group: helm-publish-main
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
@@ -376,4 +383,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/
           git diff --staged --quiet || git commit -m "chore: update Helm chart package [skip ci]"
-          git push origin main
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            git push origin main && exit 0
+            echo "Push rejected (attempt ${attempt}/5), retrying..."
+            sleep $((attempt * 3))
+          done
+          echo "Failed to push Helm chart after 5 attempts"
+          exit 1
