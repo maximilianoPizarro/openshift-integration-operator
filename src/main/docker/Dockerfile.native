@@ -1,10 +1,12 @@
 FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:jdk-21 AS build
+COPY --chown=quarkus:quarkus mvnw /code/mvnw
+COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
 USER quarkus
 WORKDIR /code
-RUN mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.6.1:go-offline
+RUN chmod +x ./mvnw && ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.6.1:go-offline
 COPY src /code/src
-RUN mvn package -Dnative -DskipTests \
+RUN ./mvnw package -Dnative -DskipTests \
     -Dquarkus.native.additional-build-args="--initialize-at-run-time=io.netty"
 
 FROM quay.io/quarkus/quarkus-micro-image:2.0
