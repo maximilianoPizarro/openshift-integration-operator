@@ -415,7 +415,7 @@ spec:
               containers:
               - name: operator
                 image: quay.io/maximilianopizarro/openshift-integration-operator:v0.4.1
-                imagePullPolicy: IfNotPresent
+                imagePullPolicy: Always
                 ports:
                 - containerPort: 8080
                   name: http
@@ -458,6 +458,10 @@ spec:
                   value: "1"
                 - name: QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT
                   value: http://integration-otel-collector:4317
+                - name: GIT_PROVIDER
+                  value: auto
+                - name: TEKTON_ENABLED
+                  value: "true"
                 volumeMounts:
                 - name: tls-certs
                   mountPath: /etc/tls
@@ -507,7 +511,7 @@ spec:
               containers:
               - name: console-plugin
                 image: quay.io/maximilianopizarro/integration-console-plugin:v0.4.1
-                imagePullPolicy: IfNotPresent
+                imagePullPolicy: Always
                 ports:
                 - containerPort: 9443
                   name: https

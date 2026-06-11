@@ -39,6 +39,8 @@ interface PlatformConfig {
   sonataFlowConsoleUrl?: string;
   sonataFlowConsoleRouteHost?: string;
   sonataFlowEnabled?: boolean;
+  gitProvider?: string;
+  tektonEnabled?: boolean;
 }
 
 interface IntegrationFlow {

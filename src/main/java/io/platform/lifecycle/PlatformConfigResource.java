@@ -34,6 +34,12 @@ public class PlatformConfigResource {
     @ConfigProperty(name = "kaoto.route-host", defaultValue = "")
     java.util.Optional<String> kaotoRouteHost;
 
+    @ConfigProperty(name = "git.provider", defaultValue = "auto")
+    String gitProvider;
+
+    @ConfigProperty(name = "tekton.enabled", defaultValue = "true")
+    boolean tektonEnabled;
+
     @GET
     public Response getConfig() {
         return Response.ok(Map.of(
@@ -43,7 +49,9 @@ public class PlatformConfigResource {
                 "sonataFlowConsoleUrl", sonataFlowConsoleUrl.orElse(""),
                 "sonataFlowConsoleRouteHost", sonataFlowConsoleRouteHost.orElse(""),
                 "kaotoUrl", kaotoInstanceUrl.orElse(""),
-                "kaotoRouteHost", kaotoRouteHost.orElse("")
+                "kaotoRouteHost", kaotoRouteHost.orElse(""),
+                "gitProvider", gitProvider,
+                "tektonEnabled", tektonEnabled
         )).build();
     }
 }

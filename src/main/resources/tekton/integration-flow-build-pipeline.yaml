@@ -1,0 +1,130 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: integration-flow-build
+  labels:
+    app.kubernetes.io/part-of: integration-platform
+    platform.io/component: build
+    app.kubernetes.io/managed-by: openshift-integration-operator
+spec:
+  params:
+    - name: git-url
+      type: string
+      description: Git repository URL (ignored when use-embedded-scaffold=true)
+      default: ""
+    - name: git-revision
+      type: string
+      default: main
+    - name: commit-sha
+      type: string
+      default: ""
+    - name: flow-name
+      type: string
+    - name: use-embedded-scaffold
+      type: string
+      description: When "true", populate workspace from embedded scaffold ConfigMap
+      default: "false"
+    - name: integration-type
+      type: string
+      description: Integration type for scaffold selection (camelRoute, camelKamelet, etc.)
+      default: camelRoute
+  workspaces:
+    - name: shared-workspace
+    - name: basic-auth
+      optional: true
+    - name: scaffold-source
+      optional: true
+  tasks:
+    - name: fetch-source
+      when:
+        - input: $(params.use-embedded-scaffold)
+          operator: in
+          values: ["false", ""]
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: URL
+          value: $(params.git-url)
+        - name: REVISION
+          value: $(params.git-revision)
+        - name: SSL_VERIFY
+          value: "false"
+        - name: DELETE_EXISTING
+          value: "false"
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+        - name: basic-auth
+          workspace: basic-auth
+
+    - name: populate-scaffold
+      when:
+        - input: $(params.use-embedded-scaffold)
+          operator: in
+          values: ["true"]
+      taskRef:
+        name: populate-scaffold
+      params:
+        - name: integration-type
+          value: $(params.integration-type)
+        - name: flow-name
+          value: $(params.flow-name)
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+        - name: scaffold-source
+          workspace: scaffold-source
+
+    - name: build-maven
+      runAfter:
+        - fetch-source
+        - populate-scaffold
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: maven
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: GOALS
+          value:
+            - package
+            - -DskipTests
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build-image
+      runAfter:
+        - build-maven
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/__PLATFORM_NAMESPACE__/$(params.flow-name):latest
+        - name: CONTEXT
+          value: .
+        - name: TLS_VERIFY
+          value: "false"
+        - name: SKIP_PUSH
+          value: "false"
+      workspaces:
+        - name: source
+          workspace: shared-workspace

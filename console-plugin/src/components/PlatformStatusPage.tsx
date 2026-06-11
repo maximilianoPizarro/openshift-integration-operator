@@ -13,12 +13,17 @@ import {
 } from '@patternfly/react-core';
 import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
 
-const API_BASE = '/api/kubernetes/apis/platform.io/v1alpha1';
+import { API_BASE, NAMESPACE, PROXY_BASE } from '../constants';
+
 const K8S_CORE = '/api/kubernetes/api/v1';
 const K8S_APPS = '/api/kubernetes/apis/apps/v1';
 const K8S_TEKTON = '/api/kubernetes/apis/tekton.dev/v1';
 const K8S_ARGO = '/api/kubernetes/apis/argoproj.io/v1alpha1';
-const NAMESPACE = 'openshift-integration';
+
+interface PlatformConfig {
+  gitProvider?: string;
+  tektonEnabled?: boolean;
+}
 
 interface ServiceCheck {
   name: string;
@@ -61,6 +66,7 @@ const PlatformStatusPage: React.FC = () => {
   const [pods, setPods] = React.useState<PodInfo[]>([]);
   const [flowCount, setFlowCount] = React.useState(0);
   const [ephemeralCount, setEphemeralCount] = React.useState(0);
+  const [gitOpsCount, setGitOpsCount] = React.useState(0);
   const [pipelineCount, setPipelineCount] = React.useState(0);
   const [argoApps, setArgoApps] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
@@ -68,6 +74,44 @@ const PlatformStatusPage: React.FC = () => {
 
   const checkServices = React.useCallback(async () => {
     const checks: ServiceCheck[] = [];
+
+    let gitOpsCount = 0;
+    let giteaRepoCount = 0;
+    let flowItems: Array<{ spec?: { deploymentMode?: string; gitRepository?: string } }> = [];
+    try {
+      const resp = await fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows`);
+      if (resp.ok) {
+        const data = await resp.json();
+        flowItems = data.items || [];
+        setFlowCount(flowItems.length);
+        setEphemeralCount(flowItems.filter(f => f.spec?.deploymentMode === 'EPHEMERAL').length);
+        for (const f of flowItems) {
+          if (f.spec?.deploymentMode !== 'EPHEMERAL') {
+            gitOpsCount++;
+          }
+          const repo = (f.spec?.gitRepository || '').toLowerCase();
+          if (repo.includes('gitea')) {
+            giteaRepoCount++;
+          }
+        }
+      }
+    } catch { /* ignore */ }
+    setGitOpsCount(gitOpsCount);
+
+    let gitProvider = 'auto';
+    let tektonEnabled = true;
+    try {
+      const cfgResp = await fetch(`${PROXY_BASE}/api/config`);
+      if (cfgResp.ok) {
+        const cfg: PlatformConfig = await cfgResp.json();
+        gitProvider = (cfg.gitProvider || 'auto').toLowerCase();
+        tektonEnabled = cfg.tektonEnabled !== false;
+      }
+    } catch { /* ignore */ }
+
+    const showGitOpsServices = gitOpsCount > 0;
+    const showGitea = showGitOpsServices
+      && (gitProvider === 'gitea' || (gitProvider === 'auto' && giteaRepoCount > 0));
 
     try {
       const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/openshift-integration-operator`);
@@ -123,60 +167,71 @@ const PlatformStatusPage: React.FC = () => {
       }
     } catch { checks.push({ name: 'Kaoto Designer', description: 'Visual editor', status: 'error', detail: 'Unreachable' }); }
 
-    try {
-      const resp = await fetch(`${K8S_APPS}/namespaces/gitea/deployments`);
-      if (resp.ok) {
-        const data = await resp.json();
-        const gitea = (data.items || []).find((d: any) => d.metadata?.name?.includes('gitea'));
-        if (gitea) {
-          const ready = gitea.status?.readyReplicas || 0;
-          checks.push({
-            name: 'Gitea (Git Server)',
-            description: 'Hosts scaffolded worker source code repositories',
-            status: ready > 0 ? 'healthy' : 'error',
-            detail: `${ready} replicas in gitea namespace`,
-            link: '/k8s/ns/gitea/deployments',
-          });
+    if (showGitea) {
+      try {
+        const resp = await fetch(`${K8S_APPS}/namespaces/gitea/deployments`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const gitea = (data.items || []).find((d: any) => d.metadata?.name?.includes('gitea'));
+          if (gitea) {
+            const ready = gitea.status?.readyReplicas || 0;
+            checks.push({
+              name: 'Gitea (Git Server)',
+              description: 'Hosts scaffolded worker source code repositories',
+              status: ready > 0 ? 'healthy' : 'error',
+              detail: `${ready} replicas in gitea namespace`,
+              link: '/k8s/ns/gitea/deployments',
+            });
+          } else {
+            checks.push({ name: 'Gitea (Git Server)', description: 'Git server', status: 'degraded', detail: 'No gitea deployment found' });
+          }
         } else {
-          checks.push({ name: 'Gitea (Git Server)', description: 'Git server', status: 'degraded', detail: 'No gitea deployment found' });
+          checks.push({ name: 'Gitea (Git Server)', description: 'Git server', status: 'degraded', detail: 'gitea namespace not accessible' });
         }
-      } else {
-        checks.push({ name: 'Gitea (Git Server)', description: 'Git server', status: 'degraded', detail: 'gitea namespace not accessible' });
-      }
-    } catch { checks.push({ name: 'Gitea (Git Server)', description: 'Git server', status: 'degraded', detail: 'Cannot check' }); }
+      } catch { checks.push({ name: 'Gitea (Git Server)', description: 'Git server', status: 'degraded', detail: 'Cannot check' }); }
+    }
 
-    try {
-      const resp = await fetch(`${K8S_APPS}/namespaces/openshift-gitops/deployments`);
-      if (resp.ok) {
-        const data = await resp.json();
-        const argoServer = (data.items || []).find((d: any) => d.metadata?.name?.includes('server'));
-        if (argoServer) {
-          const ready = argoServer.status?.readyReplicas || 0;
-          checks.push({
-            name: 'ArgoCD (GitOps)',
-            description: 'Deploys workers to target clusters via ApplicationSets',
-            status: ready > 0 ? 'healthy' : 'error',
-            detail: `Server: ${ready} replicas`,
-            link: '/k8s/ns/openshift-gitops/deployments',
-          });
+    if (showGitOpsServices) {
+      try {
+        const resp = await fetch(`${K8S_APPS}/namespaces/openshift-gitops/deployments`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const argoServer = (data.items || []).find((d: any) => d.metadata?.name?.includes('server'));
+          if (argoServer) {
+            const ready = argoServer.status?.readyReplicas || 0;
+            checks.push({
+              name: 'ArgoCD (GitOps)',
+              description: 'Deploys workers to target clusters via ApplicationSets',
+              status: ready > 0 ? 'healthy' : 'error',
+              detail: `Server: ${ready} replicas`,
+              link: '/k8s/ns/openshift-gitops/deployments',
+            });
+          } else {
+            checks.push({ name: 'ArgoCD (GitOps)', description: 'GitOps controller', status: 'error', detail: 'Not found' });
+          }
         } else {
-          checks.push({ name: 'ArgoCD (GitOps)', description: 'GitOps controller', status: 'error', detail: 'Not found' });
+          checks.push({ name: 'ArgoCD (GitOps)', description: 'GitOps controller', status: 'degraded', detail: 'openshift-gitops not accessible' });
         }
-      } else {
-        checks.push({ name: 'ArgoCD (GitOps)', description: 'GitOps controller', status: 'degraded', detail: 'openshift-gitops not accessible' });
-      }
-    } catch { checks.push({ name: 'ArgoCD (GitOps)', description: 'GitOps controller', status: 'error', detail: 'Unreachable' }); }
+      } catch { checks.push({ name: 'ArgoCD (GitOps)', description: 'GitOps controller', status: 'error', detail: 'Unreachable' }); }
+    }
 
-    try {
-      const resp = await fetch(`${K8S_TEKTON}/namespaces/${NAMESPACE}/pipelines/integration-flow-build`);
+    let pipelineExists = false;
+    if (tektonEnabled) {
+      try {
+        const resp = await fetch(`${K8S_TEKTON}/namespaces/${NAMESPACE}/pipelines/integration-flow-build`);
+        pipelineExists = resp.ok;
+      } catch { /* ignore */ }
+    }
+
+    if (showGitOpsServices || pipelineExists) {
       checks.push({
         name: 'Tekton Pipeline',
         description: 'CI pipeline for building worker container images',
-        status: resp.ok ? 'healthy' : 'error',
-        detail: resp.ok ? 'integration-flow-build ready' : 'Pipeline not found',
+        status: pipelineExists ? 'healthy' : 'degraded',
+        detail: pipelineExists ? 'integration-flow-build ready' : 'Pipeline not deployed yet',
         link: `/k8s/ns/${NAMESPACE}/tekton.dev~v1~Pipeline/integration-flow-build`,
       });
-    } catch { checks.push({ name: 'Tekton Pipeline', description: 'CI pipeline', status: 'error', detail: 'Unreachable' }); }
+    }
 
     try {
       const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/integration-otel-collector`);
@@ -196,17 +251,6 @@ const PlatformStatusPage: React.FC = () => {
     } catch { checks.push({ name: 'OpenTelemetry Collector', description: 'Telemetry', status: 'degraded', detail: 'Cannot check' }); }
 
     setServices(checks);
-
-    try {
-      const resp = await fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows`);
-      if (resp.ok) {
-        const data = await resp.json();
-        const items = data.items || [];
-        setFlowCount(items.length);
-        setEphemeralCount(items.filter((f: { spec?: { deploymentMode?: string } }) =>
-          f.spec?.deploymentMode === 'EPHEMERAL').length);
-      }
-    } catch { /* ignore */ }
 
     try {
       const resp = await fetch(`${K8S_TEKTON}/namespaces/${NAMESPACE}/pipelineruns?labelSelector=platform.io%2Fcomponent%3Dbuild&limit=100`);
@@ -299,6 +343,13 @@ const PlatformStatusPage: React.FC = () => {
           </CardBody>
         </Card>
       </div>
+
+      {!loading && gitOpsCount === 0 && (
+        <Alert variant="info" isInline title="GitOps services hidden" style={{ marginBottom: '16px' }}>
+          Gitea, ArgoCD and Tekton checks are shown only when at least one Integration Flow uses GitOps mode.
+          Quick Try (ephemeral) flows do not require them.
+        </Alert>
+      )}
 
       {/* Service checks */}
       <Title headingLevel="h2" size="lg" style={{ marginBottom: '12px' }}>External Services</Title>
