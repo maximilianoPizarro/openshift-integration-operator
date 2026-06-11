@@ -58,11 +58,7 @@ public class KaotoReconciler {
     void reconcileKaoto() {
         reconcileDeployment();
         reconcileService();
-        try {
-            reconcileRoute();
-        } catch (Exception e) {
-            LOG.infof("OpenShift Route API not available; skipping Kaoto Route (ClusterIP only): %s", e.getMessage());
-        }
+        reconcileRoute();
         LOG.infof("Reconciled Kaoto in namespace '%s' (image: %s)", platformNamespace, kaotoImage);
     }
 

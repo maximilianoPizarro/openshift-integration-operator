@@ -369,6 +369,18 @@ spec:
           - patch
           - delete
         - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
           - console.openshift.io
           resources:
           - consoleplugins
