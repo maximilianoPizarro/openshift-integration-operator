@@ -1,3 +1,4 @@
+import '../../theme/tokens.css';
 import * as React from 'react';
 import {
   Alert,
@@ -195,27 +196,27 @@ const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
                         onClick={() => handleSelect(cat, flow)}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(cat, flow); }}
                         style={{
-                          border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)',
+                          border: '1px solid var(--integration-border)',
                           borderRadius: '6px',
                           padding: '10px',
                           cursor: 'pointer',
-                          background: 'var(--pf-global--BackgroundColor--100, #fff)',
+                          background: 'var(--integration-bg-surface)',
                           transition: 'border-color 0.15s',
                         }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--pf-global--active-color--100, #2b9af3)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--pf-global--BorderColor--100, #d2d2d2)'; }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--integration-link)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--integration-border)'; }}
                       >
-                        <div style={{ fontSize: '11px', color: 'var(--pf-global--active-color--100, #2b9af3)', fontWeight: 600, marginBottom: '4px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--integration-link)', fontWeight: 600, marginBottom: '4px' }}>
                           {flow.pattern}
                         </div>
-                        <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '4px' }}>{flow.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '6px', lineHeight: 1.4 }}>
+                        <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '4px', color: 'var(--integration-text-primary)' }}>{flow.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)', marginBottom: '6px', lineHeight: 1.4 }}>
                           {flow.description}
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           <span style={{
                             fontSize: '10px', padding: '1px 6px', borderRadius: '999px',
-                            background: 'var(--pf-global--BackgroundColor--200, #f0f0f0)',
+                            background: 'var(--integration-bg-secondary)',
                             fontWeight: 600,
                           }}>
                             {flow.type}

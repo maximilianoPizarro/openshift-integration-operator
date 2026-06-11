@@ -1,3 +1,4 @@
+import '../theme/tokens.css';
 import * as React from 'react';
 import {
   Alert,
@@ -112,18 +113,18 @@ function DocLink({ label, href, description }: { label: string; href: string; de
         padding: '8px 10px',
         borderRadius: '6px',
         textDecoration: 'none',
-        border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)',
-        background: 'var(--pf-global--BackgroundColor--100, #fff)',
+        border: '1px solid var(--integration-border)',
+        background: 'var(--integration-bg-surface)',
         transition: 'border-color 0.15s',
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--pf-global--active-color--100, #2b9af3)'; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--pf-global--BorderColor--100, #d2d2d2)'; }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--integration-link)'; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--integration-border)'; }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--pf-global--link--Color, #2b9af3)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--integration-link)' }}>
         {label}
         <ExternalLinkAltIcon style={{ fontSize: '11px' }} />
       </div>
-      <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginTop: '2px', lineHeight: 1.4 }}>
+      <div style={{ fontSize: '11px', color: 'var(--integration-text-subtle)', marginTop: '2px', lineHeight: 1.4 }}>
         {description}
       </div>
     </a>
@@ -196,7 +197,7 @@ const FlowOverviewPage: React.FC = () => {
     <PageSection>
       <div style={{ marginBottom: '20px' }}>
         <Title headingLevel="h1" size="xl">Flow Overview</Title>
-        <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+        <span style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>
           Dashboard for {flows.length} integration flows in {NAMESPACE}
         </span>
       </div>
@@ -224,21 +225,21 @@ const FlowOverviewPage: React.FC = () => {
                 style={{
                   padding: '14px',
                   borderRadius: '8px',
-                  border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)',
-                  background: 'var(--pf-global--BackgroundColor--200, #f0f0f0)',
+                  border: '1px solid var(--integration-border)',
+                  background: 'var(--integration-bg-secondary)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     width: '24px', height: '24px', borderRadius: '50%',
-                    background: '#2b9af3', color: '#fff', fontSize: '12px', fontWeight: 700,
+                    background: 'var(--integration-link)', color: 'var(--pf-t--global--text--color--on-brand--default, #fff)', fontSize: '12px', fontWeight: 700,
                   }}>
                     {s.step}
                   </span>
-                  <span style={{ fontWeight: 600, fontSize: '14px' }}>{s.title}</span>
+                  <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--integration-text-primary)' }}>{s.title}</span>
                 </div>
-                <p style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', lineHeight: 1.5, marginBottom: '10px' }}>
+                <p style={{ fontSize: '12px', color: 'var(--integration-text-subtle)', lineHeight: 1.5, marginBottom: '10px' }}>
                   {s.description}
                 </p>
                 {s.action.internal ? (
@@ -273,26 +274,26 @@ const FlowOverviewPage: React.FC = () => {
           <Card isCompact isFullHeight style={{ borderLeft: '3px solid #2b9af3' }}>
             <CardBody>
               <div style={{ fontSize: '32px', fontWeight: 700, color: '#2b9af3' }}>{flows.length}</div>
-              <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Total Flows</div>
+              <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Total Flows</div>
             </CardBody>
           </Card>
         </a>
         <Card isCompact style={{ borderLeft: '3px solid #3e8635' }}>
           <CardBody>
             <div style={{ fontSize: '32px', fontWeight: 700, color: '#3e8635' }}>{runningFlows.length}</div>
-            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Running</div>
+            <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Running</div>
           </CardBody>
         </Card>
         <Card isCompact style={{ borderLeft: `3px solid ${errorFlows.length > 0 ? '#c9190b' : '#3e8635'}` }}>
           <CardBody>
             <div style={{ fontSize: '32px', fontWeight: 700, color: errorFlows.length > 0 ? '#c9190b' : '#3e8635' }}>{errorFlows.length}</div>
-            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Errors</div>
+            <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Errors</div>
           </CardBody>
         </Card>
         <Card isCompact style={{ borderLeft: '3px solid #f0ab00' }}>
           <CardBody>
             <div style={{ fontSize: '32px', fontWeight: 700, color: '#f0ab00' }}>{pipelineRuns.length}</div>
-            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Builds</div>
+            <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Builds</div>
           </CardBody>
         </Card>
       </div>
@@ -310,9 +311,9 @@ const FlowOverviewPage: React.FC = () => {
                   <div key={t.value}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
                       <Label color={t.labelColor} isCompact>{t.label}</Label>
-                      <span style={{ color: 'var(--pf-global--Color--200, #6a6e73)' }}>{count}</span>
+                      <span style={{ color: 'var(--integration-text-subtle)' }}>{count}</span>
                     </div>
-                    <div style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                    <div style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--integration-border)' }}>
                       <div style={{ height: '100%', borderRadius: '3px', backgroundColor: t.color, width: `${pct}%`, transition: 'width 0.5s' }} />
                     </div>
                   </div>
@@ -334,9 +335,9 @@ const FlowOverviewPage: React.FC = () => {
                   <div key={p.value}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
                       <Label color={p.labelColor} isCompact>{p.value}</Label>
-                      <span style={{ color: 'var(--pf-global--Color--200, #6a6e73)' }}>{count}</span>
+                      <span style={{ color: 'var(--integration-text-subtle)' }}>{count}</span>
                     </div>
-                    <div style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                    <div style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--integration-border)' }}>
                       <div style={{ height: '100%', borderRadius: '3px', backgroundColor: p.color, width: `${pct}%`, transition: 'width 0.5s' }} />
                     </div>
                   </div>
@@ -352,7 +353,7 @@ const FlowOverviewPage: React.FC = () => {
         <Card isCompact>
           <CardTitle>Platform Documentation</CardTitle>
           <CardBody>
-            <p style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '12px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '12px', color: 'var(--integration-text-subtle)', marginBottom: '12px', lineHeight: 1.5 }}>
               Guides, examples, and architecture docs for this operator — hosted on GitHub Pages.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -366,7 +367,7 @@ const FlowOverviewPage: React.FC = () => {
         <Card isCompact>
           <CardTitle>Technology References</CardTitle>
           <CardBody>
-            <p style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '12px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '12px', color: 'var(--integration-text-subtle)', marginBottom: '12px', lineHeight: 1.5 }}>
               Official docs for the engines, patterns, and tools that power your integrations.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -386,9 +387,9 @@ const FlowOverviewPage: React.FC = () => {
           </CardTitle>
           <CardBody>
             {errorFlows.map(f => (
-              <div key={f.metadata.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
+              <div key={f.metadata.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--integration-border)' }}>
                 <a href={`/integration-flows/${f.metadata.name}`}
-                  style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none', fontWeight: 500, fontSize: '13px' }}>
+                  style={{ color: 'var(--integration-link)', textDecoration: 'none', fontWeight: 500, fontSize: '13px' }}>
                   {f.metadata.name}
                 </a>
                 <span style={{ fontSize: '11px', color: '#c9190b', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -406,17 +407,17 @@ const FlowOverviewPage: React.FC = () => {
           <CardTitle>Recently Created Flows</CardTitle>
           <CardBody>
             {recentFlows.length === 0 ? (
-              <p style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+              <p style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>
                 No flows yet — <a href="/integration-flows">create your first flow</a> or browse the{' '}
                 <a href={`${DOCS_BASE_URL}/ready-flows.html`} target="_blank" rel="noopener noreferrer">Ready Flows catalog</a>.
               </p>
             ) : recentFlows.map(f => (
-              <div key={f.metadata.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
+              <div key={f.metadata.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--integration-border)' }}>
                 <a href={`/integration-flows/${f.metadata.name}`}
-                  style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none', fontSize: '13px' }}>
+                  style={{ color: 'var(--integration-link)', textDecoration: 'none', fontSize: '13px' }}>
                   {f.metadata.name}
                 </a>
-                <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                <span style={{ fontSize: '11px', color: 'var(--integration-text-subtle)' }}>
                   {timeAgo(f.metadata.creationTimestamp)}
                 </span>
               </div>
@@ -429,24 +430,24 @@ const FlowOverviewPage: React.FC = () => {
           <CardTitle>Recent Builds</CardTitle>
           <CardBody>
             {recentPRs.length === 0 ? (
-              <p style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>No builds yet</p>
+              <p style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>No builds yet</p>
             ) : recentPRs.map(pr => {
               const flowLabel = pr.metadata.labels?.['platform.io/flow-name'] || 'unknown';
               const succeeded = (pr.status?.conditions || []).find(c => c.type === 'Succeeded');
               const prStatus = succeeded?.status === 'True' ? 'Succeeded' : succeeded?.status === 'False' ? 'Failed' : 'Running';
               const prLabelColor: LabelColor = prStatus === 'Succeeded' ? 'green' : prStatus === 'Failed' ? 'red' : 'yellow';
               return (
-                <div key={pr.metadata.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
+                <div key={pr.metadata.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--integration-border)' }}>
                   <div>
                     <a href={`/k8s/ns/${NAMESPACE}/tekton.dev~v1~PipelineRun/${pr.metadata.name}`}
-                      style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none', fontSize: '12px' }}>
+                      style={{ color: 'var(--integration-link)', textDecoration: 'none', fontSize: '12px' }}>
                       {pr.metadata.name.length > 40 ? pr.metadata.name.substring(0, 40) + '...' : pr.metadata.name}
                     </a>
-                    <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Flow: {flowLabel}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--integration-text-subtle)' }}>Flow: {flowLabel}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <Label color={prLabelColor} isCompact>{prStatus}</Label>
-                    <div style={{ fontSize: '10px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--integration-text-subtle)' }}>
                       {timeAgo(pr.metadata.creationTimestamp)}
                     </div>
                   </div>
