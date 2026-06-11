@@ -10,6 +10,8 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +36,8 @@ public class ConsolePluginReconciler {
 
     @ConfigProperty(name = "console-plugin.version", defaultValue = "0.4.1")
     String pluginVersion;
+
+    private static final Path TLS_CERT_PATH = Path.of("/etc/tls/tls.crt");
 
     @ConfigProperty(name = "console-plugin.operator-service-port", defaultValue = "8443")
     int operatorServicePort;
@@ -88,7 +92,7 @@ public class ConsolePluginReconciler {
                         "service", Map.of(
                                 "name", "openshift-integration-operator",
                                 "namespace", platformNamespace,
-                                "port", operatorServicePort)));
+                                "port", effectiveOperatorServicePort())));
 
         var backend = Map.of(
                 "type", "Service",
@@ -105,5 +109,14 @@ public class ConsolePluginReconciler {
 
         resource.setAdditionalProperties(Map.of("spec", spec));
         return resource;
+    }
+
+    private int effectiveOperatorServicePort() {
+        if (operatorServicePort == 8443 && !Files.isRegularFile(TLS_CERT_PATH)) {
+            LOG.infof("TLS certificate not present at %s; ConsolePlugin proxy will use HTTP port 8080",
+                    TLS_CERT_PATH);
+            return 8080;
+        }
+        return operatorServicePort;
     }
 }
