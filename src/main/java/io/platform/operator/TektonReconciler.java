@@ -55,8 +55,16 @@ public class TektonReconciler {
     }
 
     void reconcileTektonResources() {
-        reconcileResource("tekton/populate-scaffold-task.yaml");
-        reconcileResource("tekton/integration-flow-build-pipeline.yaml");
+        try {
+            reconcileResource("tekton/populate-scaffold-task.yaml");
+        } catch (Exception e) {
+            LOG.warnf("Tekton Task reconcile failed: %s", e.getMessage());
+        }
+        try {
+            reconcileResource("tekton/integration-flow-build-pipeline.yaml");
+        } catch (Exception e) {
+            LOG.warnf("Tekton Pipeline reconcile failed: %s", e.getMessage());
+        }
         LOG.infof("Reconciled Tekton Task '%s' and Pipeline '%s' in namespace '%s'",
                 TASK_NAME, PIPELINE_NAME, namespace());
     }
@@ -73,13 +81,15 @@ public class TektonReconciler {
                     .items();
             for (HasMetadata resource : resources) {
                 resource.getMetadata().setNamespace(namespace());
+                var kind = resource.getKind();
                 var name = resource.getMetadata().getName();
-                var existing = kubernetesClient.resource(resource).inNamespace(namespace()).get();
+                var existing = kubernetesClient.genericKubernetesResources("tekton.dev/v1", kind)
+                        .inNamespace(namespace()).withName(name).get();
                 if (existing == null) {
                     kubernetesClient.resource(resource).inNamespace(namespace()).create();
-                    LOG.infof("Created Tekton %s '%s'", resource.getKind(), name);
+                    LOG.infof("Created Tekton %s '%s'", kind, name);
                 } else {
-                    LOG.debugf("Tekton %s '%s' already exists", resource.getKind(), name);
+                    LOG.debugf("Tekton %s '%s' already exists", kind, name);
                 }
             }
         } catch (Exception e) {
