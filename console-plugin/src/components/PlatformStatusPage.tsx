@@ -1,3 +1,4 @@
+import '../theme/tokens.css';
 import * as React from 'react';
 import {
   Alert,
@@ -251,7 +252,7 @@ const PlatformStatusPage: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
           <Title headingLevel="h1" size="xl">Platform Status</Title>
-          <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+          <span style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>
             {healthyCount}/{totalCount} services healthy &middot; Last checked: {lastRefresh || 'loading...'}
           </span>
         </div>
@@ -265,25 +266,25 @@ const PlatformStatusPage: React.FC = () => {
         <Card isCompact style={{ borderLeft: '3px solid #2b9af3' }}>
           <CardBody>
             <div style={{ fontSize: '28px', fontWeight: 700, color: '#2b9af3' }}>{flowCount}</div>
-            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Integration Flows</div>
+            <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Integration Flows</div>
           </CardBody>
         </Card>
         <Card isCompact style={{ borderLeft: '3px solid #f0ab00' }}>
           <CardBody>
             <div style={{ fontSize: '28px', fontWeight: 700, color: '#f0ab00' }}>{pipelineCount}</div>
-            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>PipelineRuns</div>
+            <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>PipelineRuns</div>
           </CardBody>
         </Card>
         <Card isCompact style={{ borderLeft: '3px solid #8476d1' }}>
           <CardBody>
             <div style={{ fontSize: '28px', fontWeight: 700, color: '#8476d1' }}>{argoApps}</div>
-            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>ArgoCD ApplicationSets</div>
+            <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>ArgoCD ApplicationSets</div>
           </CardBody>
         </Card>
         <Card isCompact style={{ borderLeft: '3px solid #009596' }}>
           <CardBody>
             <div style={{ fontSize: '28px', fontWeight: 700, color: '#009596' }}>{ephemeralCount}</div>
-            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Ephemeral (Quick Try)</div>
+            <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Ephemeral (Quick Try)</div>
             <Button variant="link" isInline component="a" href="/integration-flows" style={{ fontSize: '12px', padding: 0, marginTop: '4px' }}>
               Create Quick Try flow
             </Button>
@@ -294,7 +295,7 @@ const PlatformStatusPage: React.FC = () => {
             <div style={{ fontSize: '28px', fontWeight: 700, color: healthyCount === totalCount ? '#3e8635' : '#f0ab00' }}>
               {healthyCount}/{totalCount}
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>Services Healthy</div>
+            <div style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>Services Healthy</div>
           </CardBody>
         </Card>
       </div>
@@ -311,12 +312,12 @@ const PlatformStatusPage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: '13px' }}>{svc.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>{svc.description}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--integration-text-subtle)' }}>{svc.description}</div>
                   </div>
                   <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div>
                       <Label color={statusLabelColor[svc.status] || 'grey'} isCompact>{svc.status.toUpperCase()}</Label>
-                      <div style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginTop: '2px' }}>{svc.detail}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--integration-text-subtle)', marginTop: '2px' }}>{svc.detail}</div>
                     </div>
                     {svc.link && (
                       <Button variant="link" isInline component="a" href={svc.link} style={{ fontSize: '12px' }}>{'\u2197'}</Button>
@@ -349,20 +350,20 @@ const PlatformStatusPage: React.FC = () => {
               <Tr key={pod.name}>
                 <Td dataLabel="Pod">
                   <a href={`/k8s/ns/${NAMESPACE}/pods/${pod.name}`}
-                    style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none' }}>
+                    style={{ color: 'var(--integration-link)', textDecoration: 'none' }}>
                     {pod.name}
                   </a>
                 </Td>
-                <Td dataLabel="Component" style={{ color: 'var(--pf-global--Color--200, #6a6e73)' }}>{component}</Td>
+                <Td dataLabel="Component" style={{ color: 'var(--integration-text-subtle)' }}>{component}</Td>
                 <Td dataLabel="Status">
                   <Label color={podLabelColor} isCompact>
                     {pod.ready ? '\u2713' : '\u25CB'} {pod.phase}
                   </Label>
                 </Td>
-                <Td dataLabel="Restarts" style={{ color: pod.restarts > 0 ? '#f0ab00' : 'var(--pf-global--Color--200, #6a6e73)' }}>
+                <Td dataLabel="Restarts" style={{ color: pod.restarts > 0 ? '#f0ab00' : 'var(--integration-text-subtle)' }}>
                   {pod.restarts}
                 </Td>
-                <Td dataLabel="Age" style={{ color: 'var(--pf-global--Color--200, #6a6e73)' }}>{pod.age}</Td>
+                <Td dataLabel="Age" style={{ color: 'var(--integration-text-subtle)' }}>{pod.age}</Td>
               </Tr>
             );
           })}

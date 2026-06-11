@@ -46,9 +46,9 @@ annotations:
       url: https://github.com/maximilianoPizarro/openshift-integration-operator
   artifacthub.io/images: |
     - name: operator
-      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.4.0
+      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.4.1
     - name: console-plugin
-      image: quay.io/maximilianopizarro/integration-console-plugin:v0.4.0
+      image: quay.io/maximilianopizarro/integration-console-plugin:v0.4.1
   artifacthub.io/crds: |
     - kind: IntegrationFlow
       version: v1alpha1

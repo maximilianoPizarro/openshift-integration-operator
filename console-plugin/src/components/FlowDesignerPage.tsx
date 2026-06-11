@@ -1,3 +1,4 @@
+import '../theme/tokens.css';
 import * as React from 'react';
 import {
   Alert,
@@ -458,7 +459,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
       {/* Tabs + Content + Sidebar */}
       <div ref={contentRef} style={{ flex: 1, display: 'flex', minHeight: 0, backgroundColor: fullscreen ? 'var(--pf-global--BackgroundColor--dark-300, #151515)' : undefined }}>
         {/* Main area with Tabs */}
-        <div style={{ flex: 3, display: 'flex', flexDirection: 'column', border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRadius: '6px 0 0 6px', overflow: 'hidden' }}>
+        <div style={{ flex: 3, display: 'flex', flexDirection: 'column', border: '1px solid var(--integration-border)', borderRadius: '6px 0 0 6px', overflow: 'hidden' }}>
           <Tabs
             activeKey={activeTab}
             onSelect={(event, eventKey) => {
@@ -473,14 +474,14 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             <Tab eventKey="visual" title={<TabTitleText>Visual Flow</TabTitleText>}>
               {renderZoomToolbar()}
               <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-                <div style={{ flex: selectedYamlRange ? 1 : 1, backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', overflow: 'auto' }}>
+                <div style={{ flex: selectedYamlRange ? 1 : 1, backgroundColor: 'var(--integration-bg-dark)', overflow: 'auto' }}>
                   <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', minHeight: '100%' }}>
                     <FlowVisualizer design={design} engine={flow.spec.engine} onNodeClick={handleNodeClick} />
                   </div>
                 </div>
                 {selectedYamlRange && (
-                  <div style={{ width: '340px', borderLeft: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
-                    <div style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
+                  <div style={{ width: '340px', borderLeft: '1px solid var(--integration-border)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--integration-bg-dark)' }}>
+                    <div style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--integration-border)' }}>
                       <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontWeight: 600, textTransform: 'uppercase' }}>
                         YAML &middot; Lines {selectedYamlRange.start + 1}&ndash;{selectedYamlRange.end + 1}
                       </span>
@@ -509,7 +510,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             {!isSonataFlow && (
               <Tab eventKey="kaoto" title={<TabTitleText>Kaoto Designer</TabTitleText>}>
                 <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 260px)' }}>
-                  <div style={{ padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                  <div style={{ padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)' }}>
                     <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
                       Kaoto Designer &mdash; <strong>{flowName}</strong>
                     </span>
@@ -528,8 +529,8 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                     <iframe src={kaotoUrl}
                       style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
                       title="Kaoto Designer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
-                    <div style={{ width: '280px', borderLeft: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
-                      <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ width: '280px', borderLeft: '1px solid var(--integration-border)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--integration-bg-dark)' }}>
+                      <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--integration-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontWeight: 600, textTransform: 'uppercase' }}>
                           Current kaotoDesign
                         </span>
@@ -554,7 +555,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                     : sonataFlowConsoleUrl;
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 260px)' }}>
-                      <div style={{ padding: '8px 12px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)' }}>
+                      <div style={{ padding: '8px 12px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)' }}>
                         <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
                           SonataFlow Management Console
                         </span>
@@ -591,7 +592,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             )}
 
             <Tab eventKey="design" title={<TabTitleText>YAML Editor</TabTitleText>}>
-              <div style={{ display: 'flex', gap: '8px', padding: '8px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', padding: '8px 12px', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)', alignItems: 'center' }}>
                 <Button variant="secondary" onClick={copyDesignToClipboard} style={{ fontSize: '11px' }}>
                   {copiedDesign ? '\u2713 Copied!' : '\u2398 Copy kaotoDesign'}
                 </Button>
@@ -607,13 +608,13 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                   width: '100%', height: 'calc(100vh - 300px)', padding: '16px',
                   fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
                   fontSize: '13px', lineHeight: 1.6, border: 'none', resize: 'none', outline: 'none',
-                  backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
+                  backgroundColor: 'var(--integration-bg-dark)',
                   color: 'var(--pf-global--Color--light-100, #e0e0e0)',
                 }} />
             </Tab>
 
             <Tab eventKey="history" title={<TabTitleText>History</TabTitleText>}>
-              <div style={{ padding: '16px', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', minHeight: '300px' }}>
+              <div style={{ padding: '16px', backgroundColor: 'var(--integration-bg-dark)', minHeight: '300px' }}>
                 <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
                   Version History
                 </Title>
@@ -623,7 +624,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                 </div>
                 {flow.spec.gitRepository && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', backgroundColor: 'rgba(47,158,68,0.1)' }}>
+                    <div style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--integration-border)', backgroundColor: 'rgba(47,158,68,0.1)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <span style={{ fontSize: '12px', color: '#3e8635', fontWeight: 600 }}>{'\u25CF'} Current Version</span>
@@ -634,7 +635,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                         <Label color="green" isCompact>ACTIVE</Label>
                       </div>
                     </div>
-                    <div style={{ padding: '10px 12px', borderRadius: '6px', border: '1px dashed var(--pf-global--BorderColor--100, #3c3f42)' }}>
+                    <div style={{ padding: '10px 12px', borderRadius: '6px', border: '1px dashed var(--integration-border)' }}>
                       <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
                         {'\u2139'} Full commit history is available from the Git repository. To rollback to a previous version, enter a commit hash:
                       </span>
@@ -643,7 +644,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                           placeholder="Commit hash..."
                           aria-label="Rollback commit hash"
                           id="rollback-hash"
-                          style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', color: '#e0e0e0', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}
+                          style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'var(--integration-bg-dark)', color: '#e0e0e0', border: '1px solid var(--integration-border)' }}
                         />
                         <Button variant="warning" style={{ fontSize: '12px' }}
                           onClick={async () => {
@@ -671,7 +672,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             </Tab>
 
             <Tab eventKey="dependencies" title={<TabTitleText>Dependencies</TabTitleText>}>
-              <div style={{ padding: '16px', backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)', minHeight: '300px' }}>
+              <div style={{ padding: '16px', backgroundColor: 'var(--integration-bg-dark)', minHeight: '300px' }}>
                 <Title headingLevel="h3" size="md" style={{ marginBottom: '8px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
                   Dependency Graph
                 </Title>
@@ -688,7 +689,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                     <Alert variant="warning" isInline title={`${dependencies.length} flow${dependencies.length !== 1 ? 's' : ''} depend${dependencies.length === 1 ? 's' : ''} on this flow. Deleting or modifying may break them.`} />
                     {dependencies.map(dep => (
                       <a key={dep.name} href={`/integration-flows/${dep.name}`}
-                        style={{ padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--pf-global--BorderColor--100, #3c3f42)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        style={{ padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--integration-border)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <span style={{ color: 'var(--pf-global--link--Color, #2b9af3)', fontWeight: 500, fontSize: '13px' }}>{dep.name}</span>
                           <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginLeft: '8px' }}>{dep.type}</span>
@@ -707,14 +708,14 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                   flex: 1, margin: 0, padding: '16px', overflow: 'auto',
                   fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
                   fontSize: '13px', lineHeight: 1.6,
-                  backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
+                  backgroundColor: 'var(--integration-bg-dark)',
                   color: 'var(--pf-global--Color--light-100, #e0e0e0)',
                 }}>{JSON.stringify(flow.spec, null, 2)}</pre>
                 {isEphemeral && (
                   <div style={{
-                    width: '320px', borderLeft: '1px solid var(--pf-global--BorderColor--100, #3c3f42)',
+                    width: '320px', borderLeft: '1px solid var(--integration-border)',
                     padding: '16px', overflow: 'auto',
-                    backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
+                    backgroundColor: 'var(--integration-bg-dark)',
                     color: 'var(--pf-global--Color--light-100, #e0e0e0)',
                   }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: '#2b9af3' }}>
@@ -785,7 +786,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                 margin: 0, padding: '16px', overflow: 'auto', minHeight: '300px',
                 fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
                 fontSize: '13px', lineHeight: 1.6,
-                backgroundColor: 'var(--pf-global--BackgroundColor--dark-300, #1b1d21)',
+                backgroundColor: 'var(--integration-bg-dark)',
                 color: 'var(--pf-global--Color--light-100, #e0e0e0)',
               }}>{JSON.stringify(flow.status || { phase: 'Pending', message: 'Waiting for reconciliation' }, null, 2)}</pre>
             </Tab>
@@ -793,7 +794,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
         </div>
 
         {/* Sidebar */}
-        <Card isCompact isPlain style={{ width: '240px', overflow: 'auto', borderTop: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRight: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderBottom: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', borderRadius: '0 6px 6px 0' }}>
+        <Card isCompact isPlain style={{ width: '240px', overflow: 'auto', borderTop: '1px solid var(--integration-border)', borderRight: '1px solid var(--integration-border)', borderBottom: '1px solid var(--integration-border)', borderRadius: '0 6px 6px 0' }}>
           <CardBody>
             <TelemetryOverlay flowId={flowName} />
           </CardBody>

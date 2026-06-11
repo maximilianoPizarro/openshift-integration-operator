@@ -32,7 +32,7 @@ public class ConsolePluginReconciler {
     @ConfigProperty(name = "platform.namespace", defaultValue = "openshift-integration")
     String platformNamespace;
 
-    @ConfigProperty(name = "console-plugin.version", defaultValue = "0.4.0")
+    @ConfigProperty(name = "console-plugin.version", defaultValue = "0.4.1")
     String pluginVersion;
 
     @ConfigProperty(name = "console-plugin.operator-service-port", defaultValue = "8443")

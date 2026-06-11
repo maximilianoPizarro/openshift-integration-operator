@@ -1,0 +1,10 @@
+:root {
+  --integration-text-subtle: var(--pf-t--global--text--color--subtle, var(--pf-global--Color--200, #6a6e73));
+  --integration-text-muted: var(--pf-t--global--text--color--nonstatus--on-default, var(--pf-global--Color--200, #8a8d90));
+  --integration-bg-primary: var(--pf-t--global--background--color--primary--default, var(--pf-global--BackgroundColor--100, #fff));
+  --integration-bg-secondary: var(--pf-t--global--background--color--secondary--default, var(--pf-global--BackgroundColor--200, #f0f0f0));
+  --integration-bg-dark: var(--pf-t--global--background--color--secondary--default, var(--pf-global--BackgroundColor--dark-300, #1b1d21));
+  --integration-border: var(--pf-t--global--border--color--default, var(--pf-global--BorderColor--100, #3c3f42));
+  --integration-link: var(--pf-t--global--link--color--100, var(--pf-global--link--Color, #2b9af3));
+  --integration-success: var(--pf-t--global--icon--color--status--success--default, #3e8635);
+}

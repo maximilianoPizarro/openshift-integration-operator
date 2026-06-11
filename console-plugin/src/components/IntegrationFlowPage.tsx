@@ -1,3 +1,4 @@
+import '../theme/tokens.css';
 import * as React from 'react';
 import {
   Alert,
@@ -439,7 +440,7 @@ const IntegrationFlowPage: React.FC = () => {
       />
 
       {showCreate && (
-        <div style={{ padding: '14px', borderRadius: '6px', marginBottom: '14px', border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)', background: 'var(--pf-global--BackgroundColor--200, #f0f0f0)' }}>
+        <div style={{ padding: '14px', borderRadius: '6px', marginBottom: '14px', border: '1px solid var(--integration-border)', background: 'var(--integration-bg-secondary)' }}>
           {templateLoaded && (
             <Alert
               variant="info"
@@ -494,8 +495,8 @@ const IntegrationFlowPage: React.FC = () => {
                   fontSize: '12px',
                   padding: '10px',
                   borderRadius: '4px',
-                  border: '1px solid var(--pf-global--BorderColor--100, #d2d2d2)',
-                  background: 'var(--pf-global--BackgroundColor--100, #fff)',
+                  border: '1px solid var(--integration-border)',
+                  background: 'var(--integration-bg-primary)',
                   resize: 'vertical',
                   boxSizing: 'border-box',
                 }}

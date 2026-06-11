@@ -246,7 +246,7 @@ jobs:
           provenance: false
           sbom: false
           tags: |
-            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:v0.4.0
+            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:v0.4.1
             ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:latest
 
   build-native:

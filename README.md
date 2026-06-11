@@ -374,7 +374,7 @@ spec:
   deploymentMode: EPHEMERAL
   ephemeral:
     ttlSeconds: 3600
-    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.4.0
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.4.1
 ```
 
 This is useful when you know the target domain or want to pin a specific image version. Set `ephemeral.preferFullWorker: true` in operator config to always use the full image globally.
@@ -533,7 +533,7 @@ quay.io/maximilianopizarro/integration-console-plugin:latest
 quay.io/maximilianopizarro/camel-worker-{core,messaging,http,data,cloud,ai,full}:latest
 ```
 
-Version tags (`v0.4.0`) are added on git tag push. Validate flow catalog locally before push:
+Version tags (`v0.4.1`) are added on git tag push. Validate flow catalog locally before push:
 
 ```bash
 node scripts/validate-ready-flows.js

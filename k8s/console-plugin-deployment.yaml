@@ -455,7 +455,7 @@ spec:
     spec:
       containers:
         - name: console-plugin
-          image: quay.io/maximilianopizarro/integration-console-plugin:v0.4.0
+          image: quay.io/maximilianopizarro/integration-console-plugin:v0.4.1
           ports:
             - containerPort: 9443
               protocol: TCP

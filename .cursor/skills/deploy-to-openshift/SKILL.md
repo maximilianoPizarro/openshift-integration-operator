@@ -85,7 +85,7 @@ helm upgrade --install openshift-integration-operator \
   --set tekton.approvalEnabled=false
 ```
 
-On version tag push (`v*`), CI also publishes `:v0.4.0` and native images.
+On version tag push (`v*`), CI also publishes `:v0.4.1` and native images.
 
 ## Camel K bootstrap (Pipe / Kamelet examples)
 
@@ -159,7 +159,7 @@ Tekton git clone uses `integration-git-basic-auth` (Helm template includes `.git
 |-----|-----------|-------|
 | `gitea.password` | workshop password | Required for Gitea push |
 | `tekton.approvalEnabled` | `false` | Skip ApprovalTask in pipeline |
-| `consolePlugin.image.tag` | `latest` | From Quay CI; `v0.4.0` may be stale |
+| `consolePlugin.image.tag` | `latest` | From Quay CI; `v0.4.1` may be stale |
 | `ephemeral.preferFullWorker` | `false` | Tier-based worker selection |
 | `sonataflow.namespace` | `kogito-bpm` | SonataFlow CR target |
 

@@ -1,3 +1,4 @@
+import '../theme/tokens.css';
 import * as React from 'react';
 import {
   Alert,
@@ -175,8 +176,8 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowName }) => {
           fontSize: '12px',
           lineHeight: 1.5,
           fontFamily: 'var(--pf-global--FontFamily--monospace, monospace)',
-          backgroundColor: '#1b1d21',
-          color: '#e0e0e0',
+          backgroundColor: 'var(--integration-bg-dark)',
+          color: 'var(--pf-t--global--text--color--regular, var(--pf-global--Color--100, #e0e0e0))',
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
         }}
