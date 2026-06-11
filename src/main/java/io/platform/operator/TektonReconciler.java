@@ -66,20 +66,20 @@ public class TektonReconciler {
             if (in == null) {
                 throw new IllegalStateException("Missing classpath resource: " + classpathYaml);
             }
-            String yaml = new String(in.readAllBytes())
+            String yaml = new String(in.readAllBytes(), StandardCharsets.UTF_8)
                     .replace("__PLATFORM_NAMESPACE__", namespace());
             List<HasMetadata> resources = kubernetesClient
                     .load(new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)))
                     .items();
             for (HasMetadata resource : resources) {
                 resource.getMetadata().setNamespace(namespace());
+                var name = resource.getMetadata().getName();
                 var existing = kubernetesClient.resource(resource).inNamespace(namespace()).get();
                 if (existing == null) {
                     kubernetesClient.resource(resource).inNamespace(namespace()).create();
-                    LOG.infof("Created Tekton %s '%s'", resource.getKind(), resource.getMetadata().getName());
+                    LOG.infof("Created Tekton %s '%s'", resource.getKind(), name);
                 } else {
-                    resource.getMetadata().setResourceVersion(existing.getMetadata().getResourceVersion());
-                    kubernetesClient.resource(resource).inNamespace(namespace()).replace();
+                    LOG.debugf("Tekton %s '%s' already exists", resource.getKind(), name);
                 }
             }
         } catch (Exception e) {
