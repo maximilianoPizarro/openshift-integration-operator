@@ -70,6 +70,7 @@ metadata:
   name: openshift-integration-operator.v0.4.1
   namespace: placeholder
 spec:
+  replaces: openshift-integration-operator.v0.4.0
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
