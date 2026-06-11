@@ -450,6 +450,14 @@ spec:
                   value: quay.io/kaotoio/kaoto-app:main
                 - name: KAOTO_REPLICAS
                   value: "1"
+                - name: OTEL_COLLECTOR_ENABLED
+                  value: "true"
+                - name: OTEL_COLLECTOR_IMAGE
+                  value: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.109.0
+                - name: OTEL_COLLECTOR_REPLICAS
+                  value: "1"
+                - name: QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT
+                  value: http://integration-otel-collector:4317
                 volumeMounts:
                 - name: tls-certs
                   mountPath: /etc/tls

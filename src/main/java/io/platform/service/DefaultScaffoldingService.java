@@ -211,7 +211,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
                   },
                   "telemetry": {
                     "enabled": true,
-                    "otelEndpoint": "http://otel-collector:4317"
+                    "otelEndpoint": "http://integration-otel-collector:4317"
                   }
                 }
                 """.formatted(flowName, type.toEngineType().name(), type.name());
@@ -259,7 +259,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
         var sb = new StringBuilder();
         sb.append("quarkus.application.name=%s\n".formatted(flowName));
         sb.append("quarkus.opentelemetry.enabled=true\n");
-        sb.append("quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://otel-collector:4317\n");
+        sb.append("quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://integration-otel-collector:4317\n");
         sb.append("quarkus.log.level=INFO\n");
         sb.append("quarkus.http.port=8080\n");
 

@@ -9,15 +9,17 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.runtime.Startup;
+import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import java.util.Map;
 
 /**
- * Deploys Kaoto (Deployment + Service + Route on OpenShift) at operator startup.
+ * Deploys Kaoto (Deployment + Service + Route on OpenShift) at operator startup
+ * and re-syncs periodically so image/replica env changes apply without a new release.
  * Not included in the OLM bundle to avoid validation issues on vanilla k8s catalogs.
  */
 @ApplicationScoped
@@ -31,21 +33,18 @@ public class KaotoReconciler {
     @Inject
     KubernetesClient kubernetesClient;
 
-    @ConfigProperty(name = "platform.namespace", defaultValue = "openshift-integration")
-    String platformNamespace;
-
-    @ConfigProperty(name = "kaoto.enabled", defaultValue = "true")
-    boolean kaotoEnabled;
-
-    @ConfigProperty(name = "kaoto.image", defaultValue = "quay.io/kaotoio/kaoto-app:main")
-    String kaotoImage;
-
-    @ConfigProperty(name = "kaoto.replicas", defaultValue = "1")
-    int kaotoReplicas;
-
     void onStart(@jakarta.enterprise.event.Observes io.quarkus.runtime.StartupEvent ev) {
-        if (!kaotoEnabled) {
-            LOG.info("Kaoto deployment disabled (kaoto.enabled=false)");
+        reconcileIfEnabled();
+    }
+
+    @Scheduled(every = "{platform.sidecar-reconcile-interval}", delayed = "{platform.sidecar-reconcile-delay}")
+    void scheduledReconcile() {
+        reconcileIfEnabled();
+    }
+
+    private void reconcileIfEnabled() {
+        if (!enabled()) {
+            LOG.debug("Kaoto deployment disabled (kaoto.enabled=false)");
             return;
         }
         try {
@@ -58,29 +57,33 @@ public class KaotoReconciler {
     void reconcileKaoto() {
         reconcileDeployment();
         reconcileService();
-        reconcileRoute();
-        LOG.infof("Reconciled Kaoto in namespace '%s' (image: %s)", platformNamespace, kaotoImage);
+        try {
+            reconcileRoute();
+        } catch (Exception e) {
+            LOG.infof("Skipping Kaoto Route (OpenShift only): %s", e.getMessage());
+        }
+        LOG.infof("Reconciled Kaoto in namespace '%s' (image: %s)", namespace(), image());
     }
 
     private void reconcileDeployment() {
         Deployment desired = new DeploymentBuilder()
                 .withNewMetadata()
                     .withName(KAOTO_NAME)
-                    .withNamespace(platformNamespace)
+                    .withNamespace(namespace())
                     .addToLabels("app", KAOTO_NAME)
                     .addToLabels("app.kubernetes.io/part-of", "integration-platform")
                     .addToLabels("app.kubernetes.io/managed-by", "openshift-integration-operator")
                     .addToLabels("app.openshift.io/runtime", "camel")
                 .endMetadata()
                 .withNewSpec()
-                    .withReplicas(kaotoReplicas)
+                    .withReplicas(replicas())
                     .withNewSelector().addToMatchLabels("app", KAOTO_NAME).endSelector()
                     .withNewTemplate()
                         .withNewMetadata().addToLabels("app", KAOTO_NAME).endMetadata()
                         .withNewSpec()
                             .addNewContainer()
                                 .withName(KAOTO_NAME)
-                                .withImage(kaotoImage)
+                                .withImage(image())
                                 .addNewPort().withContainerPort(8080).withProtocol("TCP").endPort()
                                 .withNewReadinessProbe()
                                     .withNewHttpGet().withPath("/").withPort(new IntOrString(8080)).endHttpGet()
@@ -105,13 +108,13 @@ public class KaotoReconciler {
                 .build();
 
         var existing = kubernetesClient.apps().deployments()
-                .inNamespace(platformNamespace).withName(KAOTO_NAME).get();
+                .inNamespace(namespace()).withName(KAOTO_NAME).get();
         if (existing == null) {
-            kubernetesClient.apps().deployments().inNamespace(platformNamespace).resource(desired).create();
+            kubernetesClient.apps().deployments().inNamespace(namespace()).resource(desired).create();
             LOG.infof("Created Kaoto Deployment '%s'", KAOTO_NAME);
         } else {
             desired.getMetadata().setResourceVersion(existing.getMetadata().getResourceVersion());
-            kubernetesClient.apps().deployments().inNamespace(platformNamespace).resource(desired).update();
+            kubernetesClient.apps().deployments().inNamespace(namespace()).resource(desired).update();
             LOG.infof("Updated Kaoto Deployment '%s'", KAOTO_NAME);
         }
     }
@@ -120,7 +123,7 @@ public class KaotoReconciler {
         var service = new ServiceBuilder()
                 .withNewMetadata()
                     .withName(KAOTO_NAME)
-                    .withNamespace(platformNamespace)
+                    .withNamespace(namespace())
                     .addToLabels("app", KAOTO_NAME)
                     .addToLabels("app.kubernetes.io/part-of", "integration-platform")
                     .addToLabels("app.kubernetes.io/managed-by", "openshift-integration-operator")
@@ -136,13 +139,13 @@ public class KaotoReconciler {
                 .endSpec()
                 .build();
 
-        var existing = kubernetesClient.services().inNamespace(platformNamespace).withName(KAOTO_NAME).get();
+        var existing = kubernetesClient.services().inNamespace(namespace()).withName(KAOTO_NAME).get();
         if (existing == null) {
-            kubernetesClient.services().inNamespace(platformNamespace).resource(service).create();
+            kubernetesClient.services().inNamespace(namespace()).resource(service).create();
             LOG.infof("Created Kaoto Service '%s'", KAOTO_NAME);
         } else {
             service.getMetadata().setResourceVersion(existing.getMetadata().getResourceVersion());
-            kubernetesClient.services().inNamespace(platformNamespace).resource(service).replace();
+            kubernetesClient.services().inNamespace(namespace()).resource(service).replace();
             LOG.infof("Updated Kaoto Service '%s'", KAOTO_NAME);
         }
     }
@@ -153,7 +156,7 @@ public class KaotoReconciler {
                 .withKind("Route")
                 .withMetadata(new ObjectMetaBuilder()
                         .withName(KAOTO_NAME)
-                        .withNamespace(platformNamespace)
+                        .withNamespace(namespace())
                         .addToLabels("app", KAOTO_NAME)
                         .addToLabels("app.kubernetes.io/part-of", "integration-platform")
                         .addToLabels("app.kubernetes.io/managed-by", "openshift-integration-operator")
@@ -170,14 +173,38 @@ public class KaotoReconciler {
         route.setAdditionalProperties(Map.of("spec", spec));
 
         var existing = kubernetesClient.genericKubernetesResources(ROUTE_API, "Route")
-                .inNamespace(platformNamespace).withName(KAOTO_NAME).get();
+                .inNamespace(namespace()).withName(KAOTO_NAME).get();
         if (existing == null) {
-            kubernetesClient.resource(route).inNamespace(platformNamespace).create();
+            kubernetesClient.resource(route).inNamespace(namespace()).create();
             LOG.infof("Created Kaoto Route '%s'", KAOTO_NAME);
         } else {
             route.getMetadata().setResourceVersion(existing.getMetadata().getResourceVersion());
-            kubernetesClient.resource(route).inNamespace(platformNamespace).replace();
+            kubernetesClient.resource(route).inNamespace(namespace()).replace();
             LOG.infof("Updated Kaoto Route '%s'", KAOTO_NAME);
         }
+    }
+
+    private static boolean enabled() {
+        return ConfigProvider.getConfig()
+                .getOptionalValue("kaoto.enabled", Boolean.class)
+                .orElse(true);
+    }
+
+    private static String namespace() {
+        return ConfigProvider.getConfig()
+                .getOptionalValue("platform.namespace", String.class)
+                .orElse("openshift-integration");
+    }
+
+    private static String image() {
+        return ConfigProvider.getConfig()
+                .getOptionalValue("kaoto.image", String.class)
+                .orElse("quay.io/kaotoio/kaoto-app:main");
+    }
+
+    private static int replicas() {
+        return ConfigProvider.getConfig()
+                .getOptionalValue("kaoto.replicas", Integer.class)
+                .orElse(1);
     }
 }
