@@ -233,6 +233,18 @@ spec:
           - watch
           - create
         - apiGroups:
+          - tekton.dev
+          resources:
+          - tasks
+          - pipelines
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+        - apiGroups:
           - ""
           resources:
           - configmaps

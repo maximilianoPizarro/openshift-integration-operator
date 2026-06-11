@@ -58,12 +58,12 @@ public class TektonReconciler {
         try {
             reconcileResource("tekton/populate-scaffold-task.yaml");
         } catch (Exception e) {
-            LOG.warnf("Tekton Task reconcile failed: %s", e.getMessage());
+            LOG.warnf(e, "Tekton Task reconcile failed");
         }
         try {
             reconcileResource("tekton/integration-flow-build-pipeline.yaml");
         } catch (Exception e) {
-            LOG.warnf("Tekton Pipeline reconcile failed: %s", e.getMessage());
+            LOG.warnf(e, "Tekton Pipeline reconcile failed");
         }
         LOG.infof("Reconciled Tekton Task '%s' and Pipeline '%s' in namespace '%s'",
                 TASK_NAME, PIPELINE_NAME, namespace());
