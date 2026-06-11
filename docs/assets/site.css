@@ -1,14 +1,15 @@
 /* OpenShift Integration Operator — GitHub Pages (PatternFly 5 / RHDS-inspired) */
 
 :root {
-  --site-max-width: 76.5rem;
+  --site-max-width: 80rem;
   --site-max-width-narrow: 56.25rem;
-  --site-max-width-wide: 80rem;
+  --site-max-width-wide: 90rem;
   --site-header-height: 3.5rem;
 }
 
 html {
   scroll-behavior: smooth;
+  overflow-y: scroll;
 }
 
 body.site-page {
@@ -158,7 +159,6 @@ body.site-page a:hover {
 .site-masthead__nav-link.is-active {
   background-color: rgba(255, 255, 255, 0.15);
   color: var(--pf-v5-global--Color--light-100, #fff) !important;
-  font-weight: var(--pf-v5-global--FontWeight--body--bold, 700);
 }
 
 .site-masthead__nav-link--external::after {
