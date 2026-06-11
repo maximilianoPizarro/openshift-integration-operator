@@ -108,6 +108,10 @@ spec:
               value: {{ .Values.kaoto.routeHost | quote }}
             - name: ARGOCD_NAMESPACE
               value: {{ .Values.argocd.namespace | quote }}
+            {{- if .Values.operator.watchedNamespaces }}
+            - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_INTEGRATIONFLOWRECONCILER_NAMESPACES
+              value: {{ join "," .Values.operator.watchedNamespaces | quote }}
+            {{- end }}
             - name: QUARKUS_HTTP_SSL_PORT
               value: {{ .Values.operator.proxyPort | default 8443 | quote }}
             - name: QUARKUS_HTTP_SSL_CERTIFICATE_FILES

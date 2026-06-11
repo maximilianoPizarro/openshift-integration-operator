@@ -319,8 +319,10 @@ entries:
             engine: CAMEL
             gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
             branch: main
-            targetClusters:
-              - local
+            targeting:
+              strategy: explicit
+              clusters:
+                - local
             kaotoDesign: |
               - route:
                   from:

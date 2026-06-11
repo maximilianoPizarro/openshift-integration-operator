@@ -2,6 +2,7 @@ package io.platform.ephemeral;
 
 import io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.platform.service.ScaffoldingService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -25,16 +26,23 @@ public class CamelTestEphemeralDeployer {
     String testImage;
 
     public String deploy(String flowName, String namespace, ScaffoldingService.ScaffoldResult scaffold) {
+        return deploy(flowName, namespace, scaffold, null);
+    }
+
+    public String deploy(String flowName, String namespace, ScaffoldingService.ScaffoldResult scaffold,
+                         OwnerReference ownerRef) {
         String cmName = "iflow-" + flowName + "-test-sources";
         String jobName = "iflow-" + flowName + "-test";
 
         var labels = CamelRouteEphemeralDeployer.ephemeralLabels(flowName);
+        var ownerRefs = EphemeralOwnerReferenceHelper.asList(ownerRef);
 
         var configMap = new io.fabric8.kubernetes.api.model.ConfigMapBuilder()
                 .withNewMetadata()
                     .withName(cmName)
                     .withNamespace(namespace)
                     .withLabels(labels)
+                    .withOwnerReferences(ownerRefs)
                 .endMetadata()
                 .withData(Map.of(
                         "test.camel.yaml", scaffold.workflowDefinition(),
@@ -60,6 +68,7 @@ public class CamelTestEphemeralDeployer {
                         .withName(jobName)
                         .withNamespace(namespace)
                         .withLabels(labels)
+                        .withOwnerReferences(ownerRefs)
                         .build())
                 .build();
         job.setAdditionalProperties(Map.of(

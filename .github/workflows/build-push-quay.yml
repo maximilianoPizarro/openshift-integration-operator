@@ -253,7 +253,7 @@ jobs:
           provenance: false
           sbom: false
           tags: |
-            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:v0.4.1
+            ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:v0.5.0
             ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ matrix.worker }}:latest
 
   build-native:
@@ -354,6 +354,19 @@ jobs:
           tags: |
             ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ env.IMAGE_NAME }}-bundle:${{ env.BUNDLE_TAG }}
             ${{ env.QUAY_REGISTRY }}/${{ env.QUAY_NAMESPACE }}/${{ env.IMAGE_NAME }}-bundle:latest
+
+      - name: Prune stale Quay tags
+        if: env.BUNDLE_TAG != '' && env.BUNDLE_TAG != 'latest'
+        env:
+          QUAY_API_TOKEN: ${{ secrets.QUAY_API_TOKEN }}
+          KEEP_TAGS: latest,${{ env.BUNDLE_TAG }}
+        run: |
+          if [ -z "${QUAY_API_TOKEN}" ]; then
+            echo "QUAY_API_TOKEN not set; skip prune"
+            exit 0
+          fi
+          chmod +x scripts/prune-quay-tags.sh
+          ./scripts/prune-quay-tags.sh
 
   helm-publish:
     runs-on: ubuntu-latest

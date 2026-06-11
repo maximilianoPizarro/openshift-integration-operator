@@ -98,7 +98,7 @@ oc patch integrationplatform camel-k -n openshift-integration --type=merge \
 done
 
 oc get integrationflow -n openshift-integration</code></pre>
-        <p>Expected result: all eight flows reach <code>Running</code> phase. Camel routes deploy worker pods; Pipe/Kamelet create Camel K resources; SonataFlow workflows deploy to <code>kogito-bpm</code>.</p>
+        <p>Expected result: all eight flows reach <code>Running</code> phase. Examples 01&ndash;04 and 07&ndash;08 are Camel routes (worker Deployments); 05&ndash;06 use Camel K (Kamelet/Pipe). Each flow uses <code>spec.targeting.strategy: explicit</code> and <code>clusters: [local]</code> for single-cluster Argo CD sync.</p>
       </section>
 
       <section class="step" id="step-3">

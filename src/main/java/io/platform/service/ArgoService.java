@@ -9,6 +9,7 @@ public interface ArgoService {
     void reconcileApplicationSet(String name, String namespace, String gitRepoUrl,
                                   String branch, String path,
                                   Map<String, String> clusterSelector,
+                                  List<String> explicitClusters,
                                   List<String> excludeClusters);
 
     List<IntegrationFlowStatus.ClusterDeployment> getClusterDeployments(String applicationSetName);

@@ -473,44 +473,37 @@ docker build -f src/main/docker/Dockerfile.jvm \
 
 ## Deploy to a Cluster
 
-### Recommended: dev cluster (operator binary build + Quay plugin)
+**Registry policy:** All operator, console plugin, worker, and OLM bundle images are published to **Quay.io only** (`quay.io/maximilianopizarro/*`). Do not use the OpenShift internal registry for operator deployments.
 
-Build the operator from source via OpenShift binary build; use the **CI-published** console plugin image (do not rebuild the plugin locally unless developing UI changes).
+### Recommended: Quay + Operator SDK (OLM)
 
 ```bash
-mvn -B clean package -DskipTests
-oc apply -f target/kubernetes/integrationflows.platform.io-v1.yml
-oc start-build openshift-integration-operator --from-dir=. --follow -n openshift-integration
+# Publish (CI or local)
+gh workflow run build-push-quay.yml -f image_tag=v0.5.0
+# or: podman login quay.io && VERSION_TAG=v0.5.0 ./scripts/publish-quay.sh
+
+operator-sdk cleanup openshift-integration-operator -n openshift-integration
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.5.0 \
+  --namespace openshift-integration \
+  --install-mode AllNamespaces \
+  --timeout 10m
 ```
 
-Note the image digest from the build output, then:
+Prune stale Quay tags after release: `QUAY_API_TOKEN=... ./scripts/prune-quay-tags.sh`
+
+Apply [GitOps examples](#gitops-examples-8-catalog-flows) and Camel K bootstrap after deploy.
+
+### Alternative: Helm (Quay images)
 
 ```bash
 helm upgrade --install openshift-integration-operator \
   helm/openshift-integration-operator \
   --namespace openshift-integration \
-  --set operator.image.repository="image-registry.openshift-image-registry.svc:5000/openshift-integration/openshift-integration-operator" \
-  --set operator.image.tag=latest \
-  --set consolePlugin.image.repository="quay.io/maximilianopizarro/integration-console-plugin" \
-  --set consolePlugin.image.tag=latest \
+  --create-namespace \
+  --set operator.image.tag=v0.5.0 \
+  --set consolePlugin.image.tag=v0.5.0 \
   --set gitea.password='your-gitea-password' \
   --set tekton.approvalEnabled=false
-
-# Required: pin digest — :latest is not repulled on existing nodes
-oc set image deployment/openshift-integration-operator operator=\
-  image-registry.openshift-image-registry.svc:5000/openshift-integration/openshift-integration-operator@sha256:<digest> \
-  -n openshift-integration
-```
-
-Apply [GitOps examples](#gitops-examples-8-catalog-flows) and Camel K bootstrap after deploy.
-
-### Alternative: `scripts/deploy-cluster.sh`
-
-Builds both operator and console plugin via OpenShift ImageStreams:
-
-```bash
-mvn -B package -DskipTests
-./scripts/deploy-cluster.sh
 ```
 
 ### Production: Quay.io images
@@ -652,9 +645,17 @@ secrets:
     secretStoreRef: cluster-secret-store
 ```
 
-## Multi-namespace Configuration
+## Multi-namespace and multi-cluster Configuration
 
-The operator watches `IntegrationFlow` CRs cluster-wide. Per-CR resources are created in the CR's namespace. Configure platform namespaces via Helm:
+### Namespace scope
+
+| Concept | Behavior |
+|---------|----------|
+| **IntegrationFlow CRD** | Always namespaced — flows live in the CR's namespace |
+| **OLM install mode** | `AllNamespaces` (default workshop) or `SingleNamespace` (tenant) controls operator watch scope |
+| **Helm `operator.watchedNamespaces`** | Empty = cluster-wide; non-empty limits reconciliation to listed namespaces |
+
+Per-CR ephemeral resources are created in the **CR's namespace**, not the operator namespace.
 
 ```yaml
 namespace: openshift-integration
@@ -663,10 +664,22 @@ sonataflow:
 argocd:
   namespace: openshift-gitops
 operator:
-  watchedNamespaces: []   # optional additional namespaces
+  watchedNamespaces: []   # [] = all namespaces; [team-a, team-b] = scoped watch
 ```
 
-Multi-cluster deployment uses Argo CD ApplicationSets with `spec.targeting` on each IntegrationFlow.
+### Multi-cluster (GitOps only)
+
+Multi-cluster applies to `deploymentMode: GITOPS` via Argo CD ApplicationSets (matrix: git repo × clusters). **Ephemeral mode is always single-cluster.**
+
+| `spec.targeting.strategy` | Effect |
+|---------------------------|--------|
+| `explicit` + `clusters: [local]` | ApplicationSet deploys only to Argo CD cluster named `local` |
+| `selector` + `clusterSelector: {env: dev}` | Clusters with matching labels in Argo CD |
+| `all` | All clusters registered in Argo CD (optional `excludeClusters`) |
+
+Prerequisites: clusters registered in Argo CD (`argocd cluster add`) with `name` label matching `clusters` entries. ApplicationSet controller enabled in `openshift-gitops`.
+
+Use `spec.targeting.strategy` + `spec.targeting.clusters` — not the deprecated `spec.targetClusters`.
 
 ## PatternFly / UX Compliance
 

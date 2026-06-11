@@ -1,5 +1,7 @@
 package io.platform.ephemeral;
 
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.platform.api.v1alpha1.IntegrationFlow;
 import io.platform.api.v1alpha1.IntegrationFlowSpec;
 import io.platform.api.v1alpha1.IntegrationFlowStatus;
 import io.platform.api.v1alpha1.IntegrationType;
@@ -33,9 +35,19 @@ class EphemeralRuntimeServiceTest {
         service.sonataFlowDeployer = sonataFlowDeployer;
     }
 
+    private IntegrationFlow flow(String name, String namespace) {
+        IntegrationFlow flow = new IntegrationFlow();
+        flow.setMetadata(new ObjectMetaBuilder()
+                .withName(name)
+                .withNamespace(namespace)
+                .withUid("uid-" + name)
+                .build());
+        return flow;
+    }
+
     @Test
     void deployCamelRouteReturnsWorkerRef() {
-        when(camelRouteDeployer.deploy(anyString(), anyString(), any(), any(), any(), any(), any(), any()))
+        when(camelRouteDeployer.deploy(anyString(), anyString(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn("deployment/iflow-demo-worker");
 
         var scaffold = new ScaffoldingService.ScaffoldResult(
@@ -45,8 +57,7 @@ class EphemeralRuntimeServiceTest {
 
         var result = service.deploy(
                 IntegrationType.CAMEL_ROUTE,
-                "demo",
-                "openshift-integration",
+                flow("demo", "openshift-integration"),
                 scaffold,
                 new IntegrationFlowSpec(),
                 new IntegrationFlowStatus());
@@ -54,13 +65,13 @@ class EphemeralRuntimeServiceTest {
         assertTrue(result.success());
         assertEquals("deployment/iflow-demo-worker", result.workerRef());
         verify(camelRouteDeployer).deploy(eq("demo"), eq("openshift-integration"), eq(scaffold),
-                eq(IntegrationType.CAMEL_ROUTE), isNull(), isNull(), isNull(), isNull());
+                eq(IntegrationType.CAMEL_ROUTE), isNull(), isNull(), isNull(), isNull(), any());
     }
 
     @Test
     void deployCamelKameletUsesCamelKWhenAvailable() {
         when(camelKDeployer.isCamelKAvailable()).thenReturn(true);
-        when(camelKDeployer.deploy(anyString(), anyString(), eq(IntegrationType.CAMEL_KAMELET), anyString()))
+        when(camelKDeployer.deploy(anyString(), anyString(), eq(IntegrationType.CAMEL_KAMELET), anyString(), any()))
                 .thenReturn("kamelet/demo");
 
         var spec = new IntegrationFlowSpec();
@@ -68,8 +79,7 @@ class EphemeralRuntimeServiceTest {
 
         var result = service.deploy(
                 IntegrationType.CAMEL_KAMELET,
-                "demo",
-                "openshift-integration",
+                flow("demo", "openshift-integration"),
                 mock(ScaffoldingService.ScaffoldResult.class),
                 spec,
                 new IntegrationFlowStatus());

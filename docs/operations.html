@@ -378,13 +378,24 @@ oc describe pipelinerun &lt;name&gt; -n openshift-integration</code></pre>
         </div>
 
         <div class="troubleshoot-item">
-          <h4>7. Ephemeral flow stuck / operator rejects deploymentMode</h4>
-          <p><strong>Cause:</strong> Operator image predates ephemeral mode support, or CRD schema is outdated.</p>
-          <p><strong>Fix:</strong> Apply the latest CRD and redeploy the operator:</p>
-          <pre><code>oc apply -f target/kubernetes/integrationflows.platform.io-v1.yml
-oc start-build openshift-integration-operator --from-dir=. --follow -n openshift-integration
-oc rollout restart deploy/openshift-integration-operator -n openshift-integration</code></pre>
-          <p><strong>Verify:</strong> Operator logs should show <code>Ephemeral deploy complete</code>, not <code>Unrecognized field "deploymentMode"</code>.</p>
+          <h4>7. Ephemeral resources not deleted with IntegrationFlow</h4>
+          <p><strong>Cause (pre-0.5.0):</strong> Missing <code>ownerReferences</code> and finalizer not persisted on the CR.</p>
+          <p><strong>Fix:</strong> Upgrade to <code>v0.5.0</code> from Quay via OLM bundle:</p>
+          <pre><code>operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.5.0 \
+  --namespace openshift-integration --install-mode AllNamespaces --timeout 10m</code></pre>
+          <p><strong>Verify:</strong> After delete, <code>oc get deploy -l platform.io/ephemeral=true</code> returns no resources.</p>
+        </div>
+
+        <div class="troubleshoot-item">
+          <h4>8. Multi-cluster targeting</h4>
+          <p>GitOps flows use Argo CD ApplicationSets. Use <code>spec.targeting</code> (not deprecated <code>targetClusters</code>):</p>
+          <table>
+            <tr><th>Strategy</th><th>Effect</th></tr>
+            <tr><td><code>explicit</code> + <code>clusters: [local]</code></td><td>Deploy only to Argo CD cluster named <code>local</code></td></tr>
+            <tr><td><code>selector</code> + <code>clusterSelector</code></td><td>Clusters matching labels on Argo CD cluster secrets</td></tr>
+            <tr><td><code>all</code></td><td>All clusters registered in Argo CD</td></tr>
+          </table>
+          <p>Ephemeral mode is always single-cluster. Register clusters with <code>argocd cluster add</code> before multicluster GitOps.</p>
         </div>
 
         <div class="troubleshoot-item">

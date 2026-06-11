@@ -1,5 +1,7 @@
 package io.platform.ephemeral;
 
+import io.fabric8.kubernetes.api.model.OwnerReference;
+import io.platform.api.v1alpha1.IntegrationFlow;
 import io.platform.api.v1alpha1.IntegrationFlowSpec;
 import io.platform.api.v1alpha1.IntegrationFlowStatus;
 import io.platform.api.v1alpha1.IntegrationType;
@@ -25,9 +27,13 @@ public class EphemeralRuntimeService {
     @Inject
     SonataFlowEphemeralDeployer sonataFlowDeployer;
 
-    public DeployResult deploy(IntegrationType type, String flowName, String namespace,
+    public DeployResult deploy(IntegrationType type, IntegrationFlow flow,
                                ScaffoldingService.ScaffoldResult scaffold,
                                IntegrationFlowSpec spec, IntegrationFlowStatus status) {
+        String flowName = flow.getMetadata().getName();
+        String namespace = flow.getMetadata().getNamespace();
+        OwnerReference ownerRef = EphemeralOwnerReferenceHelper.build(flow);
+
         var ephemeral = spec.getEphemeral();
         String imageOverride = ephemeral != null ? ephemeral.getWorkerImage() : null;
         var secrets = spec.getSecrets();
@@ -35,15 +41,15 @@ public class EphemeralRuntimeService {
 
         String workerRef = switch (type) {
             case CAMEL_ROUTE -> camelRouteDeployer.deploy(flowName, namespace, scaffold,
-                    IntegrationType.CAMEL_ROUTE, imageOverride, ephemeral, resilience, secrets);
+                    IntegrationType.CAMEL_ROUTE, imageOverride, ephemeral, resilience, secrets, ownerRef);
             case CAMEL_KAMELET, CAMEL_PIPE -> {
                 if (!camelKDeployer.isCamelKAvailable()) {
                     yield camelRouteDeployer.deploy(flowName, namespace, scaffold,
-                            type, imageOverride, ephemeral, resilience, secrets);
+                            type, imageOverride, ephemeral, resilience, secrets, ownerRef);
                 }
-                yield camelKDeployer.deploy(flowName, namespace, type, spec.getKaotoDesign());
+                yield camelKDeployer.deploy(flowName, namespace, type, spec.getKaotoDesign(), ownerRef);
             }
-            case CAMEL_TEST -> camelTestDeployer.deploy(flowName, namespace, scaffold);
+            case CAMEL_TEST -> camelTestDeployer.deploy(flowName, namespace, scaffold, ownerRef);
             case SONATAFLOW -> sonataFlowDeployer.deploy(flowName, namespace, spec.getKaotoDesign(), status);
         };
         LOG.infof("Ephemeral deploy complete for %s: %s", flowName, workerRef);

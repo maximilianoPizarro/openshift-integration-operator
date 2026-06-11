@@ -127,7 +127,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         if (resource.getMetadata().getDeletionTimestamp() != null) {
             var finalizers = resource.getMetadata().getFinalizers();
             if (finalizers != null && finalizers.contains(EphemeralResourceLabels.FINALIZER)) {
-                ephemeralCleanupService.cleanup(flowName, namespace);
+                ephemeralCleanupService.cleanup(flowName, namespace, status);
                 removeFinalizer(resource, EphemeralResourceLabels.FINALIZER);
                 return UpdateControl.patchResource(resource);
             }
@@ -245,6 +245,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             // Step 4: Reconcile ArgoCD ApplicationSet for multi-cluster deployment
             status.setPhase(IntegrationFlowStatus.Phase.Deploying);
             Map<String, String> clusterSelector = resolveClusterSelector(spec.getTargeting());
+            List<String> explicitClusters = resolveExplicitClusters(spec.getTargeting());
             List<String> excludeClusters = resolveExcludeClusters(spec.getTargeting());
 
             argoService.reconcileApplicationSet(
@@ -254,6 +255,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                     spec.getBranch(),
                     GIT_MANIFEST_PATH,
                     clusterSelector,
+                    explicitClusters,
                     excludeClusters);
 
             String appSetName = flowName + "-appset";
@@ -329,6 +331,21 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                 yield Collections.emptyMap();
             }
         };
+    }
+
+    private List<String> resolveExplicitClusters(TargetingSpec targeting) {
+        if (targeting == null || targeting.getClusters() == null) {
+            return List.of();
+        }
+        if (targeting.getStrategy() != TargetingSpec.Strategy.explicit) {
+            return List.of();
+        }
+        if (targeting.getClusterSelector() != null && !targeting.getClusterSelector().isEmpty()) {
+            return List.of();
+        }
+        return targeting.getClusters().stream()
+                .filter(name -> name != null && !name.isBlank())
+                .collect(Collectors.toList());
     }
 
     private List<String> resolveExcludeClusters(TargetingSpec targeting) {
@@ -671,7 +688,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
         LOG.infof("Reconciling ephemeral IntegrationFlow '%s/%s' type=%s", namespace, flowName, type);
         status.setDeploymentMode(DeploymentMode.EPHEMERAL);
-        ensureFinalizer(resource, EphemeralResourceLabels.FINALIZER);
+        boolean finalizerAdded = ensureFinalizer(resource, EphemeralResourceLabels.FINALIZER);
 
         String desiredState = spec.getDesiredState();
         if ("paused".equals(desiredState) || "stopped".equals(desiredState)) {
@@ -681,7 +698,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             status.setCurrentState(desiredState);
             status.setMessage("Ephemeral flow " + desiredState + " by user");
             finalizeStatus(resource, status);
-            return UpdateControl.patchStatus(resource);
+            return ephemeralUpdateControl(resource, finalizerAdded);
         }
         if ("running".equals(desiredState) && status.getEphemeralWorkerRef() != null
                 && (status.getPhase() == IntegrationFlowStatus.Phase.Paused
@@ -693,7 +710,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             status.setPhase(IntegrationFlowStatus.Phase.Error);
             status.setMessage("kaotoDesign is required for ephemeral deployment");
             finalizeStatus(resource, status);
-            return UpdateControl.patchStatus(resource);
+            return ephemeralUpdateControl(resource, finalizerAdded);
         }
 
         int ttl = resolveTtlSeconds(spec);
@@ -701,7 +718,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         if (Instant.now().isAfter(expiresAt)) {
             handleExpiredEphemeral(flowName, namespace, status);
             finalizeStatus(resource, status);
-            return UpdateControl.patchStatus(resource);
+            return ephemeralUpdateControl(resource, finalizerAdded);
         }
 
         status.setEphemeralExpiresAt(expiresAt.toString());
@@ -712,7 +729,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             updateCondition(status, "Scaffolded", "True", "ScaffoldComplete", "Ephemeral worker scaffolded");
 
             var deployResult = ephemeralRuntimeService.deploy(
-                    type, flowName, namespace, scaffoldResult, spec, status);
+                    type, resource, scaffoldResult, spec, status);
 
             status.setEphemeralWorkerRef(deployResult.workerRef());
             status.setLastScaffoldedHash(currentDesignHash);
@@ -736,6 +753,13 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         }
 
         finalizeStatus(resource, status);
+        return ephemeralUpdateControl(resource, finalizerAdded);
+    }
+
+    private UpdateControl<IntegrationFlow> ephemeralUpdateControl(IntegrationFlow resource, boolean finalizerAdded) {
+        if (finalizerAdded) {
+            return UpdateControl.patchResource(resource).patchStatus(resource);
+        }
         return UpdateControl.patchStatus(resource);
     }
 
@@ -794,7 +818,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         }
     }
 
-    private void ensureFinalizer(IntegrationFlow resource, String finalizer) {
+    private boolean ensureFinalizer(IntegrationFlow resource, String finalizer) {
         var finalizers = resource.getMetadata().getFinalizers();
         if (finalizers == null) {
             finalizers = new ArrayList<>();
@@ -802,7 +826,9 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         }
         if (!finalizers.contains(finalizer)) {
             finalizers.add(finalizer);
+            return true;
         }
+        return false;
     }
 
     private void removeFinalizer(IntegrationFlow resource, String finalizer) {

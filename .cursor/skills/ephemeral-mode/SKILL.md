@@ -48,14 +48,14 @@ ephemeral:
   defaultTtlSeconds: 3600
   maxTtlSeconds: 86400
   preferFullWorker: false   # false = tier selection by detected components
-  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.4.1
-  camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.4.1
-  camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.4.1
-  camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.4.1
-  camelWorkerCloudImage: quay.io/maximilianopizarro/camel-worker-cloud:v0.4.1
-  camelWorkerAiImage: quay.io/maximilianopizarro/camel-worker-ai:v0.4.1
-  camelWorkerFullImage: quay.io/maximilianopizarro/camel-worker-full:v0.4.1
-  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.4.1
+  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.5.0
+  camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.5.0
+  camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.5.0
+  camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.5.0
+  camelWorkerCloudImage: quay.io/maximilianopizarro/camel-worker-cloud:v0.5.0
+  camelWorkerAiImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0
+  camelWorkerFullImage: quay.io/maximilianopizarro/camel-worker-full:v0.5.0
+  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.5.0
   camelK:
     detect: true
 ```

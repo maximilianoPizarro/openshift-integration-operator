@@ -1,5 +1,6 @@
 package io.platform.ephemeral;
 
+import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.EnvFromSourceBuilder;
 import io.fabric8.kubernetes.api.model.SecretVolumeSourceBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
@@ -71,6 +72,14 @@ public class CamelRouteEphemeralDeployer {
                          IntegrationType integrationType, String workerImageOverride,
                          EphemeralSpec ephemeralSpec, ResilienceSpec resilience,
                          List<SecretRef> secrets) {
+        return deploy(flowName, namespace, scaffold, integrationType, workerImageOverride,
+                ephemeralSpec, resilience, secrets, null);
+    }
+
+    public String deploy(String flowName, String namespace, ScaffoldingService.ScaffoldResult scaffold,
+                         IntegrationType integrationType, String workerImageOverride,
+                         EphemeralSpec ephemeralSpec, ResilienceSpec resilience,
+                         List<SecretRef> secrets, OwnerReference ownerRef) {
         Set<String> components = scaffold.detectedComponents() != null && !scaffold.detectedComponents().isEmpty()
                 ? scaffold.detectedComponents()
                 : componentDetector.detectComponents(scaffold.workflowDefinition());
@@ -99,11 +108,13 @@ public class CamelRouteEphemeralDeployer {
             cmData.put("application.properties", mergedProperties);
         }
 
+        var ownerRefs = EphemeralOwnerReferenceHelper.asList(ownerRef);
         var configMap = new io.fabric8.kubernetes.api.model.ConfigMapBuilder()
                 .withNewMetadata()
                     .withName(cmName)
                     .withNamespace(namespace)
                     .withLabels(labels)
+                    .withOwnerReferences(ownerRefs)
                 .endMetadata()
                 .withData(cmData)
                 .build();
@@ -174,6 +185,7 @@ public class CamelRouteEphemeralDeployer {
                     .withName(deployName)
                     .withNamespace(namespace)
                     .withLabels(labels)
+                    .withOwnerReferences(ownerRefs)
                 .endMetadata()
                 .withSpec(new DeploymentSpecBuilder()
                         .withReplicas(1)
@@ -191,6 +203,7 @@ public class CamelRouteEphemeralDeployer {
                     .withName(svcName)
                     .withNamespace(namespace)
                     .withLabels(labels)
+                    .withOwnerReferences(ownerRefs)
                 .endMetadata()
                 .withNewSpec()
                     .addToSelector(labels)

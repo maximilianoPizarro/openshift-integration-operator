@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.platform.api.v1alpha1.IntegrationType;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,6 +31,11 @@ public class CamelKEphemeralDeployer {
     }
 
     public String deploy(String flowName, String namespace, IntegrationType type, String kaotoDesign) {
+        return deploy(flowName, namespace, type, kaotoDesign, null);
+    }
+
+    public String deploy(String flowName, String namespace, IntegrationType type, String kaotoDesign,
+                         OwnerReference ownerRef) {
         if (!isCamelKAvailable()) {
             throw new IllegalStateException(
                     "Camel K operator not installed (CRD kamelets.camel.apache.org missing). "
@@ -60,6 +66,7 @@ public class CamelKEphemeralDeployer {
                     .withName(name)
                     .withNamespace(namespace)
                     .withLabels(CamelRouteEphemeralDeployer.ephemeralLabels(flowName))
+                    .withOwnerReferences(EphemeralOwnerReferenceHelper.asList(ownerRef))
                     .build());
             resource.setAdditionalProperties(doc);
             // Ensure metadata in additional properties matches

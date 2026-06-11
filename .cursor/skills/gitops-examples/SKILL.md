@@ -22,8 +22,8 @@ IntegrationFlow → scaffold push (Gitea) → Tekton PipelineRun → image :late
 | `04-error-handling-dlq.yaml` | error-handling-dlq | CAMEL_ROUTE | Deployment |
 | `05-s3-to-db-kamelet.yaml` | s3-to-db-kamelet | CAMEL_KAMELET | Kamelet CR |
 | `06-etl-pipe.yaml` | etl-pipe | CAMEL_PIPE | Camel K Pipe |
-| `07-file-processor-workflow.yaml` | file-processor-workflow | SONATAFLOW | SonataFlow CR in `kogito-bpm` |
-| `08-saga-workflow.yaml` | saga-workflow | SONATAFLOW | SonataFlow CR in `kogito-bpm` |
+| `07-file-processor-workflow.yaml` | file-processor-workflow | CAMEL_ROUTE | Deployment (file + CSV processing) |
+| `08-saga-workflow.yaml` | saga-workflow | CAMEL_ROUTE | Deployment (saga over platform-http) |
 
 Placeholder `gitRepository: https://gitea.example.com/user1/<flow>` is rewritten to cluster Gitea by the operator.
 

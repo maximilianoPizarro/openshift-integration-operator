@@ -23,6 +23,7 @@ import {
 } from '@patternfly/react-core';
 import TelemetryOverlay from './TelemetryOverlay';
 import FlowVisualizer from './FlowVisualizer';
+import { formatTargetClusters } from '../utils/targeting';
 import type { FlowNode } from './FlowVisualizer';
 import EphemeralBanner from './ephemeral/EphemeralBanner';
 import EphemeralBadge from './ephemeral/EphemeralBadge';
@@ -48,6 +49,7 @@ interface IntegrationFlow {
   spec: {
     engine: string; integrationType?: string; gitRepository: string; branch: string;
     kaotoDesign?: string; targetClusters?: string[];
+    targeting?: { strategy?: string; clusters?: string[] };
     desiredState?: string;
     schedule?: string;
     resilience?: { retry?: { maxAttempts?: number; backoff?: string; initialDelay?: string; maxDelay?: string }; circuitBreaker?: { failureThreshold?: number; halfOpenAfter?: string }; maxInflightExchanges?: number };
@@ -382,7 +384,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
               Engine: <strong>{flow.spec.integrationType || flow.spec.engine}</strong>
               {!isEphemeral && <> &middot; Branch: <strong>{flow.spec.branch}</strong></>}
-              {flow.spec.targetClusters?.length ? <> &middot; Clusters: <strong>{flow.spec.targetClusters.join(', ')}</strong></> : null}
+              {formatTargetClusters(flow.spec) !== 'None' ? <> &middot; Clusters: <strong>{formatTargetClusters(flow.spec)}</strong></> : null}
             </span>
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -868,7 +870,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
               <DescriptionListGroup>
                 <DescriptionListTerm>Target Clusters</DescriptionListTerm>
                 <DescriptionListDescription>
-                  {(flow.spec.targetClusters || []).join(', ') || 'None'}
+                  {formatTargetClusters(flow.spec)}
                 </DescriptionListDescription>
               </DescriptionListGroup>
 

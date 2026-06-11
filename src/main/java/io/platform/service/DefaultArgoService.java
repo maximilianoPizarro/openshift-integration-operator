@@ -41,12 +41,13 @@ public class DefaultArgoService implements ArgoService {
     public void reconcileApplicationSet(String name, String namespace, String gitRepoUrl,
                                          String branch, String path,
                                          Map<String, String> clusterSelector,
+                                         List<String> explicitClusters,
                                          List<String> excludeClusters) {
         String appSetName = name + "-appset";
         LOG.infof("Reconciling ApplicationSet %s in %s", appSetName, ARGO_NS);
 
         Map<String, Object> appSetSpec = buildApplicationSetSpec(
-            name, gitRepoUrl, branch, path, clusterSelector, excludeClusters);
+            name, gitRepoUrl, branch, path, clusterSelector, explicitClusters, excludeClusters);
 
         try {
             GenericKubernetesResource existing = client.genericKubernetesResources(APPSET_CTX)
@@ -136,9 +137,10 @@ public class DefaultArgoService implements ArgoService {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> buildApplicationSetSpec(String name, String gitRepoUrl,
+    static Map<String, Object> buildApplicationSetSpec(String name, String gitRepoUrl,
                                                          String branch, String path,
                                                          Map<String, String> clusterSelector,
+                                                         List<String> explicitClusters,
                                                          List<String> excludeClusters) {
         Map<String, Object> gitGenerator = Map.of(
             "git", Map.of(
@@ -148,12 +150,8 @@ public class DefaultArgoService implements ArgoService {
             )
         );
 
-        Map<String, Object> clusterGen;
-        if (clusterSelector != null && !clusterSelector.isEmpty()) {
-            clusterGen = Map.of("clusters", Map.of("selector", Map.of("matchLabels", clusterSelector)));
-        } else {
-            clusterGen = Map.of("clusters", Map.of());
-        }
+        Map<String, Object> clusterGen = ArgoClusterGeneratorBuilder.buildClusterGenerator(
+                clusterSelector, explicitClusters, excludeClusters);
 
         Map<String, Object> matrixGenerator = Map.of(
             "matrix", Map.of("generators", List.of(gitGenerator, clusterGen))
