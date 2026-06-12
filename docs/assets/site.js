@@ -1,6 +1,13 @@
 (function () {
   'use strict';
 
+  var SITE_LINKS = {
+    operatorHub: 'https://operatorhub.io/operator/community-operators/openshift-integration-operator',
+    artifactHub: 'https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator',
+    artifactHubSecurity: 'https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report',
+    github: 'https://github.com/maximilianoPizarro/openshift-integration-operator'
+  };
+
   function mastheadHtml() {
     return (
       '<header class="site-masthead" role="banner">' +
@@ -62,8 +69,10 @@
             '<a href="worker-selector.html">Tools</a>' +
             '<a href="faq.html">FAQ</a>' +
             '<a href="contributing.html">Contribute</a>' +
-            '<a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>' +
-            '<a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>' +
+            '<a href="' + SITE_LINKS.github + '" target="_blank" rel="noopener noreferrer">GitHub</a>' +
+            '<a href="' + SITE_LINKS.operatorHub + '" target="_blank" rel="noopener noreferrer">OperatorHub</a>' +
+            '<a href="' + SITE_LINKS.artifactHub + '" target="_blank" rel="noopener noreferrer">Artifact Hub</a>' +
+            '<a href="' + SITE_LINKS.artifactHubSecurity + '" target="_blank" rel="noopener noreferrer">Security report</a>' +
           '</nav>' +
           '<p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>' +
         '</div>' +

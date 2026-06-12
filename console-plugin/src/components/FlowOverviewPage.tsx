@@ -144,6 +144,8 @@ const FlowOverviewPage: React.FC = () => {
   const [flows, setFlows] = React.useState<IntegrationFlow[]>([]);
   const [pipelineRuns, setPipelineRuns] = React.useState<PipelineRun[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [lastRefreshed, setLastRefreshed] = React.useState('');
   const [pluginVersion, setPluginVersion] = React.useState<string | null>(null);
   const [flowCatalogSource, setFlowCatalogSource] = React.useState<string>('remote');
 
@@ -188,7 +190,8 @@ const FlowOverviewPage: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
-  const fetchAll = React.useCallback(async () => {
+  const fetchAll = React.useCallback(async (manual = false) => {
+    if (manual) setRefreshing(true);
     try {
       if (flowNamespace) {
         const flowResp = await fetch(integrationFlowsUrl(flowNamespace));
@@ -210,12 +213,15 @@ const FlowOverviewPage: React.FC = () => {
       if (prResp.ok) { const data = await prResp.json(); setPipelineRuns(data.items || []); }
     } catch { /* ignore */ }
     setLoading(false);
+    if (manual) {
+      setRefreshing(false);
+      setLastRefreshed(new Date().toLocaleTimeString());
+    }
   }, [flowNamespace]);
 
   React.useEffect(() => {
+    setLoading(true);
     fetchAll();
-    const interval = setInterval(fetchAll, 10000);
-    return () => clearInterval(interval);
   }, [fetchAll]);
 
   const typeCounts = React.useMemo(() => {
@@ -259,11 +265,13 @@ const FlowOverviewPage: React.FC = () => {
 
   return (
     <PageSection>
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+        <div>
         <Title headingLevel="h1" size="xl">Flow Overview</Title>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
           <span style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>
             Dashboard for {flows.length} integration flows {clusterWide ? 'cluster-wide' : `in ${flowNamespace}`}
+            {lastRefreshed ? ` · Updated ${lastRefreshed}` : ''}
           </span>
           {pluginVersion && (
             <Label color="blue" isCompact>Console plugin v{pluginVersion}</Label>
@@ -272,6 +280,10 @@ const FlowOverviewPage: React.FC = () => {
             Catalog: {flowCatalogSource}
           </Label>
         </div>
+        </div>
+        <Button variant="secondary" onClick={() => fetchAll(true)} isDisabled={refreshing}>
+          {refreshing ? 'Refreshing…' : '\u21BB Refresh'}
+        </Button>
       </div>
 
       {flows.length === 0 && (

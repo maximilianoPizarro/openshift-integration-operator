@@ -219,8 +219,10 @@ const IntegrationFlowPage: React.FC = () => {
   const [filterType, setFilterType] = React.useState('');
   const [filterPhase, setFilterPhase] = React.useState('');
   const [page, setPage] = React.useState(1);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [lastRefreshed, setLastRefreshed] = React.useState('');
 
-  const fetchFlows = React.useCallback(async () => {
+  const fetchFlows = React.useCallback(async (manual = false) => {
     if (!flowNamespace) {
       setFlows([]);
       setClusterWide(false);
@@ -228,6 +230,7 @@ const IntegrationFlowPage: React.FC = () => {
       setLoading(false);
       return;
     }
+    if (manual) setRefreshing(true);
     try {
       let resp = await k8sFetch(integrationFlowsUrl(flowNamespace));
       if (resp.ok) {
@@ -251,13 +254,16 @@ const IntegrationFlowPage: React.FC = () => {
       setError(e.message);
     } finally {
       setLoading(false);
+      if (manual) {
+        setRefreshing(false);
+        setLastRefreshed(new Date().toLocaleTimeString());
+      }
     }
   }, [flowNamespace]);
 
   React.useEffect(() => {
+    setLoading(true);
     fetchFlows();
-    const interval = setInterval(fetchFlows, 5000);
-    return () => clearInterval(interval);
   }, [fetchFlows]);
 
   const filtered = React.useMemo(() => {
@@ -466,21 +472,31 @@ const IntegrationFlowPage: React.FC = () => {
           <Title headingLevel="h1" size="xl">Integration Flows</Title>
           <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
             {flows.length} flow{flows.length !== 1 ? 's' : ''} {clusterWide ? 'cluster-wide' : `in ${flowNamespace}`}
+            {lastRefreshed ? ` · Updated ${lastRefreshed}` : ''}
           </span>
         </div>
-        <Button
-          variant={showCreate ? 'secondary' : 'primary'}
-          onClick={() => {
-            if (showCreate) {
-              setShowCreate(false);
-              clearTemplate();
-            } else {
-              setShowCreate(true);
-            }
-          }}
-        >
-          {showCreate ? 'Cancel' : '+ Create Flow'}
-        </Button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Button
+            variant="secondary"
+            onClick={() => fetchFlows(true)}
+            isDisabled={refreshing || !flowNamespace}
+          >
+            {refreshing ? 'Refreshing…' : '\u21BB Refresh'}
+          </Button>
+          <Button
+            variant={showCreate ? 'secondary' : 'primary'}
+            onClick={() => {
+              if (showCreate) {
+                setShowCreate(false);
+                clearTemplate();
+              } else {
+                setShowCreate(true);
+              }
+            }}
+          >
+            {showCreate ? 'Cancel' : '+ Create Flow'}
+          </Button>
+        </div>
       </div>
 
       {/* Summary labels */}

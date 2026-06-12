@@ -185,6 +185,8 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const [copiedFull, setCopiedFull] = React.useState(false);
   const [showExtendModal, setShowExtendModal] = React.useState(false);
   const [showPromoteModal, setShowPromoteModal] = React.useState(false);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [lastRefreshed, setLastRefreshed] = React.useState('');
 
   const kaotoUrl = resolveKaotoUrl(platformConfig);
   const sonataFlowConsoleUrl = resolveSonataFlowConsoleUrl(platformConfig);
@@ -197,23 +199,29 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   }, []);
   const [bannerDismissed, setBannerDismissed] = React.useState(false);
 
-  const fetchFlow = React.useCallback(async () => {
+  const fetchFlow = React.useCallback(async (manual = false) => {
     if (!flowName) { setError('No flow name'); setLoading(false); return; }
+    if (manual) setRefreshing(true);
     try {
       const resp = await fetch(integrationFlowUrl(flowNamespace, flowName));
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data: IntegrationFlow = await resp.json();
       setFlow(data);
-      if (!design) setDesign(data.spec.kaotoDesign || '');
+      setDesign(prev => prev || data.spec.kaotoDesign || '');
       setError(null);
+      if (manual) setLastRefreshed(new Date().toLocaleTimeString());
     } catch (e: any) {
       setError(e.message);
     } finally {
       setLoading(false);
+      if (manual) setRefreshing(false);
     }
   }, [flowName, flowNamespace]);
 
-  React.useEffect(() => { fetchFlow(); }, [fetchFlow]);
+  React.useEffect(() => {
+    setLoading(true);
+    fetchFlow();
+  }, [fetchFlow]);
 
   const [gitSyncStatus, setGitSyncStatus] = React.useState<string | null>(null);
 
@@ -396,9 +404,13 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
               Engine: <strong>{flow.spec.integrationType || flow.spec.engine}</strong>
               {!isEphemeral && <> &middot; Branch: <strong>{flow.spec.branch}</strong></>}
               {formatTargetClusters(flow.spec) !== 'None' ? <> &middot; Clusters: <strong>{formatTargetClusters(flow.spec)}</strong></> : null}
+              {lastRefreshed ? <> &middot; Updated {lastRefreshed}</> : null}
             </span>
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <Button variant="secondary" onClick={() => fetchFlow(true)} isDisabled={refreshing || stateChanging}>
+              {refreshing ? 'Refreshing…' : '\u21BB Refresh'}
+            </Button>
             {saved && <span style={{ color: '#3e8635', fontSize: '13px' }}>Saved!</span>}
             {gitSyncStatus && <span style={{ color: '#2b9af3', fontSize: '11px' }}>{gitSyncStatus}</span>}
             {phase === 'Running' && (
@@ -486,7 +498,6 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
               syncTabToUrl(tab);
             }}
             mountOnEnter
-            unmountOnExit
           >
             <Tab eventKey="visual" title={<TabTitleText>Visual Flow</TabTitleText>}>
               {renderZoomToolbar()}

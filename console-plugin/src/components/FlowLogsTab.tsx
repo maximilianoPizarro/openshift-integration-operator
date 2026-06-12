@@ -36,7 +36,7 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName }) =>
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [tailLines, setTailLines] = React.useState(500);
-  const [follow, setFollow] = React.useState(true);
+  const [follow, setFollow] = React.useState(false);
   const [container, setContainer] = React.useState('');
   const logRef = React.useRef<HTMLPreElement>(null);
 
@@ -80,7 +80,11 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName }) =>
   }, [flowName, tailLines, container]);
 
   React.useEffect(() => {
+    setLoading(true);
     fetchLogs();
+  }, [fetchLogs]);
+
+  React.useEffect(() => {
     if (!follow) return undefined;
     const id = setInterval(fetchLogs, 3000);
     return () => clearInterval(id);

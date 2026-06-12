@@ -299,8 +299,6 @@ const PlatformStatusPage: React.FC = () => {
 
   React.useEffect(() => {
     checkServices();
-    const interval = setInterval(checkServices, 15000);
-    return () => clearInterval(interval);
   }, [checkServices]);
 
   const healthyCount = services.filter(s => s.status === 'healthy').length;
