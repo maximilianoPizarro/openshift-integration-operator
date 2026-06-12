@@ -30,12 +30,13 @@
         <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
         <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
         <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
-        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li><a class="site-masthead__nav-link" href="ready-flows.html">Ready Flows</a></li>
         <li class="nav-dropdown">
           <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
           <ul class="nav-dropdown-menu">
             <li><a href="worker-selector.html">Worker Image Selector</a></li>
             <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="examples-catalog.html">Examples Catalog</a></li>
             <li><a href="operations.html">Operations</a></li>
             <li><a href="troubleshooting.html">Troubleshooting</a></li>
           </ul>
@@ -199,6 +200,11 @@ oc get integrationflow -n openshift-integration</code></pre>
 
       <section class="step" id="step-3">
         <h2><span class="step-num">B.3</span> GitOps IntegrationFlow Examples</h2>
+        <div class="note">
+          <strong>Design storage:</strong> For production GitOps flows, prefer <code>designRef</code> pointing at a ConfigMap
+          (keeps large route YAML out of the CR). Inline <code>kaotoDesign</code> is deprecated but still supported —
+          the examples below use inline YAML for copy-paste simplicity in quick evaluations.
+        </div>
         <p>The platform supports <strong>5 integration types</strong>: Camel Route, Kamelet, Pipe, Test, and SonataFlow. Below are production-ready examples for each type.</p>
 
         <h3>1. Camel Route — REST to Kafka</h3>
@@ -636,7 +642,8 @@ oc get pods -n openshift-integration -l app.kubernetes.io/component=console-plug
         <a href="try-it-now.html">Try It Now</a>
         <a href="quickstart.html">Guide</a>
         <a href="architecture.html">Architecture</a>
-        <a href="examples-catalog.html">Examples</a>
+        <a href="ready-flows.html">Ready Flows</a>
+        <a href="examples-catalog.html">Examples Catalog</a>
         <a href="worker-selector.html">Tools</a>
         <a href="faq.html">FAQ</a>
         <a href="contributing.html">Contribute</a>

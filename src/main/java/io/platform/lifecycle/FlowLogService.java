@@ -44,8 +44,10 @@ public class FlowLogService {
         IntegrationFlowStatus status = flow.getStatus();
         var spec = flow.getSpec();
 
+        String flowNamespace = flow.getMetadata().getNamespace();
+
         if (spec != null && spec.getDeploymentMode() == DeploymentMode.EPHEMERAL) {
-            return resolveFromWorkerRef(status != null ? status.getEphemeralWorkerRef() : null, platformNamespace);
+            return resolveFromWorkerRef(status != null ? status.getEphemeralWorkerRef() : null, flowNamespace);
         }
 
         IntegrationType type = spec != null ? spec.getResolvedType() : IntegrationType.CAMEL_ROUTE;
@@ -57,7 +59,7 @@ public class FlowLogService {
             return resolveFromDeployment(sfNs, deployName);
         }
 
-        Optional<PodRef> local = findRunningWorkerPod(platformNamespace, flowName);
+        Optional<PodRef> local = findRunningWorkerPod(flowNamespace, flowName);
         if (local.isPresent()) {
             return local;
         }
@@ -87,8 +89,9 @@ public class FlowLogService {
 
     public Map<String, Object> listResources(IntegrationFlow flow) {
         String flowName = flow.getMetadata().getName();
-        var runtime = listRuntimePods(flowName);
-        var build = client.pods().inNamespace(platformNamespace)
+        String flowNamespace = flow.getMetadata().getNamespace();
+        var runtime = listRuntimePods(flowNamespace, flowName);
+        var build = client.pods().inNamespace(flowNamespace)
                 .withLabel(EphemeralResourceLabels.LABEL_FLOW_NAME, flowName)
                 .withLabel(EphemeralResourceLabels.LABEL_COMPONENT, "build")
                 .list().getItems().stream()
@@ -101,8 +104,8 @@ public class FlowLogService {
         );
     }
 
-    private List<Map<String, String>> listRuntimePods(String flowName) {
-        return client.pods().inNamespace(platformNamespace)
+    private List<Map<String, String>> listRuntimePods(String namespace, String flowName) {
+        return client.pods().inNamespace(namespace)
                 .withLabel(EphemeralResourceLabels.LABEL_FLOW_NAME, flowName)
                 .list().getItems().stream()
                 .filter(this::isRuntimePod)

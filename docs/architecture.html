@@ -30,12 +30,13 @@
         <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
         <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
         <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
-        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li><a class="site-masthead__nav-link" href="ready-flows.html">Ready Flows</a></li>
         <li class="nav-dropdown">
           <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
           <ul class="nav-dropdown-menu">
             <li><a href="worker-selector.html">Worker Image Selector</a></li>
             <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="examples-catalog.html">Examples Catalog</a></li>
             <li><a href="operations.html">Operations</a></li>
             <li><a href="troubleshooting.html">Troubleshooting</a></li>
           </ul>
@@ -76,8 +77,70 @@
           workflow lifecycle management on OpenShift.
         </p>
 
-        <div class="diagram-placeholder">
-          <img src="images/architecture-high-level.svg" alt="High-level architecture diagram — OpenShift Integration Operator" width="900">
+        <div class="diagram-placeholder" role="img" aria-labelledby="arch-high-level-title">
+          <title id="arch-high-level-title">High-level architecture: OpenShift Console (plugin, Kaoto, telemetry, MCP) connects to Quarkus Operator (reconciler, scaffolding, GitOps, telemetry API, MCP bridge), which drives GitOps pipeline (Gitea, Tekton, Argo CD, Quay) and HPA-scaled runtime workers (Camel, SonataFlow, OTel, metrics)</title>
+          <!-- Inline SVG: visible when external assets are blocked; dark canvas matches diagram-placeholder -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="arch-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#388bfd"/>
+                <stop offset="100%" stop-color="#8957e5"/>
+              </linearGradient>
+              <marker id="arch-arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#388bfd"/></marker>
+              <marker id="arch-arrowYellow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#fcc419"/></marker>
+            </defs>
+            <rect width="900" height="520" rx="12" fill="#0d1117"/>
+            <text x="450" y="35" text-anchor="middle" fill="#e6edf3" font-size="18" font-weight="700">OpenShift Integration Operator — High-Level Architecture</text>
+            <rect x="30" y="70" width="840" height="90" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+            <text x="55" y="92" fill="#388bfd" font-size="11" font-weight="600">OPENSHIFT CONSOLE</text>
+            <rect x="55" y="102" width="160" height="42" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)"/>
+            <text x="135" y="128" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">Console Plugin</text>
+            <rect x="235" y="102" width="160" height="42" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)"/>
+            <text x="315" y="128" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">Kaoto Designer</text>
+            <rect x="415" y="102" width="160" height="42" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)"/>
+            <text x="495" y="128" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">Telemetry Overlay</text>
+            <rect x="595" y="102" width="160" height="42" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)"/>
+            <text x="675" y="128" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">MCP Tools Panel</text>
+            <line x1="450" y1="160" x2="450" y2="185" stroke="#388bfd" stroke-width="2" marker-end="url(#arch-arrowBlue)"/>
+            <rect x="30" y="185" width="840" height="100" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+            <text x="55" y="207" fill="#8957e5" font-size="11" font-weight="600">QUARKUS OPERATOR (JOSDK + Fabric8)</text>
+            <rect x="55" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)"/>
+            <text x="120" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">Reconciler</text>
+            <rect x="205" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)"/>
+            <text x="270" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">Scaffolding</text>
+            <rect x="355" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)"/>
+            <text x="420" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">GitOps Service</text>
+            <rect x="505" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)"/>
+            <text x="570" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">Telemetry API</text>
+            <rect x="655" y="217" width="130" height="50" rx="6" fill="rgba(137,87,229,0.12)" stroke="rgba(137,87,229,0.3)"/>
+            <text x="720" y="237" text-anchor="middle" fill="#d0bfff" font-size="11" font-weight="500">MCP Bridge</text>
+            <line x1="450" y1="285" x2="450" y2="310" stroke="#388bfd" stroke-width="2" marker-end="url(#arch-arrowBlue)"/>
+            <rect x="30" y="310" width="840" height="90" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+            <text x="55" y="332" fill="#f08c00" font-size="11" font-weight="600">GITOPS PIPELINE</text>
+            <rect x="55" y="342" width="190" height="42" rx="6" fill="rgba(240,140,0,0.1)" stroke="rgba(240,140,0,0.3)"/>
+            <text x="150" y="368" text-anchor="middle" fill="#fcc419" font-size="12" font-weight="500">Gitea Repository</text>
+            <path d="M255,363 L295,363" stroke="#fcc419" stroke-width="1.5" marker-end="url(#arch-arrowYellow)"/>
+            <rect x="305" y="342" width="190" height="42" rx="6" fill="rgba(240,140,0,0.1)" stroke="rgba(240,140,0,0.3)"/>
+            <text x="400" y="368" text-anchor="middle" fill="#fcc419" font-size="12" font-weight="500">Tekton Pipeline</text>
+            <path d="M505,363 L545,363" stroke="#fcc419" stroke-width="1.5" marker-end="url(#arch-arrowYellow)"/>
+            <rect x="555" y="342" width="190" height="42" rx="6" fill="rgba(240,140,0,0.1)" stroke="rgba(240,140,0,0.3)"/>
+            <text x="650" y="368" text-anchor="middle" fill="#fcc419" font-size="12" font-weight="500">ArgoCD Sync</text>
+            <rect x="770" y="342" width="85" height="42" rx="6" fill="rgba(240,140,0,0.1)" stroke="rgba(240,140,0,0.3)"/>
+            <text x="812" y="368" text-anchor="middle" fill="#fcc419" font-size="11" font-weight="500">Quay.io</text>
+            <line x1="450" y1="400" x2="450" y2="425" stroke="#388bfd" stroke-width="2" marker-end="url(#arch-arrowBlue)"/>
+            <rect x="30" y="425" width="840" height="85" rx="10" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+            <text x="55" y="447" fill="#51cf66" font-size="11" font-weight="600">RUNTIME WORKERS (one HPA per flow)</text>
+            <rect x="55" y="457" width="180" height="38" rx="6" fill="rgba(232,89,12,0.12)" stroke="rgba(232,89,12,0.3)"/>
+            <text x="145" y="481" text-anchor="middle" fill="#ff922b" font-size="12" font-weight="500">Apache Camel Workers</text>
+            <rect x="255" y="457" width="180" height="38" rx="6" fill="rgba(47,158,68,0.12)" stroke="rgba(47,158,68,0.3)"/>
+            <text x="345" y="481" text-anchor="middle" fill="#69db7c" font-size="12" font-weight="500">SonataFlow Workers</text>
+            <rect x="455" y="457" width="140" height="38" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)"/>
+            <text x="525" y="481" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">OTel Collector</text>
+            <rect x="615" y="457" width="120" height="38" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)"/>
+            <text x="675" y="481" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">HPA v2</text>
+            <rect x="755" y="457" width="100" height="38" rx="6" fill="rgba(56,139,253,0.12)" stroke="rgba(56,139,253,0.3)"/>
+            <text x="805" y="481" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="500">Metrics</text>
+          </svg>
         </div>
 
         <div class="component-grid">
@@ -435,29 +498,55 @@
 Content-Type: application/json
 
 { "query": "OpenShift integration patterns" }</code></pre>
+
+        <h3>Security and SSRF mitigation</h3>
+        <p>
+          The <code>serverUrl</code> query parameter accepts any URL when the allowlist is empty — the operator will
+          proxy JSON-RPC requests to that host from inside the cluster. This creates a potential
+          <strong>server-side request forgery (SSRF)</strong> vector if untrusted users can obtain a valid Kubernetes token.
+        </p>
+        <ul>
+          <li><strong>Production:</strong> Always configure an allowlist via Helm — only prefix-matched URLs are accepted.</li>
+          <li><strong>Auth:</strong> Every call requires <code>Authorization: Bearer &lt;k8s-token&gt;</code> validated via TokenReview.</li>
+          <li><strong>Empty allowlist:</strong> Permits all URLs (development only).</li>
+        </ul>
+        <pre><code>helm upgrade --install openshift-integration-operator \
+  helm/openshift-integration-operator \
+  --namespace openshift-integration \
+  --set mcp.allowedServerUrls[0]=https://mcp.example.com \
+  --set mcp.allowedServerUrls[1]=http://mcp-tools.internal.svc</code></pre>
+        <p>See also <a href="troubleshooting.html#mcp-ssrf">Troubleshooting — MCP allowlist</a> and <a href="ai-models-and-mcp.html#mcp-operator-api">AI Models &amp; MCP</a>.</p>
       </section>
 
       <section class="doc-section" id="autoscaling">
         <h2>Worker Autoscaling</h2>
         <p>
-          Worker deployments are managed by a Kubernetes HorizontalPodAutoscaler (HPA v2) configured via Helm values.
+          Each <code>IntegrationFlow</code> with a worker Deployment gets its own
+          <strong>HorizontalPodAutoscaler (HPA v2)</strong>. The reconciler creates one HPA per flow with
+          <code>scaleTargetRef</code> pointing at that flow's Deployment — not a shared global autoscaler.
         </p>
 
         <div class="diagram-placeholder">
-          <img src="images/worker-autoscaling.svg" alt="Worker autoscaling — HPA v2" width="900">
+          <img src="images/worker-autoscaling.svg" alt="Per-flow worker autoscaling: metrics-server feeds CPU and memory utilization to an HPA v2 controller that scales the individual flow worker Deployment between min and max replicas" width="900">
         </div>
 
         <ul>
-          <li><strong>Min replicas:</strong> 1 (configurable via <code>workers.minReplicas</code>)</li>
-          <li><strong>Max replicas:</strong> 10 (configurable via <code>workers.maxReplicas</code>)</li>
+          <li><strong>GitOps flows:</strong> <code>base/hpa.yaml</code> is scaffolded to Git and synced by Argo CD on each target cluster.</li>
+          <li><strong>Ephemeral flows:</strong> The reconciler creates <code>iflow-&lt;name&gt;-hpa</code> targeting <code>iflow-&lt;name&gt;-worker</code>.</li>
+          <li><strong>Min replicas:</strong> 1 (Helm <code>workers.minReplicas</code>)</li>
+          <li><strong>Max replicas:</strong> 10 (Helm <code>workers.maxReplicas</code>)</li>
           <li><strong>CPU target:</strong> 70% utilization (<code>workers.targetCPUUtilization</code>)</li>
           <li><strong>Memory target:</strong> 80% utilization (<code>workers.targetMemoryUtilization</code>)</li>
         </ul>
 
         <p>
-          The HPA scales the worker Deployment up during high load and scales down when utilization drops,
-          ensuring cost-efficient resource usage while maintaining throughput for integration workloads.
+          With ten flows in <code>Running</code> phase, each flow scales independently based on its own worker pod
+          utilization. Disable autoscaling globally with <code>workers.enabled=false</code>.
         </p>
+        <pre><code>helm upgrade --install openshift-integration-operator \
+  helm/openshift-integration-operator \
+  --namespace openshift-integration \
+  --set workers.maxReplicas=20</code></pre>
       </section>
 
       <div class="note">
@@ -474,7 +563,8 @@ Content-Type: application/json
         <a href="try-it-now.html">Try It Now</a>
         <a href="quickstart.html">Guide</a>
         <a href="architecture.html">Architecture</a>
-        <a href="examples-catalog.html">Examples</a>
+        <a href="ready-flows.html">Ready Flows</a>
+        <a href="examples-catalog.html">Examples Catalog</a>
         <a href="worker-selector.html">Tools</a>
         <a href="faq.html">FAQ</a>
         <a href="contributing.html">Contribute</a>

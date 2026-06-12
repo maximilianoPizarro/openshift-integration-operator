@@ -43,7 +43,7 @@
 - **Template Catalog** — Browse 200+ ready flows from the console create form (`docs/flow-catalog.json`)
 - **MCP/AI Ready** — Model Context Protocol bridge for discovering and invoking AI tools in flows
 - **Observable** — OpenTelemetry instrumentation with real-time SSE telemetry for canvas node coloring
-- **Auto-scaling Workers** — HPA v2-driven worker pods scale on CPU and memory utilization
+- **Auto-scaling Workers** — One HPA v2 per IntegrationFlow worker Deployment (CPU and memory)
 - **Multi-cluster** — Target multiple clusters from a single IntegrationFlow spec via ArgoCD ApplicationSets
 - **SonataFlow Integration** — Auto-deploys SonataFlow CRs to the OpenShift Serverless Logic operator with Management Console links
 - **Lifecycle Management** — Pause/Resume/Stop, scheduled execution, declarative retry + circuit breaker

@@ -54,11 +54,12 @@ public class FlowLifecycleService {
 
     private void scaleFlowWorkloads(IntegrationFlow flow, int replicas) {
         String flowName = flow.getMetadata().getName();
+        String flowNamespace = flow.getMetadata().getNamespace();
         var spec = flow.getSpec();
         IntegrationFlowStatus status = flow.getStatus();
 
         if (spec != null && spec.getDeploymentMode() == DeploymentMode.EPHEMERAL) {
-            scaleDeploymentFromRef(status != null ? status.getEphemeralWorkerRef() : null, platformNamespace, replicas);
+            scaleDeploymentFromRef(status != null ? status.getEphemeralWorkerRef() : null, flowNamespace, replicas);
             return;
         }
 
@@ -72,7 +73,7 @@ public class FlowLifecycleService {
             return;
         }
 
-        scaleDeployment(platformNamespace, sonataFlowCrPrefix + flowName, replicas);
+        scaleDeployment(flowNamespace, sonataFlowCrPrefix + flowName, replicas);
         if (status != null && status.getSonataFlowName() != null && status.getSonataFlowNamespace() != null) {
             scaleDeployment(status.getSonataFlowNamespace(), status.getSonataFlowName(), replicas);
         }

@@ -289,7 +289,7 @@ entries:
     - mcp
     - ai
     - opentelemetry
-    - n8n-alternative
+    - camel-lifecycle
     kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro
@@ -428,7 +428,7 @@ entries:
     - mcp
     - ai
     - opentelemetry
-    - n8n-alternative
+    - camel-lifecycle
     kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro
@@ -465,22 +465,28 @@ entries:
         - apiVersion: platform.io/v1alpha1
           kind: IntegrationFlow
           metadata:
-            name: sample-camel-flow
+            name: rest-to-kafka
+            namespace: openshift-integration
           spec:
+            deploymentMode: GITOPS
+            integrationType: CAMEL_ROUTE
             engine: CAMEL
-            gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
+            gitRepository: https://gitea.example.com/user1/rest-to-kafka
             branch: main
-            targetClusters:
-              - local
+            targeting:
+              strategy: explicit
+              clusters:
+                - local
             kaotoDesign: |
               - route:
+                  id: rest-to-kafka
                   from:
-                    uri: timer:tick
-                    parameters:
-                      period: 5000
+                    uri: "platform-http:/api/ingest"
                     steps:
                       - log:
-                          message: "Hello from IntegrationFlow"
+                          message: "Received: ${body}"
+                      - to:
+                          uri: "kafka:integration-events?brokers=my-cluster-kafka-bootstrap:9092"
       artifacthub.io/images: |
         - name: operator
           image: quay.io/maximilianopizarro/openshift-integration-operator:v0.1.0
@@ -527,7 +533,7 @@ entries:
     - mcp
     - ai
     - opentelemetry
-    - n8n-alternative
+    - camel-lifecycle
     kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro

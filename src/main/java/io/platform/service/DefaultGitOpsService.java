@@ -29,6 +29,21 @@ public class DefaultGitOpsService implements GitOpsService {
     @ConfigProperty(name = "sonataflow.namespace", defaultValue = "kogito-bpm")
     String sonataFlowNamespace;
 
+    @ConfigProperty(name = "workers.enabled", defaultValue = "true")
+    boolean workersEnabled;
+
+    @ConfigProperty(name = "workers.min-replicas", defaultValue = "1")
+    int workersMinReplicas;
+
+    @ConfigProperty(name = "workers.max-replicas", defaultValue = "10")
+    int workersMaxReplicas;
+
+    @ConfigProperty(name = "workers.target-cpu-utilization", defaultValue = "70")
+    int workersTargetCpu;
+
+    @ConfigProperty(name = "workers.target-memory-utilization", defaultValue = "80")
+    int workersTargetMemory;
+
     @Override
     public GitPushResult pushScaffold(String gitRepository, String branch, String integrationFlowName,
                                       IntegrationType integrationType,
@@ -107,6 +122,12 @@ public class DefaultGitOpsService implements GitOpsService {
                 provider.createOrUpdateFile(owner, repoName, branch, "base/service.yaml",
                         GitOpsManifestGenerator.service(integrationFlowName),
                         "Scaffold: update service.yaml");
+                if (workersEnabled) {
+                    provider.createOrUpdateFile(owner, repoName, branch, "base/hpa.yaml",
+                            GitOpsManifestGenerator.hpa(integrationFlowName, workersMinReplicas,
+                                    workersMaxReplicas, workersTargetCpu, workersTargetMemory),
+                            "Scaffold: update hpa.yaml");
+                }
             }
         }
     }

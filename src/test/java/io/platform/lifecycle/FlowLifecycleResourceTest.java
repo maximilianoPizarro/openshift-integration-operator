@@ -9,30 +9,31 @@ import static org.hamcrest.Matchers.*;
 @QuarkusTest
 class FlowLifecycleResourceTest {
 
+    private static final String NS = "openshift-integration";
+
     @Test
     void extendEphemeralRequiresPositiveSeconds() {
         given()
-            .when().post("/api/flows/any-flow/ephemeral/extend")
+            .when().post("/api/namespaces/" + NS + "/flows/any-flow/ephemeral/extend")
             .then()
             .statusCode(400)
             .body("error", containsString("seconds"));
     }
 
     @Test
-    void extendEphemeralReturnsNotFoundForMissingFlow() {
+    void extendEphemeralRequiresAuth() {
         given()
-            .when().post("/api/flows/nonexistent-flow-xyz/ephemeral/extend?seconds=1800")
+            .when().post("/api/namespaces/" + NS + "/flows/nonexistent-flow-xyz/ephemeral/extend?seconds=1800")
             .then()
-            .statusCode(404)
-            .body("error", containsString("not found"));
+            .statusCode(401);
     }
 
     @Test
-    void getLogsReturnsNotFoundForMissingFlow() {
+    void getLogsRequiresAuth() {
         given()
-            .when().get("/api/flows/nonexistent-flow-xyz/logs")
+            .when().get("/api/namespaces/" + NS + "/flows/nonexistent-flow-xyz/logs")
             .then()
-            .statusCode(404);
+            .statusCode(401);
     }
 
     @Test
@@ -49,20 +50,19 @@ class FlowLifecycleResourceTest {
         given()
             .contentType("application/json")
             .body("{}")
-            .when().post("/api/flows/any-flow/promote-to-gitops")
+            .when().post("/api/namespaces/" + NS + "/flows/any-flow/promote-to-gitops")
             .then()
             .statusCode(400)
             .body("error", containsString("gitRepository"));
     }
 
     @Test
-    void promoteToGitOpsReturnsNotFoundForMissingFlow() {
+    void promoteToGitOpsRequiresAuth() {
         given()
             .contentType("application/json")
             .body("{\"gitRepository\":\"https://gitea.example.com/org/repo\",\"branch\":\"main\"}")
-            .when().post("/api/flows/nonexistent-flow-xyz/promote-to-gitops")
+            .when().post("/api/namespaces/" + NS + "/flows/nonexistent-flow-xyz/promote-to-gitops")
             .then()
-            .statusCode(404)
-            .body("error", containsString("not found"));
+            .statusCode(401);
     }
 }

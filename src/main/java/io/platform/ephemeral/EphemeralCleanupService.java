@@ -39,6 +39,15 @@ public class EphemeralCleanupService {
                 .withLabels(selector).delete();
 
         try {
+            kubernetesClient.genericKubernetesResources("autoscaling/v2", "HorizontalPodAutoscaler")
+                    .inNamespace(namespace)
+                    .withLabel(EphemeralResourceLabels.LABEL_FLOW_NAME, flowName)
+                    .delete();
+        } catch (Exception e) {
+            LOG.debugf("HPA cleanup skipped: %s", e.getMessage());
+        }
+
+        try {
             kubernetesClient.genericKubernetesResources("camel.apache.org/v1", "Kamelet")
                     .inNamespace(namespace).withLabels(selector).delete();
             kubernetesClient.genericKubernetesResources("camel.apache.org/v1", "Pipe")

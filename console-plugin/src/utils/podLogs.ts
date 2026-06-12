@@ -1,4 +1,3 @@
-import { NAMESPACE } from '../constants';
 import { getCsrfToken } from './proxyFetch';
 
 const K8S_PODS = `/api/kubernetes/api/v1/namespaces`;
@@ -13,14 +12,15 @@ function isRuntimePod(name: string, labels?: Record<string, string>): boolean {
 }
 
 export async function fetchPodLogsViaK8s(
+  flowNamespace: string,
   flowName: string,
   tailLines: number,
   container?: string,
   sonataFlowNs?: string,
 ): Promise<{ namespace: string; podName: string; container: string; logs: string }> {
-  const namespaces = sonataFlowNs && sonataFlowNs !== NAMESPACE
-    ? [NAMESPACE, sonataFlowNs]
-    : [NAMESPACE];
+  const namespaces = sonataFlowNs && sonataFlowNs !== flowNamespace
+    ? [flowNamespace, sonataFlowNs]
+    : [flowNamespace];
 
   for (const ns of namespaces) {
     const selector = encodeURIComponent(`platform.io/flow-name=${flowName}`);

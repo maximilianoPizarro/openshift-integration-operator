@@ -8,10 +8,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class GitOpsManifestGeneratorTest {
 
     @Test
-    void camelRouteKustomizationIncludesDeploymentAndService() {
+    void camelRouteKustomizationIncludesDeploymentServiceAndHpa() {
         String kustomize = GitOpsManifestGenerator.kustomization("rest-to-kafka", IntegrationType.CAMEL_ROUTE);
         assertTrue(kustomize.contains("deployment.yaml"));
         assertTrue(kustomize.contains("service.yaml"));
+        assertTrue(kustomize.contains("hpa.yaml"));
+    }
+
+    @Test
+    void hpaTargetsFlowDeployment() {
+        String hpa = GitOpsManifestGenerator.hpa("rest-to-kafka", 1, 10, 70, 80);
+        assertTrue(hpa.contains("name: iflow-rest-to-kafka-hpa"));
+        assertTrue(hpa.contains("name: iflow-rest-to-kafka"));
+        assertTrue(hpa.contains("averageUtilization: 70"));
     }
 
     @Test

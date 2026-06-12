@@ -11,6 +11,7 @@ import {
 } from '@patternfly/react-core';
 
 import { PROXY_BASE } from '../../constants';
+import { flowApiPath } from '../../utils/k8sUrls';
 
 function getCsrfToken(): string {
   const match = document.cookie.match(/csrf-token=([^;]+)/);
@@ -18,6 +19,7 @@ function getCsrfToken(): string {
 }
 
 export interface PromoteToGitOpsModalProps {
+  flowNamespace: string;
   flowName: string;
   isOpen: boolean;
   onClose: () => void;
@@ -26,6 +28,7 @@ export interface PromoteToGitOpsModalProps {
 }
 
 export const PromoteToGitOpsModal: React.FC<PromoteToGitOpsModalProps> = ({
+  flowNamespace,
   flowName,
   isOpen,
   onClose,
@@ -43,7 +46,7 @@ export const PromoteToGitOpsModal: React.FC<PromoteToGitOpsModalProps> = ({
     }
     setLoading(true);
     try {
-      const resp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/promote-to-gitops`, {
+      const resp = await fetch(`${PROXY_BASE}${flowApiPath(flowNamespace, flowName, '/promote-to-gitops')}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         body: JSON.stringify({ gitRepository, branch }),

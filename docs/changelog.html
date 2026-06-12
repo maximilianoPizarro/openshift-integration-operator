@@ -64,12 +64,13 @@
         <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
         <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
         <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
-        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li><a class="site-masthead__nav-link" href="ready-flows.html">Ready Flows</a></li>
         <li class="nav-dropdown">
           <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
           <ul class="nav-dropdown-menu">
             <li><a href="worker-selector.html">Worker Image Selector</a></li>
             <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="examples-catalog.html">Examples Catalog</a></li>
             <li><a href="operations.html">Operations</a></li>
             <li><a href="troubleshooting.html">Troubleshooting</a></li>
           </ul>
@@ -113,6 +114,9 @@
           <li><span class="tag tag-feature">Feature</span> <strong>Ephemeral AI & MCP:</strong> Added 24 new ephemeral AI examples using LangChain4j and MCP bridge.</li>
           <li><span class="tag tag-feature">Feature</span> <strong>Console UI:</strong> Added Worker Properties editor in the create form with auto-secret creation.</li>
           <li><span class="tag tag-feature">Feature</span> <strong>Offline Catalog:</strong> Added offline flow catalog API with Helm ConfigMap support.</li>
+          <li><span class="tag tag-feature">Feature</span> <strong>Per-flow HPA:</strong> Reconciler creates one HorizontalPodAutoscaler per IntegrationFlow worker Deployment (replaces broken global HPA).</li>
+          <li><span class="tag tag-feature">Feature</span> <strong>Documentation:</strong> Site navbar on landing, comparison CTA, inline architecture SVG, MCP SSRF mitigation docs, mobile nav contrast fix.</li>
+          <li><span class="tag tag-fix">Fix</span> <strong>Docs:</strong> Quickstart notes on <code>designRef</code> vs deprecated inline <code>kaotoDesign</code>; README/Artifact Hub example uses <code>spec.targeting</code>.</li>
           <li><span class="tag tag-fix">Fix</span> <strong>Ephemeral Cleanup:</strong> Fixed orphaned deployments when deleting ephemeral flows by adding proper ownerReferences.</li>
           <li><span class="tag tag-fix">Fix</span> <strong>Targeting:</strong> Fixed multi-cluster targeting issues.</li>
         </ul>
@@ -162,7 +166,8 @@
         <a href="try-it-now.html">Try It Now</a>
         <a href="quickstart.html">Guide</a>
         <a href="architecture.html">Architecture</a>
-        <a href="examples-catalog.html">Examples</a>
+        <a href="ready-flows.html">Ready Flows</a>
+        <a href="examples-catalog.html">Examples Catalog</a>
         <a href="worker-selector.html">Tools</a>
         <a href="faq.html">FAQ</a>
         <a href="contributing.html">Contribute</a>

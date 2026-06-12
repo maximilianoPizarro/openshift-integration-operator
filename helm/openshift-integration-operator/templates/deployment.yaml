@@ -114,6 +114,20 @@ spec:
               value: {{ .Values.kaoto.routeHost | quote }}
             - name: ARGOCD_NAMESPACE
               value: {{ .Values.argocd.namespace | quote }}
+            - name: WORKERS_ENABLED
+              value: {{ .Values.workers.enabled | quote }}
+            - name: WORKERS_MIN_REPLICAS
+              value: {{ .Values.workers.minReplicas | quote }}
+            - name: WORKERS_MAX_REPLICAS
+              value: {{ .Values.workers.maxReplicas | quote }}
+            - name: WORKERS_TARGET_CPU_UTILIZATION
+              value: {{ .Values.workers.targetCPUUtilization | quote }}
+            - name: WORKERS_TARGET_MEMORY_UTILIZATION
+              value: {{ .Values.workers.targetMemoryUtilization | quote }}
+            {{- if .Values.mcp.allowedServerUrls }}
+            - name: MCP_ALLOWED_SERVER_URLS
+              value: {{ join "," .Values.mcp.allowedServerUrls | quote }}
+            {{- end }}
             {{- if .Values.operator.watchedNamespaces }}
             - name: QUARKUS_OPERATOR_SDK_CONTROLLERS_INTEGRATIONFLOWRECONCILER_NAMESPACES
               value: {{ join "," .Values.operator.watchedNamespaces | quote }}

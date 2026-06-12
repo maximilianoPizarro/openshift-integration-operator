@@ -14,8 +14,10 @@ import {
 import { consolePodLogsUrl } from '../utils/podLinks';
 import { proxyFetch } from '../utils/proxyFetch';
 import { fetchPodLogsViaK8s } from '../utils/podLogs';
+import { flowApiPath } from '../utils/k8sUrls';
 
 export interface FlowLogsTabProps {
+  flowNamespace: string;
   flowName: string;
 }
 
@@ -29,7 +31,7 @@ interface LogsResponse {
   error?: string;
 }
 
-const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowName }) => {
+const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName }) => {
   const [data, setData] = React.useState<LogsResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -44,11 +46,11 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowName }) => {
       if (container) params.set('container', container);
 
       let json: LogsResponse | null = null;
-      const proxyResp = await proxyFetch(`/api/flows/${flowName}/logs?${params}`);
+      const proxyResp = await proxyFetch(`${flowApiPath(flowNamespace, flowName, '/logs')}?${params}`);
       if (proxyResp.ok) {
         json = await proxyResp.json();
       } else if (proxyResp.status === 502 || proxyResp.status === 503) {
-        const k8s = await fetchPodLogsViaK8s(flowName, tailLines, container || undefined);
+        const k8s = await fetchPodLogsViaK8s(flowNamespace, flowName, tailLines, container || undefined);
         json = {
           ...k8s,
           containers: k8s.container ? [k8s.container] : [],

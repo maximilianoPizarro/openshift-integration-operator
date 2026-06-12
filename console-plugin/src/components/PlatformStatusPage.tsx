@@ -13,7 +13,9 @@ import {
 } from '@patternfly/react-core';
 import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
 
-import { API_BASE, NAMESPACE, PROXY_BASE } from '../constants';
+import { API_BASE, PLATFORM_NAMESPACE, PROXY_BASE } from '../constants';
+import { integrationFlowsUrl } from '../utils/k8sUrls';
+import { useFlowNamespace } from '../hooks/useFlowNamespace';
 
 const K8S_CORE = '/api/kubernetes/api/v1';
 const K8S_APPS = '/api/kubernetes/apis/apps/v1';
@@ -62,6 +64,7 @@ function timeAgo(ts: string): string {
 }
 
 const PlatformStatusPage: React.FC = () => {
+  const flowNamespace = useFlowNamespace();
   const [services, setServices] = React.useState<ServiceCheck[]>([]);
   const [pods, setPods] = React.useState<PodInfo[]>([]);
   const [flowCount, setFlowCount] = React.useState(0);
@@ -79,7 +82,10 @@ const PlatformStatusPage: React.FC = () => {
     let giteaRepoCount = 0;
     let flowItems: Array<{ spec?: { deploymentMode?: string; gitRepository?: string } }> = [];
     try {
-      const resp = await fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows`);
+      let resp = await fetch(integrationFlowsUrl());
+      if (!resp.ok) {
+        resp = await fetch(integrationFlowsUrl(flowNamespace));
+      }
       if (resp.ok) {
         const data = await resp.json();
         flowItems = data.items || [];
@@ -114,7 +120,7 @@ const PlatformStatusPage: React.FC = () => {
       && (gitProvider === 'gitea' || (gitProvider === 'auto' && giteaRepoCount > 0));
 
     try {
-      const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/openshift-integration-operator`);
+      const resp = await fetch(`${K8S_APPS}/namespaces/${PLATFORM_NAMESPACE}/deployments/openshift-integration-operator`);
       if (resp.ok) {
         const dep = await resp.json();
         const ready = dep.status?.readyReplicas || 0;
@@ -124,7 +130,7 @@ const PlatformStatusPage: React.FC = () => {
           description: 'Quarkus operator reconciling IntegrationFlow CRs',
           status: ready >= desired ? 'healthy' : ready > 0 ? 'degraded' : 'error',
           detail: `${ready}/${desired} replicas ready`,
-          link: `/k8s/ns/${NAMESPACE}/deployments/openshift-integration-operator`,
+          link: `/k8s/ns/${PLATFORM_NAMESPACE}/deployments/openshift-integration-operator`,
         });
       } else {
         checks.push({ name: 'Integration Operator', description: 'Quarkus operator', status: 'error', detail: `HTTP ${resp.status}` });
@@ -134,7 +140,7 @@ const PlatformStatusPage: React.FC = () => {
     }
 
     try {
-      const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/integration-console-plugin`);
+      const resp = await fetch(`${K8S_APPS}/namespaces/${PLATFORM_NAMESPACE}/deployments/integration-console-plugin`);
       if (resp.ok) {
         const dep = await resp.json();
         const ready = dep.status?.readyReplicas || 0;
@@ -143,7 +149,7 @@ const PlatformStatusPage: React.FC = () => {
           description: 'OpenShift Console Dynamic Plugin serving this UI',
           status: ready > 0 ? 'healthy' : 'error',
           detail: `${ready}/${dep.spec?.replicas || 1} replicas`,
-          link: `/k8s/ns/${NAMESPACE}/deployments/integration-console-plugin`,
+          link: `/k8s/ns/${PLATFORM_NAMESPACE}/deployments/integration-console-plugin`,
         });
       } else {
         checks.push({ name: 'Console Plugin', description: 'Dynamic Plugin', status: 'error', detail: 'Not found' });
@@ -151,7 +157,7 @@ const PlatformStatusPage: React.FC = () => {
     } catch { checks.push({ name: 'Console Plugin', description: 'Dynamic Plugin', status: 'error', detail: 'Unreachable' }); }
 
     try {
-      const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/kaoto`);
+      const resp = await fetch(`${K8S_APPS}/namespaces/${PLATFORM_NAMESPACE}/deployments/kaoto`);
       if (resp.ok) {
         const dep = await resp.json();
         const ready = dep.status?.readyReplicas || 0;
@@ -160,7 +166,7 @@ const PlatformStatusPage: React.FC = () => {
           description: 'Visual editor for Apache Camel integrations',
           status: ready > 0 ? 'healthy' : 'error',
           detail: `${ready}/${dep.spec?.replicas || 1} replicas`,
-          link: `/k8s/ns/${NAMESPACE}/deployments/kaoto`,
+          link: `/k8s/ns/${PLATFORM_NAMESPACE}/deployments/kaoto`,
         });
       } else {
         checks.push({ name: 'Kaoto Designer', description: 'Visual editor', status: 'degraded', detail: 'Deployment not found' });
@@ -218,7 +224,7 @@ const PlatformStatusPage: React.FC = () => {
     let pipelineExists = false;
     if (tektonEnabled) {
       try {
-        const resp = await fetch(`${K8S_TEKTON}/namespaces/${NAMESPACE}/pipelines/integration-flow-build`);
+        const resp = await fetch(`${K8S_TEKTON}/namespaces/${PLATFORM_NAMESPACE}/pipelines/integration-flow-build`);
         pipelineExists = resp.ok;
       } catch { /* ignore */ }
     }
@@ -229,12 +235,12 @@ const PlatformStatusPage: React.FC = () => {
         description: 'CI pipeline for building worker container images',
         status: pipelineExists ? 'healthy' : 'degraded',
         detail: pipelineExists ? 'integration-flow-build ready' : 'Pipeline not deployed yet',
-        link: `/k8s/ns/${NAMESPACE}/tekton.dev~v1~Pipeline/integration-flow-build`,
+        link: `/k8s/ns/${PLATFORM_NAMESPACE}/tekton.dev~v1~Pipeline/integration-flow-build`,
       });
     }
 
     try {
-      const resp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/integration-otel-collector`);
+      const resp = await fetch(`${K8S_APPS}/namespaces/${PLATFORM_NAMESPACE}/deployments/integration-otel-collector`);
       if (resp.ok) {
         const dep = await resp.json();
         const ready = dep.status?.readyReplicas || 0;
@@ -243,7 +249,7 @@ const PlatformStatusPage: React.FC = () => {
           description: 'Receives traces and metrics from worker pods',
           status: ready > 0 ? 'healthy' : 'degraded',
           detail: `${ready} replicas`,
-          link: `/k8s/ns/${NAMESPACE}/deployments/integration-otel-collector`,
+          link: `/k8s/ns/${PLATFORM_NAMESPACE}/deployments/integration-otel-collector`,
         });
       } else {
         checks.push({ name: 'OpenTelemetry Collector', description: 'Telemetry aggregation', status: 'degraded', detail: 'Not deployed' });
@@ -253,7 +259,7 @@ const PlatformStatusPage: React.FC = () => {
     setServices(checks);
 
     try {
-      const resp = await fetch(`${K8S_TEKTON}/namespaces/${NAMESPACE}/pipelineruns?labelSelector=platform.io%2Fcomponent%3Dbuild&limit=100`);
+      const resp = await fetch(`${K8S_TEKTON}/namespaces/${PLATFORM_NAMESPACE}/pipelineruns?labelSelector=platform.io%2Fcomponent%3Dbuild&limit=100`);
       if (resp.ok) { const data = await resp.json(); setPipelineCount((data.items || []).length); }
     } catch { /* ignore */ }
 
@@ -263,7 +269,7 @@ const PlatformStatusPage: React.FC = () => {
     } catch { /* ignore */ }
 
     try {
-      const resp = await fetch(`${K8S_CORE}/namespaces/${NAMESPACE}/pods`);
+      const resp = await fetch(`${K8S_CORE}/namespaces/${PLATFORM_NAMESPACE}/pods`);
       if (resp.ok) {
         const data = await resp.json();
         const podList: PodInfo[] = (data.items || []).map((p: any) => ({
@@ -280,7 +286,7 @@ const PlatformStatusPage: React.FC = () => {
 
     setLastRefresh(new Date().toLocaleTimeString());
     setLoading(false);
-  }, []);
+  }, [flowNamespace]);
 
   React.useEffect(() => {
     checkServices();
@@ -400,7 +406,7 @@ const PlatformStatusPage: React.FC = () => {
             return (
               <Tr key={pod.name}>
                 <Td dataLabel="Pod">
-                  <a href={`/k8s/ns/${NAMESPACE}/pods/${pod.name}`}
+                  <a href={`/k8s/ns/${PLATFORM_NAMESPACE}/pods/${pod.name}`}
                     style={{ color: 'var(--integration-link)', textDecoration: 'none' }}>
                     {pod.name}
                   </a>

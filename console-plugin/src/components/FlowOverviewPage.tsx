@@ -12,7 +12,9 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon, ArrowRightIcon } from '@patternfly/react-icons';
-import { DOCS_BASE_URL, GITHUB_REPO_URL, NAMESPACE, PLUGIN_NAME } from '../constants';
+import { DOCS_BASE_URL, GITHUB_REPO_URL, PLATFORM_NAMESPACE, PLUGIN_NAME } from '../constants';
+import { integrationFlowsUrl } from '../utils/k8sUrls';
+import { useFlowNamespace } from '../hooks/useFlowNamespace';
 import { loadPlatformConfig } from '../utils/flowCatalog';
 
 const API_BASE = '/api/kubernetes/apis/platform.io/v1alpha1';
@@ -136,6 +138,8 @@ function DocLink({ label, href, description }: { label: string; href: string; de
 }
 
 const FlowOverviewPage: React.FC = () => {
+  const flowNamespace = useFlowNamespace();
+  const [clusterWide, setClusterWide] = React.useState(false);
   const [flows, setFlows] = React.useState<IntegrationFlow[]>([]);
   const [pipelineRuns, setPipelineRuns] = React.useState<PipelineRun[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -158,7 +162,7 @@ const FlowOverviewPage: React.FC = () => {
 
       if (!cancelled) {
         try {
-          const depResp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/integration-console-plugin`);
+          const depResp = await fetch(`${K8S_APPS}/namespaces/${PLATFORM_NAMESPACE}/deployments/integration-console-plugin`);
           if (depResp.ok) {
             const dep = await depResp.json();
             const image: string = dep?.spec?.template?.spec?.containers?.[0]?.image || '';
@@ -185,15 +189,24 @@ const FlowOverviewPage: React.FC = () => {
 
   const fetchAll = React.useCallback(async () => {
     try {
-      const [flowResp, prResp] = await Promise.all([
-        fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows`),
-        fetch(`${K8S_TEKTON}/namespaces/${NAMESPACE}/pipelineruns?labelSelector=platform.io%2Fcomponent%3Dbuild&limit=50`),
-      ]);
-      if (flowResp.ok) { const data = await flowResp.json(); setFlows(data.items || []); }
+      let flowResp = await fetch(integrationFlowsUrl());
+      if (flowResp.ok) {
+        const data = await flowResp.json();
+        setFlows(data.items || []);
+        setClusterWide(true);
+      } else {
+        flowResp = await fetch(integrationFlowsUrl(flowNamespace));
+        if (flowResp.ok) {
+          const data = await flowResp.json();
+          setFlows(data.items || []);
+          setClusterWide(false);
+        }
+      }
+      const prResp = await fetch(`${K8S_TEKTON}/namespaces/${PLATFORM_NAMESPACE}/pipelineruns?labelSelector=platform.io%2Fcomponent%3Dbuild&limit=50`);
       if (prResp.ok) { const data = await prResp.json(); setPipelineRuns(data.items || []); }
     } catch { /* ignore */ }
     setLoading(false);
-  }, []);
+  }, [flowNamespace]);
 
   React.useEffect(() => {
     fetchAll();
@@ -246,7 +259,7 @@ const FlowOverviewPage: React.FC = () => {
         <Title headingLevel="h1" size="xl">Flow Overview</Title>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
           <span style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>
-            Dashboard for {flows.length} integration flows in {NAMESPACE}
+            Dashboard for {flows.length} integration flows {clusterWide ? 'cluster-wide' : `in ${flowNamespace}`}
           </span>
           {pluginVersion && (
             <Label color="blue" isCompact>Console plugin v{pluginVersion}</Label>
@@ -494,7 +507,7 @@ const FlowOverviewPage: React.FC = () => {
               return (
                 <div key={pr.metadata.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--integration-border)' }}>
                   <div>
-                    <a href={`/k8s/ns/${NAMESPACE}/tekton.dev~v1~PipelineRun/${pr.metadata.name}`}
+                    <a href={`/k8s/ns/${PLATFORM_NAMESPACE}/tekton.dev~v1~PipelineRun/${pr.metadata.name}`}
                       style={{ color: 'var(--integration-link)', textDecoration: 'none', fontSize: '12px' }}>
                       {pr.metadata.name.length > 40 ? pr.metadata.name.substring(0, 40) + '...' : pr.metadata.name}
                     </a>

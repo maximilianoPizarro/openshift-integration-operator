@@ -32,8 +32,10 @@ import { resolveMinimalTemplateProperties, type TemplatePropertyConfig } from '.
 import ConfirmDeleteModal from './modals/ConfirmDeleteModal';
 import ConfirmLifecycleModal from './modals/ConfirmLifecycleModal';
 import TemplateCatalogModal, { TemplateSelection } from './modals/TemplateCatalogModal';
-import { API_BASE as K8S_FLOW_API, NAMESPACE, PROXY_BASE } from '../constants';
+import { API_BASE as K8S_FLOW_API, PLATFORM_NAMESPACE, PROXY_BASE } from '../constants';
 import { buildPodLinks } from '../utils/podLinks';
+import { useFlowNamespace } from '../hooks/useFlowNamespace';
+import { designerRoute, flowApiPath, integrationFlowUrl, integrationFlowsUrl } from '../utils/k8sUrls';
 
 const API_BASE = K8S_FLOW_API;
 
@@ -177,8 +179,8 @@ const conditionColor = (status: string) => {
   return '#6a6e73';
 };
 
-function consoleUrl(path: string): string {
-  return `/k8s/ns/${NAMESPACE}/${path}`;
+function consoleUrl(namespace: string, path: string): string {
+  return `/k8s/ns/${namespace}/${path}`;
 }
 
 function clusterSummary(deployments: ClusterDeployment[] | undefined): string {
@@ -188,6 +190,8 @@ function clusterSummary(deployments: ClusterDeployment[] | undefined): string {
 }
 
 const IntegrationFlowPage: React.FC = () => {
+  const flowNamespace = useFlowNamespace();
+  const [clusterWide, setClusterWide] = React.useState(false);
   const [flows, setFlows] = React.useState<IntegrationFlow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -195,8 +199,8 @@ const IntegrationFlowPage: React.FC = () => {
   const [newName, setNewName] = React.useState('');
   const [newEngine, setNewEngine] = React.useState<string>('CAMEL_ROUTE');
   const [creating, setCreating] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<string | null>(null);
-  const [lifecycleModal, setLifecycleModal] = React.useState<{ name: string; action: 'pause' | 'stop' } | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<{ namespace: string; name: string } | null>(null);
+  const [lifecycleModal, setLifecycleModal] = React.useState<{ namespace: string; name: string; action: 'pause' | 'stop' } | null>(null);
   const [actionLoading, setActionLoading] = React.useState(false);
   const [openKebab, setOpenKebab] = React.useState<string | null>(null);
   const [ephemeralMode, setEphemeralMode] = React.useState(true);
@@ -217,17 +221,26 @@ const IntegrationFlowPage: React.FC = () => {
 
   const fetchFlows = React.useCallback(async () => {
     try {
-      const resp = await fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows`);
+      let resp = await k8sFetch(integrationFlowsUrl());
+      if (resp.ok) {
+        const data = await resp.json();
+        setFlows(data.items || []);
+        setClusterWide(true);
+        setError(null);
+        return;
+      }
+      resp = await k8sFetch(integrationFlowsUrl(flowNamespace));
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       setFlows(data.items || []);
+      setClusterWide(false);
       setError(null);
     } catch (e: any) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [flowNamespace]);
 
   React.useEffect(() => {
     fetchFlows();
@@ -325,11 +338,11 @@ const IntegrationFlowPage: React.FC = () => {
         const secretObj = {
           apiVersion: 'v1',
           kind: 'Secret',
-          metadata: { name: finalSecretName, namespace: NAMESPACE },
+          metadata: { name: finalSecretName, namespace: flowNamespace },
           type: 'Opaque',
           data: encodedData,
         };
-        const secResp = await k8sFetch(`${API_BASE}/namespaces/${NAMESPACE}/secrets`, {
+        const secResp = await k8sFetch(`${K8S_FLOW_API}/namespaces/${flowNamespace}/secrets`, {
           method: 'POST',
           body: JSON.stringify(secretObj),
         });
@@ -357,10 +370,10 @@ const IntegrationFlowPage: React.FC = () => {
       const newFlow = {
         apiVersion: 'platform.io/v1alpha1',
         kind: 'IntegrationFlow',
-        metadata: { name: flowName, namespace: NAMESPACE },
+        metadata: { name: flowName, namespace: flowNamespace },
         spec,
       };
-      const resp = await k8sFetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows`, {
+      const resp = await k8sFetch(integrationFlowsUrl(flowNamespace), {
         method: 'POST',
         body: JSON.stringify(newFlow),
       });
@@ -379,10 +392,10 @@ const IntegrationFlowPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (name: string) => {
+  const handleDelete = async (namespace: string, name: string) => {
     setActionLoading(true);
     try {
-      const resp = await k8sFetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows/${name}`, { method: 'DELETE' });
+      const resp = await k8sFetch(integrationFlowUrl(namespace, name), { method: 'DELETE' });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       setDeleteTarget(null);
       await fetchFlows();
@@ -393,10 +406,10 @@ const IntegrationFlowPage: React.FC = () => {
     }
   };
 
-  const changeState = async (name: string, desiredState: string) => {
+  const changeState = async (namespace: string, name: string, desiredState: string) => {
     setActionLoading(true);
     try {
-      const resp = await fetch(`${PROXY_BASE}/api/flows/${name}/state`, {
+      const resp = await fetch(`${PROXY_BASE}${flowApiPath(namespace, name, '/state')}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ desiredState }),
@@ -436,7 +449,7 @@ const IntegrationFlowPage: React.FC = () => {
         <div>
           <Title headingLevel="h1" size="xl">Integration Flows</Title>
           <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
-            {flows.length} flow{flows.length !== 1 ? 's' : ''} in {NAMESPACE}
+            {flows.length} flow{flows.length !== 1 ? 's' : ''} {clusterWide ? 'cluster-wide' : `in ${flowNamespace}`}
           </span>
         </div>
         <Button
@@ -496,9 +509,9 @@ const IntegrationFlowPage: React.FC = () => {
 
       <ConfirmDeleteModal
         isOpen={deleteTarget !== null}
-        resourceName={deleteTarget || ''}
+        resourceName={deleteTarget ? `${deleteTarget.namespace}/${deleteTarget.name}` : ''}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget.namespace, deleteTarget.name)}
         loading={actionLoading}
       />
       <ConfirmLifecycleModal
@@ -506,7 +519,7 @@ const IntegrationFlowPage: React.FC = () => {
         action={lifecycleModal?.action || 'pause'}
         flowName={lifecycleModal?.name || ''}
         onClose={() => setLifecycleModal(null)}
-        onConfirm={() => lifecycleModal && changeState(lifecycleModal.name, lifecycleModal.action === 'pause' ? 'paused' : 'stopped')}
+        onConfirm={() => lifecycleModal && changeState(lifecycleModal.namespace, lifecycleModal.name, lifecycleModal.action === 'pause' ? 'paused' : 'stopped')}
         loading={actionLoading}
       />
 
@@ -677,6 +690,7 @@ const IntegrationFlowPage: React.FC = () => {
             <Thead>
               <Tr>
                 <Th>Name</Th>
+                {clusterWide && <Th>Namespace</Th>}
                 <Th>Type</Th>
                 <Th>Mode</Th>
                 <Th>Phase</Th>
@@ -695,16 +709,22 @@ const IntegrationFlowPage: React.FC = () => {
                 const conditions = flow.status?.conditions || [];
                 const typeInfo = INTEGRATION_TYPES.find(t => t.value === (flow.spec.integrationType || (flow.spec.engine === 'CAMEL' ? 'CAMEL_ROUTE' : 'SONATAFLOW')));
                 const flowName = flow.metadata.name;
+                const flowNs = flow.metadata.namespace || flowNamespace;
                 const isEphemeral = flow.spec.deploymentMode === 'EPHEMERAL';
                 const isExpired = phase === 'Expired';
                 return (
-                  <Tr key={flow.metadata.uid || flowName}>
+                  <Tr key={flow.metadata.uid || `${flowNs}/${flowName}`}>
                     <Td dataLabel="Name">
-                      <a href={`/integration-flows/${flowName}`}
+                      <a href={designerRoute(flowNs, flowName)}
                         style={{ color: 'var(--pf-global--link--Color, #2b9af3)', textDecoration: 'none', fontWeight: 500 }}>
                         {flowName}
                       </a>
                     </Td>
+                    {clusterWide && (
+                      <Td dataLabel="Namespace">
+                        <span style={{ fontSize: '12px' }}>{flowNs}</span>
+                      </Td>
+                    )}
                     <Td dataLabel="Type">
                       <Label color={typeToLabelColor[typeInfo?.value || ''] || 'grey'} isCompact icon={<span>{typeInfo?.icon}</span>}>
                         {typeInfo?.label || flow.spec.engine}
@@ -754,7 +774,7 @@ const IntegrationFlowPage: React.FC = () => {
                     </Td>
                     <Td dataLabel="Resources">
                       {(() => {
-                        const links = buildPodLinks(flowName, flow.status?.sonataFlowNamespace);
+                        const links = buildPodLinks(flowNs, flowName, flow.status?.sonataFlowNamespace);
                         return (
                       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                         <Button variant="link" isInline component="a"
@@ -772,7 +792,7 @@ const IntegrationFlowPage: React.FC = () => {
                         </Button>
                         )}
                         <Button variant="link" isInline component="a"
-                          href={consoleUrl(`tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`)} title="View PipelineRuns">
+                          href={consoleUrl(flowNs, `tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`)} title="View PipelineRuns">
                           {'\u29D7'} Pipelines
                         </Button>
                         {flow.status?.argoApplicationName && (
@@ -800,18 +820,18 @@ const IntegrationFlowPage: React.FC = () => {
                         )}
                       >
                         <DropdownList>
-                          <DropdownItem key="edit" component="a" href={`/integration-flows/${flowName}`}>Edit</DropdownItem>
-                          <DropdownItem key="logs" component="a" href={`/integration-flows/${flowName}?tab=logs`}>View logs</DropdownItem>
+                          <DropdownItem key="edit" component="a" href={designerRoute(flowNs, flowName)}>Edit</DropdownItem>
+                          <DropdownItem key="logs" component="a" href={`${designerRoute(flowNs, flowName)}?tab=logs`}>View logs</DropdownItem>
                           {phase === 'Running' && !isExpired && (
-                            <DropdownItem key="pause" onClick={() => { setLifecycleModal({ name: flowName, action: 'pause' }); setOpenKebab(null); }}>Pause</DropdownItem>
+                            <DropdownItem key="pause" onClick={() => { setLifecycleModal({ namespace: flowNs, name: flowName, action: 'pause' }); setOpenKebab(null); }}>Pause</DropdownItem>
                           )}
                           {(phase === 'Paused' || flow.status?.currentState === 'paused') && (
-                            <DropdownItem key="resume" onClick={() => { changeState(flowName, 'running'); setOpenKebab(null); }}>Resume</DropdownItem>
+                            <DropdownItem key="resume" onClick={() => { changeState(flowNs, flowName, 'running'); setOpenKebab(null); }}>Resume</DropdownItem>
                           )}
                           {phase !== 'Stopped' && !isExpired && (
-                            <DropdownItem key="stop" onClick={() => { setLifecycleModal({ name: flowName, action: 'stop' }); setOpenKebab(null); }}>Stop</DropdownItem>
+                            <DropdownItem key="stop" onClick={() => { setLifecycleModal({ namespace: flowNs, name: flowName, action: 'stop' }); setOpenKebab(null); }}>Stop</DropdownItem>
                           )}
-                          <DropdownItem key="delete" onClick={() => { setDeleteTarget(flowName); setOpenKebab(null); }}>Delete</DropdownItem>
+                          <DropdownItem key="delete" onClick={() => { setDeleteTarget({ namespace: flowNs, name: flowName }); setOpenKebab(null); }}>Delete</DropdownItem>
                         </DropdownList>
                       </Dropdown>
                     </Td>

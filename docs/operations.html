@@ -30,12 +30,13 @@
         <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
         <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
         <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
-        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li><a class="site-masthead__nav-link" href="ready-flows.html">Ready Flows</a></li>
         <li class="nav-dropdown">
           <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
           <ul class="nav-dropdown-menu">
             <li><a href="worker-selector.html">Worker Image Selector</a></li>
             <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="examples-catalog.html">Examples Catalog</a></li>
             <li><a href="operations.html">Operations</a></li>
             <li><a href="troubleshooting.html">Troubleshooting</a></li>
           </ul>
@@ -303,6 +304,46 @@ curl -s -u "user1:password" \
         </table>
       </section>
 
+      <section class="doc-section" id="multi-namespace-rbac">
+        <h2>Multi-namespace flows and RBAC</h2>
+        <p>
+          <code>IntegrationFlow</code> is namespaced. Install the operator once (cluster-admin); users create flows in their
+          OpenShift project. The console plugin lists flows in the <strong>active project</strong>, or cluster-wide when the
+          user has cluster list permission.
+        </p>
+        <h3>Default (no extra RoleBindings)</h3>
+        <p>
+          The CRD ships with aggregation labels (<code>aggregate-to-admin/edit/view</code>) so standard OpenShift project
+          roles can manage flows in namespaces where the user already has edit or admin.
+        </p>
+        <pre><code><span class="comment"># Developer in project team-a creates a flow in team-a</span>
+oc project team-a
+oc apply -f my-flow.yaml
+
+<span class="comment"># Cluster admin sees all flows in the console Integration Flows tab</span>
+oc get integrationflows -A</code></pre>
+        <h3>Optional tighten (ResourceQuota)</h3>
+        <p>Limit flows per namespace with a native <code>ResourceQuota</code> (opt-in):</p>
+        <pre><code>apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: integration-flows
+  namespace: team-a
+spec:
+  hard:
+    count/integrationflows.platform.io: "10"</code></pre>
+        <h3>Lifecycle API (namespaced)</h3>
+        <pre><code><span class="comment"># Extend TTL — namespace in path, Bearer token required</span>
+curl -X POST "https://&lt;operator&gt;/api/namespaces/team-a/flows/my-flow/ephemeral/extend?seconds=3600" \
+  -H "Authorization: Bearer &lt;token&gt;"
+
+<span class="comment"># Promote to GitOps</span>
+curl -X POST "https://&lt;operator&gt;/api/namespaces/team-a/flows/my-flow/promote-to-gitops" \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"gitRepository":"https://gitea.example.com/org/repo","branch":"main"}'</code></pre>
+      </section>
+
       <!-- Section 4b: Ephemeral Quick Try -->
       <section class="doc-section" id="ephemeral">
         <h2>Ephemeral Quick Try Mode</h2>
@@ -342,11 +383,12 @@ curl -s -u "user1:password" \
 
         <h3>Lifecycle API</h3>
         <pre><code><span class="comment"># Extend TTL by 1 hour</span>
-curl -X POST "https://&lt;operator&gt;/api/flows/ephemeral-camel-demo/ephemeral/extend?seconds=3600" \
+curl -X POST "https://&lt;operator&gt;/api/namespaces/openshift-integration/flows/ephemeral-camel-demo/ephemeral/extend?seconds=3600" \
   -H "Authorization: Bearer &lt;token&gt;"
 
 <span class="comment"># Promote to GitOps</span>
-curl -X POST "https://&lt;operator&gt;/api/flows/ephemeral-camel-demo/promote-to-gitops" \
+curl -X POST "https://&lt;operator&gt;/api/namespaces/openshift-integration/flows/ephemeral-camel-demo/promote-to-gitops" \
+  -H "Authorization: Bearer &lt;token&gt;" \
   -H "Content-Type: application/json" \
   -d '{"gitRepository":"https://gitea.example.com/org/repo","branch":"main"}'</code></pre>
 
@@ -516,7 +558,8 @@ oc describe pipelinerun &lt;name&gt; -n openshift-integration</code></pre>
         <a href="try-it-now.html">Try It Now</a>
         <a href="quickstart.html">Guide</a>
         <a href="architecture.html">Architecture</a>
-        <a href="examples-catalog.html">Examples</a>
+        <a href="ready-flows.html">Ready Flows</a>
+        <a href="examples-catalog.html">Examples Catalog</a>
         <a href="worker-selector.html">Tools</a>
         <a href="faq.html">FAQ</a>
         <a href="contributing.html">Contribute</a>

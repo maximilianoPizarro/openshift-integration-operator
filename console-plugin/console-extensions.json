@@ -57,6 +57,16 @@
     "type": "console.page/route",
     "properties": {
       "exact": true,
+      "path": "/integration-flows/ns/:namespace/:name",
+      "component": {
+        "$codeRef": "flowDesignerPage.default"
+      }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
       "path": "/integration-flows/:name",
       "component": {
         "$codeRef": "flowDesignerPage.default"

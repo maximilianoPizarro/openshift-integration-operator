@@ -176,6 +176,7 @@ body.site-page a:hover {
     flex-wrap: wrap;
     align-items: stretch;
     padding: var(--pf-v5-global--spacer--sm, 0.5rem) var(--pf-v5-global--spacer--md, 1rem);
+    background-color: var(--pf-v5-global--BackgroundColor--dark-100, #151515);
   }
 
   .site-masthead__toggle {
@@ -191,6 +192,7 @@ body.site-page a:hover {
     flex-basis: 100%;
     order: 3;
     padding-bottom: var(--pf-v5-global--spacer--sm, 0.5rem);
+    background-color: var(--pf-v5-global--BackgroundColor--dark-100, #151515);
   }
 
   .site-masthead__nav.is-open {
@@ -201,14 +203,33 @@ body.site-page a:hover {
     flex-direction: column;
     align-items: stretch;
     gap: 0;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: var(--pf-v5-global--BackgroundColor--dark-200, #1f1f1f);
     border-radius: var(--pf-v5-global--BorderRadius--md, 6px);
     overflow: hidden;
+    border: var(--pf-v5-global--BorderWidth--sm, 1px) solid rgba(255, 255, 255, 0.12);
   }
 
   .site-masthead__nav-link {
     border-radius: 0;
     padding: var(--pf-v5-global--spacer--md, 1rem);
+    color: var(--pf-v5-global--Color--light-100, #fff) !important;
+  }
+
+  .nav-dropdown-menu {
+    position: static;
+    box-shadow: none;
+    background-color: var(--pf-v5-global--BackgroundColor--dark-300, #2b2b2b);
+    padding-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .nav-dropdown-menu a {
+    color: var(--pf-v5-global--Color--light-200, #f0f0f0) !important;
+    padding: 0.75rem 1.5rem;
+  }
+
+  .nav-dropdown-menu a:hover {
+    background-color: rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -988,7 +1009,8 @@ footer a:hover {
   overflow: hidden;
 }
 
-.diagram-placeholder img {
+.diagram-placeholder img,
+.diagram-placeholder svg {
   max-width: 100%;
   height: auto;
   border-radius: var(--pf-v5-global--BorderRadius--sm, 3px);
@@ -1199,13 +1221,4 @@ pre:hover .copy-btn {
 
 .nav-dropdown-menu a:hover {
   background: rgba(255,255,255,0.1);
-}
-
-@media (max-width: 1100px) {
-  .nav-dropdown-menu {
-    position: static;
-    box-shadow: none;
-    background: transparent;
-    padding-left: 1rem;
-  }
 }

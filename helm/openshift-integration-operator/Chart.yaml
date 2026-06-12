@@ -2,8 +2,8 @@ apiVersion: v2
 name: openshift-integration-operator
 description: The missing lifecycle layer for Apache Camel on OpenShift — design visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
 type: application
-version: 0.5.0
-appVersion: "0.5.0"
+version: 0.6.0
+appVersion: "0.6.0"
 kubeVersion: ">=1.27.0-0"
 home: https://maximilianopizarro.github.io/openshift-integration-operator/
 sources:
@@ -48,9 +48,9 @@ annotations:
       url: https://github.com/maximilianoPizarro/openshift-integration-operator
   artifacthub.io/images: |
     - name: operator
-      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.5.0
+      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.0
     - name: console-plugin
-      image: quay.io/maximilianopizarro/integration-console-plugin:v0.5.0
+      image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.0
   artifacthub.io/crds: |
     - kind: IntegrationFlow
       version: v1alpha1

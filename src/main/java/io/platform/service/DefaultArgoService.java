@@ -47,7 +47,7 @@ public class DefaultArgoService implements ArgoService {
         LOG.infof("Reconciling ApplicationSet %s in %s", appSetName, ARGO_NS);
 
         Map<String, Object> appSetSpec = buildApplicationSetSpec(
-            name, gitRepoUrl, branch, path, clusterSelector, explicitClusters, excludeClusters);
+            name, gitRepoUrl, branch, path, clusterSelector, explicitClusters, excludeClusters, namespace);
 
         try {
             GenericKubernetesResource existing = client.genericKubernetesResources(APPSET_CTX)
@@ -141,7 +141,8 @@ public class DefaultArgoService implements ArgoService {
                                                          String branch, String path,
                                                          Map<String, String> clusterSelector,
                                                          List<String> explicitClusters,
-                                                         List<String> excludeClusters) {
+                                                         List<String> excludeClusters,
+                                                         String flowNamespace) {
         Map<String, Object> gitGenerator = Map.of(
             "git", Map.of(
                 "repoURL", gitRepoUrl,
@@ -171,7 +172,7 @@ public class DefaultArgoService implements ArgoService {
                 ),
                 "destination", Map.of(
                     "server", "{{server}}",
-                    "namespace", "openshift-integration"
+                    "namespace", flowNamespace
                 ),
                 "syncPolicy", Map.of(
                     "automated", Map.of("prune", true, "selfHeal", true),

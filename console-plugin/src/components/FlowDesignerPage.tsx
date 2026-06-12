@@ -31,8 +31,9 @@ import ExtendTtlModal from './ephemeral/ExtendTtlModal';
 import PromoteToGitOpsModal from './ephemeral/PromoteToGitOpsModal';
 import FlowLogsTab from './FlowLogsTab';
 import ConfirmLifecycleModal from './modals/ConfirmLifecycleModal';
-import { API_BASE, NAMESPACE, PROXY_BASE } from '../constants';
+import { API_BASE, PLATFORM_NAMESPACE, PROXY_BASE } from '../constants';
 import { buildPodLinks } from '../utils/podLinks';
+import { flowApiPath, integrationFlowUrl, consoleFlowUrl } from '../utils/k8sUrls';
 
 interface PlatformConfig {
   kaotoUrl?: string;
@@ -74,16 +75,24 @@ function getCsrfToken(): string {
   return match ? match[1] : '';
 }
 
-function extractFlowName(): string {
+function extractRouteParams(): { namespace: string; name: string } {
   const path = window.location.pathname;
   const segments = path.split('/').filter(Boolean);
   const idx = segments.indexOf('integration-flows');
-  if (idx >= 0 && idx + 1 < segments.length) return segments[idx + 1];
-  return '';
+  if (idx >= 0 && segments[idx + 1] === 'ns' && idx + 3 <= segments.length) {
+    return {
+      namespace: decodeURIComponent(segments[idx + 2] || PLATFORM_NAMESPACE),
+      name: decodeURIComponent(segments[idx + 3] || ''),
+    };
+  }
+  if (idx >= 0 && idx + 1 < segments.length) {
+    return { namespace: PLATFORM_NAMESPACE, name: segments[idx + 1] };
+  }
+  return { namespace: PLATFORM_NAMESPACE, name: '' };
 }
 
 interface FlowDesignerPageProps {
-  match?: { params: { name: string } };
+  match?: { params: { name?: string; namespace?: string } };
 }
 
 const phaseDot: Record<string, string> = {
@@ -116,7 +125,7 @@ function getBaseAppsDomain(): string {
 
 function resolveKaotoUrl(config: PlatformConfig | null): string {
   if (config?.kaotoUrl) return config.kaotoUrl;
-  const host = config?.kaotoRouteHost || `kaoto-${NAMESPACE}`;
+  const host = config?.kaotoRouteHost || `kaoto-${PLATFORM_NAMESPACE}`;
   return `https://${host}.${getBaseAppsDomain()}`;
 }
 
@@ -153,7 +162,9 @@ function syncTabToUrl(tab: TabId) {
 }
 
 const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
-  const flowName = match?.params?.name || extractFlowName();
+  const routeParams = extractRouteParams();
+  const flowNamespace = match?.params?.namespace || routeParams.namespace;
+  const flowName = match?.params?.name || routeParams.name;
   const [flow, setFlow] = React.useState<IntegrationFlow | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
@@ -189,7 +200,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const fetchFlow = React.useCallback(async () => {
     if (!flowName) { setError('No flow name'); setLoading(false); return; }
     try {
-      const resp = await fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows/${flowName}`);
+      const resp = await fetch(integrationFlowUrl(flowNamespace, flowName));
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data: IntegrationFlow = await resp.json();
       setFlow(data);
@@ -200,7 +211,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
     } finally {
       setLoading(false);
     }
-  }, [flowName]);
+  }, [flowName, flowNamespace]);
 
   React.useEffect(() => { fetchFlow(); }, [fetchFlow]);
 
@@ -213,7 +224,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
     setGitSyncStatus(null);
     try {
       const patch = [{ op: 'replace', path: '/spec/kaotoDesign', value: design }];
-      const resp = await fetch(`${API_BASE}/namespaces/${NAMESPACE}/integrationflows/${flowName}`, {
+      const resp = await fetch(integrationFlowUrl(flowNamespace, flowName), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json-patch+json', 'X-CSRFToken': getCsrfToken() },
         body: JSON.stringify(patch),
@@ -226,7 +237,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
       const isEphemeralFlow = flow.spec.deploymentMode === 'EPHEMERAL';
       if (!isEphemeralFlow) {
         try {
-          const gitResp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/design`, {
+          const gitResp = await fetch(`${PROXY_BASE}${flowApiPath(flowNamespace, flowName, '/design')}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
             body: JSON.stringify({ kaotoDesign: design }),
@@ -263,7 +274,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const changeState = async (desiredState: string) => {
     setStateChanging(true);
     try {
-      const resp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/state`, {
+      const resp = await fetch(`${PROXY_BASE}${flowApiPath(flowNamespace, flowName, '/state')}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         body: JSON.stringify({ desiredState }),
@@ -280,7 +291,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const toggleCircuitBreaker = async () => {
     const action = flow?.status?.circuitBreakerState === 'open' ? 'close' : 'open';
     try {
-      await fetch(`${PROXY_BASE}/api/flows/${flowName}/circuit/${action}`, {
+      await fetch(`${PROXY_BASE}${flowApiPath(flowNamespace, flowName, `/circuit/${action}`)}`, {
         method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() },
       });
       await fetchFlow();
@@ -291,13 +302,13 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
 
   const fetchDependencies = React.useCallback(async () => {
     try {
-      const resp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/dependencies`);
+      const resp = await fetch(`${PROXY_BASE}${flowApiPath(flowNamespace, flowName, '/dependencies')}`);
       if (resp.ok) {
         const data = await resp.json();
         setDependencies(data.dependents || []);
       }
     } catch { /* ignore */ }
-  }, [flowName]);
+  }, [flowName, flowNamespace]);
 
   React.useEffect(() => { if (activeTab === 'dependencies') fetchDependencies(); }, [activeTab, fetchDependencies]);
 
@@ -436,12 +447,14 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
       </div>
 
       <ExtendTtlModal
+        flowNamespace={flowNamespace}
         flowName={flowName}
         isOpen={showExtendModal}
         onClose={() => setShowExtendModal(false)}
         onExtended={fetchFlow}
       />
       <PromoteToGitOpsModal
+        flowNamespace={flowNamespace}
         flowName={flowName}
         isOpen={showPromoteModal}
         onClose={() => setShowPromoteModal(false)}
@@ -655,7 +668,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                             const hash = (document.getElementById('rollback-hash') as HTMLInputElement)?.value;
                             if (!hash || !confirm(`Rollback ${flowName} to ${hash}?`)) return;
                             try {
-                              const resp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/rollback?commitHash=${hash}`, {
+                              const resp = await fetch(`${PROXY_BASE}${flowApiPath(flowNamespace, flowName, '/rollback')}?commitHash=${hash}`, {
                                 method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() },
                               });
                               if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -772,7 +785,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                     </div>
 
                     <Button variant="link" isInline component="a"
-                      href={`/k8s/ns/${NAMESPACE}/platform.io~v1alpha1~IntegrationFlow/${flowName}/yaml`}
+                      href={`${consoleFlowUrl(flowNamespace, flowName)}/yaml`}
                       style={{ fontSize: '12px', marginTop: '12px', display: 'block' }}>
                       {'\u270E'} Edit CR to add properties
                     </Button>
@@ -782,7 +795,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             </Tab>
 
             <Tab eventKey="logs" title={<TabTitleText>Logs</TabTitleText>}>
-              <FlowLogsTab flowName={flowName} />
+              <FlowLogsTab flowNamespace={flowNamespace} flowName={flowName} />
             </Tab>
 
             <Tab eventKey="cr-status" title={<TabTitleText>Status</TabTitleText>}>
@@ -809,7 +822,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                 <DescriptionListDescription>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {(() => {
-                      const links = buildPodLinks(flowName, flow.status?.sonataFlowNamespace);
+                      const links = buildPodLinks(flowNamespace, flowName, flow.status?.sonataFlowNamespace);
                       return (
                         <>
                           <Button variant="link" isInline component="a" href={`/integration-flows/${flowName}?tab=logs`}>
@@ -825,7 +838,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                           )}
                           {!isEphemeral && (
                             <Button variant="link" isInline component="a"
-                              href={`/k8s/ns/${NAMESPACE}/tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`}>
+                              href={`/k8s/ns/${flowNamespace}/tekton.dev~v1~PipelineRun?labelSelector=platform.io%2Fflow-name%3D${flowName}`}>
                               <span style={{ color: '#f0ab00' }}>{'\u29D7'}</span> PipelineRuns
                             </Button>
                           )}
@@ -928,11 +941,11 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                   <DescriptionListTerm>IntegrationFlow CR</DescriptionListTerm>
                   <DescriptionListDescription>
                     <Button variant="link" isInline component="a"
-                      href={`/k8s/ns/${NAMESPACE}/platform.io~v1alpha1~IntegrationFlow/${flowName}`}>
+                      href={consoleFlowUrl(flowNamespace, flowName)}>
                       <span style={{ color: '#2b9af3' }}>{'\u2699'}</span> View CR YAML
                     </Button>
                     <Button variant="link" isInline component="a"
-                      href={`/k8s/ns/${NAMESPACE}/platform.io~v1alpha1~IntegrationFlow/${flowName}/yaml`}
+                      href={`${consoleFlowUrl(flowNamespace, flowName)}/yaml`}
                       style={{ display: 'block', marginTop: '2px' }}>
                       <span style={{ color: '#8476d1' }}>{'\u270E'}</span> Edit CR YAML
                     </Button>

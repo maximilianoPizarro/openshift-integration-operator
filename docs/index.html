@@ -30,12 +30,13 @@
         <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
         <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
         <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
-        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li><a class="site-masthead__nav-link" href="ready-flows.html">Ready Flows</a></li>
         <li class="nav-dropdown">
           <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
           <ul class="nav-dropdown-menu">
             <li><a href="worker-selector.html">Worker Image Selector</a></li>
             <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="examples-catalog.html">Examples Catalog</a></li>
             <li><a href="operations.html">Operations</a></li>
             <li><a href="troubleshooting.html">Troubleshooting</a></li>
           </ul>
@@ -64,7 +65,8 @@
         visual Kaoto designer, MCP/AI integration, and native Kubernetes orchestration.
       </p>
       <div class="hero-links">
-        <a class="btn btn-primary" href="#ephemeral">Try it now — no prerequisites</a>
+        <a class="btn btn-primary" href="try-it-now.html">Try it now — no prerequisites</a>
+        <a class="btn btn-secondary" href="comparison.html">Compare platforms</a>
         <a class="btn btn-tertiary" href="contributing.html">Contribute a Flow</a>
         <a class="btn btn-tertiary" href="migrating-from-camel-k.html">Migrating from Camel K</a>
         <a class="btn btn-tertiary" href="https://github.com/maximilianoPizarro/openshift-integration-operator">View on GitHub</a>
@@ -118,7 +120,7 @@
           <article class="card">
             <div class="card-icon">📋</div>
             <h3>Architecture evaluator</h3>
-            <p>Compare against Camel K, Fuse, and MuleSoft in the <a href="#comparison">comparison table</a> below or on <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>.</p>
+            <p>Compare against Camel K, Fuse, and MuleSoft in the <a href="comparison.html">full comparison table</a> or on <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>.</p>
           </article>
         </div>
       </div>
@@ -188,7 +190,7 @@
           <article class="card">
             <div class="card-icon">📈</div>
             <h3>Auto-scaling Workers</h3>
-            <p>HPA v2-driven worker pods scale on CPU and memory utilization.</p>
+            <p>HPA v2 per IntegrationFlow — each worker Deployment scales independently on CPU and memory.</p>
           </article>
           <article class="card">
             <div class="card-icon">🔍</div>
@@ -265,7 +267,7 @@
             </tbody>
           </table>
         </div>
-        <p style="margin-top: 1rem;">See also <a href="architecture.html">Architecture</a> and <a href="migrating-from-camel-k.html">Migrating from Camel K</a>.</p>
+        <p style="margin-top: 1rem;">See the <a href="comparison.html">full platform comparison</a>, <a href="architecture.html">Architecture</a>, and <a href="migrating-from-camel-k.html">Migrating from Camel K</a>.</p>
       </div>
     </section>
 
@@ -284,7 +286,8 @@ oc apply -f k8s/examples/09-ephemeral-demo.yaml
 oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></pre>
         <p>
           See the full <a href="quickstart.html">Quick Start Guide</a> for GitOps examples, console plugin access, and verification steps.
-          Browse the <a href="examples-catalog.html"><strong>250+ Examples Catalog</strong></a> covering 310 Apache Camel Quarkus components.
+          Browse <a href="ready-flows.html"><strong>250+ Ready Flows</strong></a> or the
+          <a href="examples-catalog.html">Examples Catalog</a> (310 Apache Camel Quarkus components).
         </p>
       </div>
     </section>
@@ -424,7 +427,9 @@ quay.io/maximilianopizarro/camel-worker-ai:v0.5.0          <span class="comment"
         <a href="try-it-now.html">Try It Now</a>
         <a href="quickstart.html">Guide</a>
         <a href="architecture.html">Architecture</a>
-        <a href="examples-catalog.html">Examples</a>
+        <a href="ready-flows.html">Ready Flows</a>
+        <a href="examples-catalog.html">Examples Catalog</a>
+        <a href="comparison.html">Comparison</a>
         <a href="worker-selector.html">Tools</a>
         <a href="faq.html">FAQ</a>
         <a href="contributing.html">Contribute</a>

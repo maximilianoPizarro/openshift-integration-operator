@@ -19,9 +19,11 @@ import io.platform.ephemeral.EphemeralRuntimeService;
 import io.platform.lifecycle.FlowLifecycleService;
 import io.platform.service.ArgoService;
 import io.platform.service.git.GitUrlResolver;
+import io.platform.service.GitOpsManifestGenerator;
 import io.platform.service.GitOpsService;
 import io.platform.service.ScaffoldSourceResolver;
 import io.platform.service.ScaffoldingService;
+import io.platform.service.WorkerHpaService;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -65,6 +67,9 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
 
     @Inject
     ScaffoldSourceResolver scaffoldSourceResolver;
+
+    @Inject
+    WorkerHpaService workerHpaService;
 
     @ConfigProperty(name = "sonataflow.enabled", defaultValue = "true")
     boolean sonataFlowEnabled;
@@ -272,6 +277,17 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             if (spec.getAlerting() != null && spec.getAlerting().isEnabled()) {
                 reconcilePrometheusRule(namespace, flowName, spec.getAlerting());
                 status.setPrometheusRuleName("iflow-" + flowName + "-alerts");
+            }
+
+            // Step 5b: Per-flow HPA for GitOps worker Deployments (local cluster)
+            if (type == IntegrationType.CAMEL_ROUTE || type == IntegrationType.CAMEL_TEST) {
+                workerHpaService.reconcile(namespace, flowName,
+                        GitOpsManifestGenerator.deploymentName(flowName),
+                        Map.of(
+                                "platform.io/flow-name", flowName,
+                                "platform.io/component", "worker-hpa",
+                                "app.kubernetes.io/part-of", "integration-platform"),
+                        null);
             }
 
             // Step 6: Create CronJob for scheduled execution (if configured)
@@ -734,6 +750,17 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             status.setEphemeralWorkerRef(deployResult.workerRef());
             status.setLastScaffoldedHash(currentDesignHash);
             updateCondition(status, "EphemeralDeployed", "True", "Deployed", deployResult.message());
+
+            if (type == IntegrationType.CAMEL_ROUTE || type == IntegrationType.CAMEL_TEST) {
+                var ownerRef = io.platform.ephemeral.EphemeralOwnerReferenceHelper.build(resource);
+                workerHpaService.reconcile(namespace, flowName,
+                        GitOpsManifestGenerator.ephemeralDeploymentName(flowName),
+                        Map.of(
+                                EphemeralResourceLabels.LABEL_EPHEMERAL, "true",
+                                EphemeralResourceLabels.LABEL_FLOW_NAME, flowName,
+                                EphemeralResourceLabels.LABEL_COMPONENT, "worker-hpa"),
+                        io.platform.ephemeral.EphemeralOwnerReferenceHelper.asList(ownerRef));
+            }
 
             if (type == IntegrationType.SONATAFLOW) {
                 status.setPhase("True".equals(status.getSonataFlowReady())

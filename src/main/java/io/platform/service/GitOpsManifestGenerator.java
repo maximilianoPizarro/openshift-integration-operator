@@ -10,12 +10,16 @@ public final class GitOpsManifestGenerator {
     private GitOpsManifestGenerator() {
     }
 
+    public static String hpaName(String flowName) {
+        return "iflow-" + flowName + "-hpa";
+    }
+
     public static String kustomization(String flowName, IntegrationType type) {
         String resourcesBlock = switch (type) {
             case CAMEL_KAMELET -> "  - kamelet.yaml\n";
             case CAMEL_PIPE -> "  - pipe.yaml\n";
             case SONATAFLOW -> "  - sonataflow.yaml\n";
-            default -> "  - deployment.yaml\n  - service.yaml\n";
+            default -> "  - deployment.yaml\n  - service.yaml\n  - hpa.yaml\n";
         };
         return """
                 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -112,5 +116,45 @@ public final class GitOpsManifestGenerator {
 
     public static String deploymentName(String flowName) {
         return "iflow-" + flowName;
+    }
+
+    public static String ephemeralDeploymentName(String flowName) {
+        return "iflow-" + flowName + "-worker";
+    }
+
+    public static String hpa(String flowName, int minReplicas, int maxReplicas,
+                             int targetCpuUtilization, int targetMemoryUtilization) {
+        String deploymentName = deploymentName(flowName);
+        return """
+                apiVersion: autoscaling/v2
+                kind: HorizontalPodAutoscaler
+                metadata:
+                  name: %s
+                  labels:
+                    app.kubernetes.io/part-of: integration-platform
+                    platform.io/flow-name: "%s"
+                    platform.io/component: worker-hpa
+                spec:
+                  scaleTargetRef:
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    name: %s
+                  minReplicas: %d
+                  maxReplicas: %d
+                  metrics:
+                    - type: Resource
+                      resource:
+                        name: cpu
+                        target:
+                          type: Utilization
+                          averageUtilization: %d
+                    - type: Resource
+                      resource:
+                        name: memory
+                        target:
+                          type: Utilization
+                          averageUtilization: %d
+                """.formatted(hpaName(flowName), flowName, deploymentName,
+                minReplicas, maxReplicas, targetCpuUtilization, targetMemoryUtilization);
     }
 }

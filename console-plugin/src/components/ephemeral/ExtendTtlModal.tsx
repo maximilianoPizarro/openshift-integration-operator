@@ -11,6 +11,7 @@ import {
 } from '@patternfly/react-core';
 
 import { PROXY_BASE } from '../../constants';
+import { flowApiPath } from '../../utils/k8sUrls';
 
 function getCsrfToken(): string {
   const match = document.cookie.match(/csrf-token=([^;]+)/);
@@ -18,13 +19,14 @@ function getCsrfToken(): string {
 }
 
 export interface ExtendTtlModalProps {
+  flowNamespace: string;
   flowName: string;
   isOpen: boolean;
   onClose: () => void;
   onExtended: () => void;
 }
 
-export const ExtendTtlModal: React.FC<ExtendTtlModalProps> = ({ flowName, isOpen, onClose, onExtended }) => {
+export const ExtendTtlModal: React.FC<ExtendTtlModalProps> = ({ flowNamespace, flowName, isOpen, onClose, onExtended }) => {
   const [hours, setHours] = React.useState('1');
   const [loading, setLoading] = React.useState(false);
 
@@ -32,7 +34,7 @@ export const ExtendTtlModal: React.FC<ExtendTtlModalProps> = ({ flowName, isOpen
     setLoading(true);
     try {
       const seconds = Number(hours) * 3600;
-      const resp = await fetch(`${PROXY_BASE}/api/flows/${flowName}/ephemeral/extend?seconds=${seconds}`, {
+      const resp = await fetch(`${PROXY_BASE}${flowApiPath(flowNamespace, flowName, '/ephemeral/extend')}?seconds=${seconds}`, {
         method: 'POST',
         headers: { 'X-CSRFToken': getCsrfToken() },
       });

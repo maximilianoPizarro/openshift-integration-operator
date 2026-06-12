@@ -1,26 +1,75 @@
 (function () {
   'use strict';
 
-  var NAV_ITEMS = [
-    { href: 'index.html', label: 'Home', page: 'index' },
-    { href: 'architecture.html', label: 'Architecture', page: 'architecture' },
-    { href: 'quickstart.html', label: 'Guide', page: 'quickstart' },
-    { href: 'ai-models-and-mcp.html', label: 'AI & MCP', page: 'ai-models-and-mcp' },
-    { href: 'migrating-from-camel-k.html', label: 'Migrate', page: 'migrating-from-camel-k' },
-    { href: 'operations.html', label: 'Operations', page: 'operations' },
-    { href: 'examples-catalog.html', label: 'Examples', page: 'examples-catalog' },
-    { href: 'ready-flows.html', label: 'Ready Flows', page: 'ready-flows' },
-    { href: 'contributing.html', label: 'Contribute', page: 'contributing' },
-    { href: 'https://github.com/maximilianoPizarro/openshift-integration-operator', label: 'GitHub', external: true }
-  ];
+  function mastheadHtml() {
+    return (
+      '<header class="site-masthead" role="banner">' +
+        '<div class="site-masthead__brand">' +
+          '<button type="button" class="site-masthead__toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="site-nav">' +
+            '<span class="site-masthead__toggle-icon" aria-hidden="true"></span>' +
+          '</button>' +
+          '<a class="site-masthead__logo" href="index.html">' +
+            '<img src="assets/logo.png" alt="" width="28" height="28">' +
+            '<span>OpenShift Integration Operator</span>' +
+          '</a>' +
+        '</div>' +
+        '<nav class="site-masthead__nav" id="site-nav" aria-label="Primary">' +
+          '<ul class="site-masthead__nav-list">' +
+            '<li><a class="site-masthead__nav-link" href="index.html">Home</a></li>' +
+            '<li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>' +
+            '<li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>' +
+            '<li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>' +
+            '<li><a class="site-masthead__nav-link" href="ready-flows.html">Ready Flows</a></li>' +
+            '<li class="nav-dropdown">' +
+              '<a class="site-masthead__nav-link" href="#" data-nav-dropdown>Tools ▾</a>' +
+              '<ul class="nav-dropdown-menu">' +
+                '<li><a href="worker-selector.html">Worker Image Selector</a></li>' +
+                '<li><a href="yaml-generator.html">CR YAML Generator</a></li>' +
+                '<li><a href="examples-catalog.html">Examples Catalog</a></li>' +
+                '<li><a href="operations.html">Operations</a></li>' +
+                '<li><a href="troubleshooting.html">Troubleshooting</a></li>' +
+              '</ul>' +
+            '</li>' +
+            '<li class="nav-dropdown">' +
+              '<a class="site-masthead__nav-link" href="#" data-nav-dropdown>About ▾</a>' +
+              '<ul class="nav-dropdown-menu">' +
+                '<li><a href="comparison.html">Comparison</a></li>' +
+                '<li><a href="migrating-from-camel-k.html">Migrate</a></li>' +
+                '<li><a href="faq.html">FAQ</a></li>' +
+                '<li><a href="changelog.html">Changelog</a></li>' +
+                '<li><a href="contributing.html">Contribute</a></li>' +
+              '</ul>' +
+            '</li>' +
+          '</ul>' +
+        '</nav>' +
+      '</header>'
+    );
+  }
 
-  var HOME_ANCHORS = [
-    { href: '#who-is-this-for', label: 'Audience' },
-    { href: '#ephemeral', label: 'Quick Try' },
-    { href: '#comparison', label: 'Compare' },
-    { href: '#features', label: 'Features' },
-    { href: '#screenshots', label: 'Screenshots' }
-  ];
+  function footerHtml() {
+    return (
+      '<footer class="site-footer">' +
+        '<div class="container">' +
+          '<p>Built by <a href="https://github.com/maximilianoPizarro"><strong>maximilianoPizarro</strong></a></p>' +
+          '<nav class="site-footer__links" aria-label="Footer">' +
+            '<a href="index.html">Home</a>' +
+            '<a href="try-it-now.html">Try It Now</a>' +
+            '<a href="quickstart.html">Guide</a>' +
+            '<a href="architecture.html">Architecture</a>' +
+            '<a href="ready-flows.html">Ready Flows</a>' +
+            '<a href="examples-catalog.html">Examples Catalog</a>' +
+            '<a href="comparison.html">Comparison</a>' +
+            '<a href="worker-selector.html">Tools</a>' +
+            '<a href="faq.html">FAQ</a>' +
+            '<a href="contributing.html">Contribute</a>' +
+            '<a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>' +
+            '<a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>' +
+          '</nav>' +
+          '<p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>' +
+        '</div>' +
+      '</footer>'
+    );
+  }
 
   function currentPage() {
     var path = window.location.pathname.split('/').pop() || 'index.html';
@@ -28,44 +77,53 @@
     return path.replace('.html', '');
   }
 
-  function buildNavLink(item, activePage) {
-    var li = document.createElement('li');
-    var a = document.createElement('a');
-    a.className = 'site-masthead__nav-link';
-    a.href = item.href;
-    a.textContent = item.label;
-
-    if (item.external) {
-      a.classList.add('site-masthead__nav-link--external');
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-    } else if (item.page === activePage) {
-      a.classList.add('is-active');
-      a.setAttribute('aria-current', 'page');
+  function injectSiteChrome() {
+    var mastheadSlot = document.getElementById('site-masthead');
+    if (mastheadSlot && !mastheadSlot.querySelector('.site-masthead')) {
+      mastheadSlot.innerHTML = mastheadHtml();
     }
+    var footerSlot = document.getElementById('site-footer');
+    if (footerSlot && !footerSlot.querySelector('.site-footer')) {
+      footerSlot.innerHTML = footerHtml();
+    }
+  }
 
-    li.appendChild(a);
-    return li;
+  function initDropdowns(header) {
+    header.querySelectorAll('[data-nav-dropdown]').forEach(function (trigger) {
+      trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        trigger.parentElement.classList.toggle('is-open');
+      });
+    });
+    header.querySelectorAll('.nav-dropdown > .site-masthead__nav-link[href="#"]').forEach(function (trigger) {
+      if (trigger.hasAttribute('data-nav-dropdown')) return;
+      trigger.addEventListener('click', function (e) {
+        e.preventDefault();
+        trigger.parentElement.classList.toggle('is-open');
+      });
+    });
   }
 
   function initMasthead() {
+    injectSiteChrome();
+
     var nav = document.getElementById('site-nav');
     var toggle = document.querySelector('.site-masthead__toggle');
     var header = document.querySelector('.site-masthead');
     if (!nav || !toggle || !header) return;
 
-    // Set active link
     var activePage = currentPage();
-    var links = nav.querySelectorAll('.site-masthead__nav-link');
-    links.forEach(function(link) {
+    nav.querySelectorAll('.site-masthead__nav-link[href]').forEach(function (link) {
       var href = link.getAttribute('href');
+      if (!href || href === '#') return;
       if (href === activePage + '.html' || (activePage === 'index' && href === 'index.html')) {
         link.classList.add('is-active');
         link.setAttribute('aria-current', 'page');
       }
     });
 
-    // Mobile toggle
+    initDropdowns(header);
+
     toggle.addEventListener('click', function () {
       var open = nav.classList.toggle('is-open');
       toggle.setAttribute('aria-expanded', String(open));
@@ -86,7 +144,6 @@
     });
   }
 
-
   function initLightbox() {
     var links = document.querySelectorAll('.lightbox-link');
     if (links.length === 0) return;
@@ -104,8 +161,8 @@
       img.src = '';
     }
 
-    links.forEach(function(link) {
-      link.addEventListener('click', function(e) {
+    links.forEach(function (link) {
+      link.addEventListener('click', function (e) {
         e.preventDefault();
         img.src = this.href;
         modal.classList.add('is-open');
@@ -113,55 +170,48 @@
     });
 
     closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
       if (e.target === modal) closeModal();
     });
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
     });
   }
 
-
   function initCopyButtons() {
-    var blocks = document.querySelectorAll('pre');
-    blocks.forEach(function(pre) {
-      // Only add copy button if it contains a code block or text
-      if (!pre.textContent.trim()) return;
-      
+    document.querySelectorAll('pre').forEach(function (pre) {
+      if (!pre.textContent.trim() || pre.querySelector('.copy-btn')) return;
+
       var btn = document.createElement('button');
       btn.className = 'copy-btn';
       btn.textContent = 'Copy';
       btn.setAttribute('aria-label', 'Copy code to clipboard');
-      
-      btn.addEventListener('click', function() {
+
+      btn.addEventListener('click', function () {
         var code = pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText;
-        navigator.clipboard.writeText(code).then(function() {
+        navigator.clipboard.writeText(code).then(function () {
           btn.textContent = 'Copied!';
           btn.classList.add('copied');
-          setTimeout(function() {
+          setTimeout(function () {
             btn.textContent = 'Copy';
             btn.classList.remove('copied');
           }, 2000);
         });
       });
-      
+
       pre.appendChild(btn);
     });
   }
 
-
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-      initMasthead();
-      initLightbox();
-      initCopyButtons();
-      
-    });
-  } else {
+  function boot() {
     initMasthead();
     initLightbox();
     initCopyButtons();
-    
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
 })();

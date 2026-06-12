@@ -143,12 +143,14 @@ helm uninstall integration-operator --namespace openshift-integration
 | `operator.serviceAccount.create` | Create ServiceAccount | `true` |
 | `operator.serviceAccount.name` | ServiceAccount name | `integration-operator-sa` |
 
-### Workers (HPA)
+### Workers (per-flow HPA)
+
+Helm `workers.*` sets defaults for **one HPA per IntegrationFlow** worker Deployment. GitOps scaffolds include `base/hpa.yaml`.
 
 | Parameter | Description | Default |
 |---|---|---|
-| `workers.enabled` | Enable worker HPA configuration | `true` |
-| `workers.minReplicas` | Minimum worker replicas | `1` |
+| `workers.enabled` | Create per-flow HPAs via reconciler | `true` |
+| `workers.minReplicas` | Minimum replicas per flow | `1` |
 | `workers.maxReplicas` | Maximum worker replicas | `10` |
 | `workers.targetCPUUtilization` | CPU utilization threshold (%) | `70` |
 | `workers.targetMemoryUtilization` | Memory utilization threshold (%) | `80` |
@@ -518,11 +520,11 @@ oc patch console.operator.openshift.io cluster --type=json \
 
 ### Workers not scaling
 
-Verify the HPA is configured and metrics are available:
+Verify per-flow HPAs after deploying IntegrationFlows:
 
 ```bash
-oc get hpa -n openshift-integration
-oc describe hpa openshift-integration-operator-workers -n openshift-integration
+oc get hpa -n openshift-integration -l platform.io/component=worker-hpa
+oc describe hpa iflow-rest-to-kafka-hpa -n openshift-integration
 ```
 
 ## Links
