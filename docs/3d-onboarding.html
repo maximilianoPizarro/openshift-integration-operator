@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenShift Integration Operator - 3D Overview</title>
+    <link rel="stylesheet" href="assets/css/3d-style.css">
+    <!-- Import Three.js and GSAP from CDN for GitHub Pages compatibility -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        <button id="fullscreen-btn">Fullscreen</button>
+        
+        <div id="info-panel" class="hidden">
+            <h2 id="panel-title">Node Title</h2>
+            <p id="panel-desc">Node description goes here.</p>
+            <pre><code id="panel-code">yaml snippet</code></pre>
+            <button id="close-panel-btn">Back to Overview</button>
+        </div>
+    </div>
+
+    <script src="assets/js/3d-app.js"></script>
+</body>
+</html>
