@@ -5,6 +5,8 @@
     { href: 'index.html', label: 'Home', page: 'index' },
     { href: 'architecture.html', label: 'Architecture', page: 'architecture' },
     { href: 'quickstart.html', label: 'Guide', page: 'quickstart' },
+    { href: 'ai-models-and-mcp.html', label: 'AI & MCP', page: 'ai-models-and-mcp' },
+    { href: 'migrating-from-camel-k.html', label: 'Migrate', page: 'migrating-from-camel-k' },
     { href: 'operations.html', label: 'Operations', page: 'operations' },
     { href: 'examples-catalog.html', label: 'Examples', page: 'examples-catalog' },
     { href: 'ready-flows.html', label: 'Ready Flows', page: 'ready-flows' },
@@ -13,6 +15,9 @@
   ];
 
   var HOME_ANCHORS = [
+    { href: '#who-is-this-for', label: 'Audience' },
+    { href: '#ephemeral', label: 'Quick Try' },
+    { href: '#comparison', label: 'Compare' },
     { href: '#features', label: 'Features' },
     { href: '#screenshots', label: 'Screenshots' }
   ];
@@ -138,6 +143,7 @@
           '<a href="index.html">Home</a>' +
           '<a href="architecture.html">Architecture</a>' +
           '<a href="quickstart.html">Guide</a>' +
+          '<a href="ai-models-and-mcp.html">AI &amp; MCP</a>' +
           '<a href="operations.html">Operations</a>' +
           '<a href="examples-catalog.html">Examples (255)</a>' +
           '<a href="ready-flows.html">Ready Flows (200+)</a>' +

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Configure AI models and MCP tool calls in IntegrationFlow CRs — ephemeral properties, secrets, multi-provider reference">
+  <title>AI Models &amp; MCP | OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/patternfly.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatText/RedHatText.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatDisplay/RedHatDisplay.css">
+  <link rel="stylesheet" href="assets/site.css">
+  <script defer src="assets/site.js"></script>
+</head>
+<body class="site-page site-page--doc">
+  <div id="site-masthead"></div>
+
+  <header class="page-header">
+    <div class="container">
+      <a href="index.html" class="back-link">&larr; Back to Home</a>
+      <h1>AI Models &amp; MCP</h1>
+      <p>Configure LLM providers and Model Context Protocol tool calls from <code>IntegrationFlow</code> CR properties — no Java required for ephemeral Quick Try.</p>
+    </div>
+  </header>
+
+  <main class="site-main site-main--compact">
+    <div class="container">
+
+      <section class="doc-section" id="overview">
+        <h2>Overview</h2>
+        <p>
+          Integration flows use <strong>Apache Camel LangChain4j</strong> for LLM steps and the operator
+          <strong>MCP Bridge</strong> for external tool discovery and invocation. Both are configured from the CR:
+        </p>
+        <ul>
+          <li><code>spec.ephemeral.properties</code> — Quarkus/Camel key-value map merged into the worker <code>application.properties</code></li>
+          <li><code>spec.secrets</code> — Kubernetes Secrets injected as env vars (<code>envFrom: true</code>) or volume mounts</li>
+          <li><code>spec.ephemeral.disableProperties</code> — glob patterns to remove auto-detected defaults (e.g. disable OpenAI when using Ollama only)</li>
+        </ul>
+        <p>Plain-text index of 20+ ephemeral AI YAML examples: <code>docs/ephemeral-ai-examples.txt</code> and <code>k8s/examples/ephemeral-ai/</code>.</p>
+      </section>
+
+      <section class="doc-section" id="pipeline">
+        <h2>How CR properties reach the worker</h2>
+        <ol>
+          <li>You set <code>spec.ephemeral.properties</code> with Quarkus keys (e.g. <code>quarkus.langchain4j.openai.chat-model.model-name</code>).</li>
+          <li><code>ComponentPropertiesRegistry</code> adds safe defaults when <code>langchain4j-chat</code> is detected in the route.</li>
+          <li><code>EphemeralConfigMerger</code> merges layers into <code>application.properties</code> in ConfigMap <code>iflow-&lt;name&gt;-sources</code>.</li>
+          <li>The worker pod mounts the ConfigMap at <code>/deployments/config</code> and sets <code>QUARKUS_CONFIG_LOCATIONS=file:/deployments/config/application.properties</code>.</li>
+          <li>Quarkus LangChain4j extensions create <code>ChatModel</code> CDI beans; Camel <code>langchain4j-chat:</code> uses the default or named bean.</li>
+        </ol>
+        <pre><code>spec:
+  deploymentMode: EPHEMERAL
+  ephemeral:
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+  secrets:
+    - name: openai-credentials
+      envFrom: true</code></pre>
+        <pre><code>oc create secret generic openai-credentials -n openshift-integration \
+  --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME \
+  --from-literal=OPENAI_MODEL=gpt-4o-mini</code></pre>
+      </section>
+
+      <section class="doc-section" id="worker-image">
+        <h2>Worker image</h2>
+        <p>Routes with <code>langchain4j-chat</code> auto-select <code>camel-worker-ai:v0.5.0</code>. Pin explicitly when needed:</p>
+        <pre><code>spec:
+  ephemeral:
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0</code></pre>
+        <p><strong>Baked into <code>camel-worker-ai</code> (v0.5.0+):</strong> Quarkus LangChain4j OpenAI, Ollama, Camel HTTP/Jackson (for MCP bridge calls).</p>
+        <p><strong>GitOps custom workers:</strong> add extra Quarkus extensions to your worker <code>pom.xml</code> for Anthropic, Azure OpenAI, Mistral, Hugging Face, Vertex AI, Bedrock — property keys below still apply via scaffold <code>application.properties</code>.</p>
+      </section>
+
+      <section class="doc-section" id="providers">
+        <h2>Provider reference</h2>
+        <p>Set provider keys under <code>spec.ephemeral.properties</code>. Use Secrets for API keys — never commit real keys to Git.</p>
+
+        <h3 id="openai">OpenAI / OpenAI-compatible APIs</h3>
+        <p>Works with OpenAI, local proxies, and many compatible gateways via <code>base-url</code>.</p>
+        <pre><code>quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+quarkus.langchain4j.openai.base-url: "https://api.openai.com/v1"   # optional
+quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+quarkus.langchain4j.openai.chat-model.temperature: "0.7"
+quarkus.langchain4j.openai.chat-model.max-completion-tokens: "2048"
+quarkus.langchain4j.openai.embedding-model.model-name: "text-embedding-3-small"</code></pre>
+
+        <h3 id="azure-openai">Azure OpenAI</h3>
+        <p>Requires <code>quarkus-langchain4j-azure-openai</code> in GitOps worker; or use OpenAI extension + Azure endpoint as <code>base-url</code>.</p>
+        <pre><code>quarkus.langchain4j.azure-openai.api-key: "${AZURE_OPENAI_API_KEY}"
+quarkus.langchain4j.azure-openai.resource-name: "my-resource"
+quarkus.langchain4j.azure-openai.deployment-name: "gpt-4o"
+quarkus.langchain4j.azure-openai.chat-model.temperature: "0.3"</code></pre>
+
+        <h3 id="ollama">Ollama (on-cluster or local)</h3>
+        <p>Included in <code>camel-worker-ai</code>. Disable default OpenAI when Ollama-only:</p>
+        <pre><code>quarkus.langchain4j.openai.chat-model.enabled: "false"
+quarkus.langchain4j.ollama.base-url: "http://ollama.llm.svc:11434"
+quarkus.langchain4j.ollama.chat-model.model-id: "llama3.2"
+quarkus.langchain4j.ollama.chat-model.temperature: "0.3"</code></pre>
+        <p>Example: <code>k8s/examples/ephemeral-ai/22-ollama-local.yaml</code></p>
+
+        <h3 id="anthropic">Anthropic Claude</h3>
+        <pre><code>quarkus.langchain4j.anthropic.api-key: "${ANTHROPIC_API_KEY}"
+quarkus.langchain4j.anthropic.chat-model.model-name: "claude-3-5-sonnet-20241022"
+quarkus.langchain4j.anthropic.chat-model.max-tokens: "4096"</code></pre>
+
+        <h3 id="mistral">Mistral AI</h3>
+        <pre><code>quarkus.langchain4j.mistralai.api-key: "${MISTRAL_API_KEY}"
+quarkus.langchain4j.mistralai.chat-model.model-name: "mistral-large-latest"</code></pre>
+
+        <h3 id="huggingface">Hugging Face</h3>
+        <pre><code>quarkus.langchain4j.hugging-face.api-key: "${HF_API_TOKEN}"
+quarkus.langchain4j.hugging-face.chat-model.model-id: "meta-llama/Llama-3.2-3B-Instruct"</code></pre>
+
+        <h3 id="vertex">Google Vertex AI</h3>
+        <pre><code>quarkus.langchain4j.vertex-ai.gemini.project-id: "${GCP_PROJECT_ID}"
+quarkus.langchain4j.vertex-ai.gemini.location: "us-central1"
+quarkus.langchain4j.vertex-ai.gemini.chat-model.model-id: "gemini-2.0-flash"</code></pre>
+
+        <h3 id="bedrock">AWS Bedrock</h3>
+        <pre><code>quarkus.langchain4j.bedrock.aws.region: "${AWS_REGION:us-east-1}"
+quarkus.langchain4j.bedrock.aws.access-key-id: "${AWS_ACCESS_KEY_ID}"
+quarkus.langchain4j.bedrock.aws.secret-access-key: "${AWS_SECRET_ACCESS_KEY}"
+quarkus.langchain4j.bedrock.chat-model.model-id: "anthropic.claude-3-5-sonnet-20241022-v2:0"</code></pre>
+        <p>Camel also supports <code>aws-bedrock</code> / <code>aws-bedrock-agent-runtime</code> components for direct Bedrock APIs in routes.</p>
+
+        <h3 id="embeddings-rag">Embeddings &amp; RAG</h3>
+        <pre><code>quarkus.langchain4j.openai.embedding-model.model-name: "text-embedding-3-small"
+# Vector store (GitOps / full worker): qdrant, elasticsearch, etc. in route YAML</code></pre>
+      </section>
+
+      <section class="doc-section" id="multi-model">
+        <h2>Multiple models in one flow</h2>
+        <p>Named Quarkus profiles map to CDI beans referenced as <code>chatModel: "#profileName"</code> in Camel:</p>
+        <pre><code>quarkus.langchain4j.openai.fast.chat-model.model-name: "gpt-4o-mini"
+quarkus.langchain4j.openai.fast.api-key: "${OPENAI_API_KEY}"
+quarkus.langchain4j.openai.strong.chat-model.model-name: "gpt-4o"
+quarkus.langchain4j.openai.strong.api-key: "${OPENAI_API_KEY}"</code></pre>
+        <pre><code>- to:
+    uri: "langchain4j-chat:analyst"
+    parameters:
+      chatModel: "#strong"</code></pre>
+        <p>Example: <code>k8s/examples/ephemeral-ai/21-multi-model-profiles.yaml</code></p>
+        <p>Per-request overrides: Camel headers <code>CamelLangChain4jChatTemperature</code>, <code>CamelLangChain4jChatMaxTokens</code> (see example 12).</p>
+      </section>
+
+      <section class="doc-section" id="secrets-table">
+        <h2>Secrets cheat sheet</h2>
+        <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid #444;">
+              <th style="text-align:left; padding:0.5rem;">Provider</th>
+              <th style="text-align:left; padding:0.5rem;">Secret keys (envFrom)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:0.5rem;">OpenAI</td><td><code>OPENAI_API_KEY</code>, optional <code>OPENAI_MODEL</code></td></tr>
+            <tr><td style="padding:0.5rem;">Azure OpenAI</td><td><code>AZURE_OPENAI_API_KEY</code></td></tr>
+            <tr><td style="padding:0.5rem;">Ollama</td><td><code>OLLAMA_BASE_URL</code>, <code>OLLAMA_MODEL</code></td></tr>
+            <tr><td style="padding:0.5rem;">Anthropic</td><td><code>ANTHROPIC_API_KEY</code></td></tr>
+            <tr><td style="padding:0.5rem;">Mistral</td><td><code>MISTRAL_API_KEY</code></td></tr>
+            <tr><td style="padding:0.5rem;">Hugging Face</td><td><code>HF_API_TOKEN</code></td></tr>
+            <tr><td style="padding:0.5rem;">Vertex AI</td><td><code>GOOGLE_APPLICATION_CREDENTIALS</code> (mount JSON key file)</td></tr>
+            <tr><td style="padding:0.5rem;">Bedrock</td><td><code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>AWS_REGION</code></td></tr>
+            <tr><td style="padding:0.5rem;">MCP bridge</td><td><code>OPERATOR_MCP_TOKEN</code>, <code>MCP_SERVER_URL</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="doc-section" id="mcp">
+        <h2>MCP (Model Context Protocol)</h2>
+        <p>
+          The operator exposes a secured MCP bridge so flows and the console can discover and invoke tools on external MCP servers
+          without embedding MCP client code in every worker.
+        </p>
+
+        <h3 id="mcp-operator-api">Operator API</h3>
+        <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+          <tr style="border-bottom: 1px solid #444;"><td style="padding:0.5rem;"><code>GET /api/mcp/tools?serverUrl=...</code></td><td>List tools (JSON-RPC <code>tools/list</code>)</td></tr>
+          <tr><td style="padding:0.5rem;"><code>POST /api/mcp/tools/{toolName}/call?serverUrl=...</code></td><td>Invoke tool (JSON-RPC <code>tools/call</code>)</td></tr>
+        </table>
+        <p>Requires <code>Authorization: Bearer &lt;k8s-token&gt;</code>. Configure allowlist in Helm:</p>
+        <pre><code>mcp:
+  allowedServerUrls:
+    - https://mcp.example.com
+    - http://mcp-tools.internal.svc</code></pre>
+        <p>See <a href="architecture.html#mcp-bridge">Architecture — MCP Bridge</a>.</p>
+
+        <h3 id="mcp-from-flows">Calling MCP from an ephemeral flow</h3>
+        <p>Use HTTP from the worker to the operator Service (port 8080) with a bearer token:</p>
+        <pre><code>oc create token default -n openshift-integration --duration=24h > /tmp/token
+oc create secret generic mcp-flow-credentials -n openshift-integration \
+  --from-literal=OPERATOR_MCP_TOKEN="$(cat /tmp/token)" \
+  --from-literal=MCP_SERVER_URL=https://mcp.example.com</code></pre>
+        <pre><code>spec:
+  secrets:
+    - name: mcp-flow-credentials
+      envFrom: true
+  ephemeral:
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0</code></pre>
+        <p>Examples:</p>
+        <ul>
+          <li><code>k8s/examples/ephemeral-ai/23-mcp-bridge-call.yaml</code> — list tools + invoke <code>web_search</code></li>
+          <li><code>k8s/examples/ephemeral-ai/24-mcp-llm-chain.yaml</code> — MCP result → LLM synthesis</li>
+        </ul>
+        <div class="note">
+          <strong>Note:</strong> The MCP bridge currently returns stub responses for off-cluster MCP servers until JSON-RPC transport is fully implemented.
+          The API contract, auth, and allowlist are production-ready; wire your MCP server URL to test end-to-end once transport is enabled.
+        </div>
+
+        <h3 id="mcp-console">Console &amp; Kaoto</h3>
+        <p>The console plugin can call the same operator endpoints for AI-assisted design steps. Flow routes can combine:</p>
+        <ol>
+          <li>MCP tool call → structured context</li>
+          <li><code>langchain4j-chat</code> → natural language answer</li>
+          <li>Optional publish to Kafka / HTTP response</li>
+        </ol>
+      </section>
+
+      <section class="doc-section" id="validate">
+        <h2>Validate on cluster</h2>
+        <pre><code># Publish v0.5.0 images (Quay login required)
+podman login quay.io
+VERSION_TAG=v0.5.0 ./scripts/publish-quay.sh
+
+operator-sdk cleanup openshift-integration-operator -n openshift-integration
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.5.0 \
+  --namespace openshift-integration --install-mode AllNamespaces --timeout 10m
+
+# AI smoke test
+oc create secret generic openai-credentials -n openshift-integration \
+  --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+oc apply -f k8s/examples/ephemeral-ai/01-openai-simple-chat.yaml
+oc logs -l platform.io/flow-name=ephemeral-ai-simple-chat -n openshift-integration -f</code></pre>
+        <p>Or run <code>./scripts/validate-ephemeral-ai.sh</code> after secrets are configured.</p>
+      </section>
+
+      <section class="doc-section" id="examples-index">
+        <h2>Example index</h2>
+        <ul>
+          <li><code>01</code>–<code>20</code> — plain-text LLM prompts (chat, CoT, sentiment, RAG-inline, …)</li>
+          <li><code>21-multi-model-profiles.yaml</code> — fast + strong OpenAI profiles</li>
+          <li><code>22-ollama-local.yaml</code> — Ollama without OpenAI key</li>
+          <li><code>23-mcp-bridge-call.yaml</code> — operator MCP bridge HTTP</li>
+          <li><code>24-mcp-llm-chain.yaml</code> — MCP + LLM pipeline</li>
+        </ul>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+</body>
+</html>

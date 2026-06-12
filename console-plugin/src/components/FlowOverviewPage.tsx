@@ -12,10 +12,12 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { ExternalLinkAltIcon, ArrowRightIcon } from '@patternfly/react-icons';
-import { DOCS_BASE_URL, GITHUB_REPO_URL, NAMESPACE } from '../constants';
+import { DOCS_BASE_URL, GITHUB_REPO_URL, NAMESPACE, PLUGIN_NAME } from '../constants';
+import { loadPlatformConfig } from '../utils/flowCatalog';
 
 const API_BASE = '/api/kubernetes/apis/platform.io/v1alpha1';
 const K8S_TEKTON = '/api/kubernetes/apis/tekton.dev/v1';
+const K8S_APPS = '/api/kubernetes/apis/apps/v1';
 
 interface IntegrationFlow {
   metadata: { name: string; namespace: string; creationTimestamp: string; uid: string };
@@ -137,6 +139,49 @@ const FlowOverviewPage: React.FC = () => {
   const [flows, setFlows] = React.useState<IntegrationFlow[]>([]);
   const [pipelineRuns, setPipelineRuns] = React.useState<PipelineRun[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [pluginVersion, setPluginVersion] = React.useState<string | null>(null);
+  const [flowCatalogSource, setFlowCatalogSource] = React.useState<string>('remote');
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadMeta = async () => {
+      try {
+        const manifestResp = await fetch(`/api/plugins/${PLUGIN_NAME}/plugin-manifest.json`);
+        if (manifestResp.ok) {
+          const manifest = await manifestResp.json();
+          if (!cancelled && manifest?.version) {
+            setPluginVersion(manifest.version);
+          }
+        }
+      } catch { /* fall through to deployment image */ }
+
+      if (!cancelled) {
+        try {
+          const depResp = await fetch(`${K8S_APPS}/namespaces/${NAMESPACE}/deployments/integration-console-plugin`);
+          if (depResp.ok) {
+            const dep = await depResp.json();
+            const image: string = dep?.spec?.template?.spec?.containers?.[0]?.image || '';
+            const tag = image.includes(':') ? image.split(':').pop() : '';
+            if (tag) {
+              setPluginVersion(prev => prev || tag.replace(/^v/, ''));
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
+      const cfg = await loadPlatformConfig();
+      if (!cancelled) {
+        if (cfg.flowCatalogSource) setFlowCatalogSource(cfg.flowCatalogSource);
+        if (cfg.consolePluginVersion) {
+          setPluginVersion(prev => prev || cfg.consolePluginVersion || null);
+        }
+      }
+    };
+
+    loadMeta();
+    return () => { cancelled = true; };
+  }, []);
 
   const fetchAll = React.useCallback(async () => {
     try {
@@ -199,9 +244,17 @@ const FlowOverviewPage: React.FC = () => {
     <PageSection>
       <div style={{ marginBottom: '20px' }}>
         <Title headingLevel="h1" size="xl">Flow Overview</Title>
-        <span style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>
-          Dashboard for {flows.length} integration flows in {NAMESPACE}
-        </span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+          <span style={{ fontSize: '12px', color: 'var(--integration-text-subtle)' }}>
+            Dashboard for {flows.length} integration flows in {NAMESPACE}
+          </span>
+          {pluginVersion && (
+            <Label color="blue" isCompact>Console plugin v{pluginVersion}</Label>
+          )}
+          <Label color={flowCatalogSource === 'configmap' ? 'orange' : 'grey'} isCompact>
+            Catalog: {flowCatalogSource}
+          </Label>
+        </div>
       </div>
 
       {flows.length === 0 && (

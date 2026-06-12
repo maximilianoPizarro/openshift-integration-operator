@@ -108,6 +108,8 @@ public class CamelRouteEphemeralDeployer {
             cmData.put("application.properties", mergedProperties);
         }
 
+        boolean hasExternalProperties = !mergedProperties.isBlank();
+
         var ownerRefs = EphemeralOwnerReferenceHelper.asList(ownerRef);
         var configMap = new io.fabric8.kubernetes.api.model.ConfigMapBuilder()
                 .withNewMetadata()
@@ -157,7 +159,16 @@ public class CamelRouteEphemeralDeployer {
                 .addNewEnv()
                     .withName("QUARKUS_CAMEL_MAIN_ROUTES_INCLUDE_PATTERN")
                     .withValue("file:/deployments/config/flow.camel.yaml")
-                .endEnv()
+                .endEnv();
+
+        if (hasExternalProperties) {
+            containerBuilder.addNewEnv()
+                    .withName("QUARKUS_CONFIG_LOCATIONS")
+                    .withValue("file:/deployments/config/application.properties")
+                    .endEnv();
+        }
+
+        containerBuilder
                 .addNewVolumeMount()
                     .withName("sources")
                     .withMountPath("/deployments/config")

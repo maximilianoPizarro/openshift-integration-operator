@@ -1,0 +1,48 @@
+# Context block + question (no vector DB)
+# Plain-text prompt in kaotoDesign — complete spec.ephemeral.properties before apply.
+# See docs/ephemeral-ai-examples.txt for the full property cheat sheet.
+#
+# oc create secret generic openai-credentials -n openshift-integration \
+#   --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-inline-rag
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    properties:
+      # COMPLETAR: usa Secret openai-credentials (envFrom) o pega la key aquí
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.7"
+      quarkus.langchain4j.openai.chat-model.max-completion-tokens: "1024"
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-inline-rag
+        from:
+          uri: "timer:ragTick?period=120000"
+          steps:
+            - setProperty:
+                name: context
+                constant: |
+                  Product docs: Ephemeral mode deploys IntegrationFlow workers without Git. TTL defaults to 3600s. Delete the CR to cleanup. Promote-to-GitOps scaffolds a repo.
+            - setProperty:
+                name: question
+                constant: "How do I clean up ephemeral resources?"
+            - setBody:
+                simple: "Use ONLY this context:\n${exchangeProperty.context}\n\nQuestion: ${exchangeProperty.question}\nAnswer in one paragraph."
+            - to:
+                uri: "langchain4j-chat:rag"
+            - log:
+                message: "RAG answer: ${body}"

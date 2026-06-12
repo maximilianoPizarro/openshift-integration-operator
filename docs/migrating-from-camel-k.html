@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Migrate from Apache Camel K or Red Hat Fuse to OpenShift Integration Operator">
+  <title>Migrating from Camel K | OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/patternfly.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatText/RedHatText.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatDisplay/RedHatDisplay.css">
+  <link rel="stylesheet" href="assets/site.css">
+  <script defer src="assets/site.js"></script>
+</head>
+<body class="site-page site-page--doc">
+  <div id="site-masthead"></div>
+
+  <header class="page-header">
+    <div class="container">
+      <a href="index.html" class="back-link">&larr; Back to Home</a>
+      <h1>Migrating from Camel K</h1>
+      <p>Lift-and-shift Apache Camel integrations to the IntegrationFlow lifecycle layer on OpenShift.</p>
+    </div>
+  </header>
+
+  <main class="site-main site-main--compact">
+    <div class="container">
+
+      <section class="doc-section" id="overview">
+        <h2>What this operator adds</h2>
+        <p>
+          Apache Camel K remains a valid runtime for Kamelets and Pipes. This operator adds a
+          <strong>lifecycle layer</strong>: visual design in the console, GitOps (Tekton + Argo CD),
+          ephemeral try-before-GitOps, multicluster ApplicationSets, and unified observability.
+        </p>
+        <p>Compare platforms in the <a href="index.html#comparison">landing comparison table</a>.</p>
+      </section>
+
+      <section class="doc-section" id="what-you-keep">
+        <h2>What you keep</h2>
+        <ul>
+          <li>Camel route YAML, Kamelet definitions, and Pipe bindings</li>
+          <li>Component URIs and Enterprise Integration Patterns (CBR, saga, multicast, etc.)</li>
+          <li>Camel Quarkus worker model (GitOps builds) or precompiled workers (ephemeral)</li>
+          <li>SonataFlow / Serverless Workflow definitions where applicable</li>
+        </ul>
+      </section>
+
+      <section class="doc-section" id="what-changes">
+        <h2>What changes</h2>
+        <ul>
+          <li><strong>CR model</strong> — Camel K <code>Integration</code> / <code>Kamelet</code> / <code>Pipe</code> → single <code>IntegrationFlow</code> CR with <code>integrationType</code></li>
+          <li><strong>GitOps pipeline</strong> — Scaffold → Git push → Tekton build → Argo CD sync (optional but recommended for production)</li>
+          <li><strong>Targeting</strong> — Use <code>spec.targeting.strategy</code> + <code>clusters</code> or <code>clusterSelector</code> (not deprecated <code>targetClusters</code>)</li>
+          <li><strong>Design storage</strong> — Prefer <code>designRef</code>; inline <code>kaotoDesign</code> is deprecated but supported for migration</li>
+        </ul>
+      </section>
+
+      <section class="doc-section" id="lift-and-shift">
+        <h2>Lift-and-shift path</h2>
+        <ol class="steps">
+          <li><strong>Export route YAML</strong> from Camel K or Fuse (or paste from existing <code>Integration</code> spec)</li>
+          <li><strong>Ephemeral try</strong> — Create <code>IntegrationFlow</code> with <code>deploymentMode: EPHEMERAL</code> and paste YAML into <code>kaotoDesign</code> (<a href="quickstart.html#track-a">Track A</a>)</li>
+          <li><strong>Validate</strong> — Console logs, telemetry, lifecycle controls</li>
+          <li><strong>Promote to GitOps</strong> — Console <em>Promote to GitOps</em> or REST API; operator scaffolds Git repo and runs Tekton + Argo CD</li>
+          <li><strong>Production</strong> — Configure <code>targeting</code>, resilience, and alerting per <a href="architecture.html">Architecture</a></li>
+        </ol>
+        <pre><code>apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: migrated-route
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: migrated
+        from:
+          uri: "timer:tick?period=5000"
+          steps:
+            - log:
+                message: "Migrated from Camel K"</code></pre>
+      </section>
+
+      <section class="doc-section" id="mapping">
+        <h2>Resource mapping</h2>
+        <table>
+          <thead>
+            <tr><th>Camel K / Fuse</th><th>This operator</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>Integration</code> (route)</td><td><code>IntegrationFlow</code> with <code>integrationType: CAMEL_ROUTE</code></td></tr>
+            <tr><td><code>Kamelet</code></td><td><code>integrationType: CAMEL_KAMELET</code></td></tr>
+            <tr><td><code>Pipe</code></td><td><code>integrationType: CAMEL_PIPE</code></td></tr>
+            <tr><td><code>IntegrationPlatform</code></td><td>Operator + Helm values; Camel K bootstrap for Kamelet/Pipe examples</td></tr>
+            <tr><td>Kit / image build</td><td>Tekton pipeline <code>integration-flow-build</code> or ephemeral precompiled workers</td></tr>
+            <tr><td><code>trait:</code> configuration</td><td><code>spec.ephemeral.properties</code>, resilience, worker resources via scaffold</td></tr>
+            <tr><td>Multicluster</td><td><code>spec.targeting</code> → Argo CD ApplicationSet</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="doc-section" id="fuse">
+        <h2>For Red Hat Fuse users</h2>
+        <p>
+          Red Hat Fuse 7.x is end of life. Fuse Online provided a visual editor similar in spirit to this platform’s
+          Kaoto + console plugin combination, but Fuse did not offer native GitOps or multicluster ApplicationSets.
+        </p>
+        <ul>
+          <li>Export Camel XML or YAML routes from Fuse applications</li>
+          <li>Convert to Kaoto-compatible YAML where needed (or paste into <code>kaotoDesign</code>)</li>
+          <li>Run ephemeral validation, then promote to GitOps for production parity</li>
+        </ul>
+        <p>
+          Red Hat migration guidance:
+          <a href="https://access.redhat.com/documentation/en-us/red_hat_fuse/" target="_blank" rel="noopener noreferrer">Red Hat Fuse documentation</a>
+          (EOL notices and Camel migration paths).
+        </p>
+      </section>
+
+      <section class="doc-section" id="next">
+        <h2>Next steps</h2>
+        <ul>
+          <li><a href="quickstart.html#track-a">10-minute ephemeral eval</a></li>
+          <li><a href="quickstart.html#track-b">Full GitOps track</a></li>
+          <li><a href="ready-flows.html">Ready flows catalog</a> — 200+ starting templates</li>
+          <li><a href="contributing.html">Contribute a flow</a> back to the community catalog</li>
+        </ul>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+</body>
+</html>

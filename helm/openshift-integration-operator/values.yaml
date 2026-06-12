@@ -62,6 +62,12 @@ scaffolds:
     camelTest: true
     sonataflow: true
 
+flowCatalog:
+  source: remote          # remote | configmap
+  configMapName: flow-catalog
+  configMapKey: flow-catalog.json
+  embedOnInstall: true    # when source=configmap, create ConfigMap from bundled JSON
+
 secrets:
   provider: values   # values | external-secrets | sealed-secrets
   externalSecrets:

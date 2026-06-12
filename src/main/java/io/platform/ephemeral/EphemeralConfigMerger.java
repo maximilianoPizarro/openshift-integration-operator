@@ -57,6 +57,13 @@ public class EphemeralConfigMerger {
             merged.putAll(ephemeralSpec.getProperties());
         }
 
+        // Ensure mounted route + Camel reload settings when CR supplies Quarkus/Camel config
+        if (!merged.isEmpty()) {
+            merged.putIfAbsent("camel.main.routes-reload-enabled", "true");
+            merged.putIfAbsent("camel.main.routes-include-pattern",
+                    "file:/deployments/config/flow.camel.yaml");
+        }
+
         // Layer 5: disable filter — remove matching keys
         if (ephemeralSpec != null && ephemeralSpec.getDisableProperties() != null) {
             applyDisableFilter(merged, ephemeralSpec.getDisableProperties());

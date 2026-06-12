@@ -11,7 +11,7 @@ import {
   Spinner,
   Title,
 } from '@patternfly/react-core';
-import { FLOW_CATALOG_URL } from '../../constants';
+import { fetchFlowCatalog, offlineCatalogDocsUrl } from '../../utils/flowCatalog';
 
 export interface FlowTemplate {
   name: string;
@@ -63,13 +63,9 @@ const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
 
     setLoading(true);
     setError(null);
-    fetch(FLOW_CATALOG_URL)
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((data: FlowCategory[]) => {
-        setCatalog(data);
+    fetchFlowCatalog()
+      .then((data: unknown) => {
+        setCatalog(data as FlowCategory[]);
         setLoading(false);
       })
       .catch((e: Error) => {
@@ -164,7 +160,17 @@ const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
         </div>
 
         {error && (
-          <Alert variant="danger" isInline title={`Failed to load catalog: ${error}`} style={{ marginBottom: '12px' }} />
+          <Alert variant="danger" isInline title="Failed to load catalog" style={{ marginBottom: '12px' }}>
+            {error}
+            {error.includes('Offline catalog') && (
+              <>
+                {' '}
+                <a href={offlineCatalogDocsUrl()} target="_blank" rel="noopener noreferrer">
+                  Offline catalog setup guide
+                </a>
+              </>
+            )}
+          </Alert>
         )}
 
         {loading ? (

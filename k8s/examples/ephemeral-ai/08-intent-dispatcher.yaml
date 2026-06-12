@@ -1,0 +1,68 @@
+# Intent label → direct handler
+# Plain-text prompt in kaotoDesign — complete spec.ephemeral.properties before apply.
+# See docs/ephemeral-ai-examples.txt for the full property cheat sheet.
+#
+# oc create secret generic openai-credentials -n openshift-integration \
+#   --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-intent
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.0"
+      quarkus.langchain4j.openai.chat-model.max-completion-tokens: "512"
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-intent-main
+        from:
+          uri: "timer:intentTick?period=60000"
+          steps:
+            - setProperty:
+                name: userMessage
+                constant: "I need a refund for order 8842, it arrived damaged."
+            - setBody:
+                simple: "Classify intent as one label only: ORDER_STATUS, REFUND_REQUEST, PRODUCT_INQUIRY, COMPLAINT, GENERAL_QUESTION.\nMessage: ${exchangeProperty.userMessage}"
+            - to:
+                uri: "langchain4j-chat:intent"
+            - setProperty:
+                name: intent
+                simple: "${body.trim()}"
+            - choice:
+                when:
+                  - simple: "${exchangeProperty.intent} == 'REFUND_REQUEST'"
+                    steps:
+                      - to:
+                          uri: "direct:refund-handler"
+                otherwise:
+                  steps:
+                    - to:
+                        uri: "direct:general-handler"
+    - route:
+        id: refund-handler
+        from:
+          uri: "direct:refund-handler"
+          steps:
+            - log:
+                message: "Dispatch REFUND workflow for: ${exchangeProperty.userMessage}"
+    - route:
+        id: general-handler
+        from:
+          uri: "direct:general-handler"
+          steps:
+            - log:
+                message: "Dispatch GENERAL handler (intent=${exchangeProperty.intent})"

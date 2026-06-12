@@ -91,12 +91,16 @@ oc exec deploy/integration-console-plugin -n openshift-integration -- \
 PROXY_BASE = /api/proxy/plugin/integration-console-plugin/backend
 ```
 
-Used for telemetry SSE, lifecycle API, flow logs, and template catalog (`docs/flow-catalog.json` via docs base URL).
+Used for telemetry SSE, lifecycle API, flow logs, platform config, and (when configured) offline template catalog.
 
 Operator backend must be **HTTPS 8443** (not plain HTTP 8080).
 
 ## Template catalog
 
-- Source: `docs/flow-catalog.json` (extracted/maintained via `scripts/extract-flow-catalog.js`)
-- UI: `console-plugin/src/components/modals/TemplateCatalogModal.tsx`
+- **Connected (default):** GitHub Pages `docs/flow-catalog.json` via `FLOW_CATALOG_URL` in `constants.ts`
+- **Air-gapped:** ConfigMap `flow-catalog` served by operator at `PROXY_BASE/api/flow-catalog`
+  - Import: `./scripts/import-flow-catalog-configmap.sh`
+  - Helm: `--set flowCatalog.source=configmap`
+- UI: `console-plugin/src/components/modals/TemplateCatalogModal.tsx` (uses `utils/flowCatalog.ts`)
+- Overview shows plugin version + catalog mode on `FlowOverviewPage.tsx`
 - Validate: `node scripts/validate-ready-flows.js` (not yet in CI — run locally before push)

@@ -1,0 +1,13 @@
+{{- if and (eq (.Values.flowCatalog.source | default "remote") "configmap") (.Values.flowCatalog.embedOnInstall | default true) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.flowCatalog.configMapName | default "flow-catalog" }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    platform.io/component: flow-catalog
+    {{- include "operator.labels" . | nindent 4 }}
+data:
+  {{ .Values.flowCatalog.configMapKey | default "flow-catalog.json" }}: |
+{{ .Files.Get "files/flow-catalog.json" | nindent 4 }}
+{{- end }}

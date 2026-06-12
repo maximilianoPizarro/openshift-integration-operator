@@ -1,0 +1,37 @@
+# Ephemeral AI — Ollama local model (no OpenAI key)
+# COMPLETAR: OLLAMA_BASE_URL and model id for your cluster.
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-ollama
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0
+    properties:
+      quarkus.langchain4j.openai.chat-model.enabled: "false"
+      quarkus.langchain4j.ollama.base-url: "${OLLAMA_BASE_URL:http://ollama.llm.svc:11434}"
+      quarkus.langchain4j.ollama.chat-model.model-id: "${OLLAMA_MODEL:llama3.2}"
+      quarkus.langchain4j.ollama.chat-model.temperature: "0.3"
+  secrets:
+    - name: ollama-config
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-ollama
+        from:
+          uri: "timer:ollamaTick?period=90000"
+          steps:
+            - setBody:
+                constant: "Explain ephemeral IntegrationFlow mode in one sentence."
+            - to:
+                uri: "langchain4j-chat:ollama"
+            - log:
+                message: "Ollama: ${body}"

@@ -20,28 +20,80 @@
     <div class="container">
       <a href="index.html" class="back-link">← Back to Home</a>
       <h1>Quick Start Guide</h1>
-      <p>Install the operator and deploy your first IntegrationFlow in minutes.</p>
+      <p>Track A: evaluate in 10 minutes with ephemeral. Track B: full GitOps production stack.</p>
     </div>
   </header>
 
   <main class="site-main site-main--compact">
     <div class="container">
+      <section class="step" id="track-a">
+        <h2><span class="step-num">A</span> Try in 10 Minutes (Ephemeral)</h2>
+        <p>No Gitea, Tekton, or Argo CD required — only the operator from Quay and an IntegrationFlow CR.</p>
+
+        <h3>A.1 Install operator (Quay + OLM)</h3>
+        <pre><code>mvn -B clean package -DskipTests   # optional: validate locally first
+operator-sdk bundle validate ./bundle
+
+operator-sdk cleanup openshift-integration-operator -n openshift-integration
+
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.5.0 \
+  --namespace openshift-integration \
+  --install-mode AllNamespaces \
+  --timeout 10m
+
+oc get csv -n openshift-integration
+oc get pods -n openshift-integration</code></pre>
+        <p>Alternative: Helm with Quay images — see <a href="operations.html">Operations</a> or root README.</p>
+
+        <h3>A.2 Deploy first ephemeral flow</h3>
+        <pre><code>oc apply -f k8s/examples/09-ephemeral-demo.yaml
+oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></pre>
+
+        <h3>A.3 Verify</h3>
+        <pre><code>oc get integrationflow ephemeral-camel-demo -n openshift-integration \
+  -o jsonpath='{.status.phase}{"\n"}'
+
+oc logs -l platform.io/flow-name=ephemeral-camel-demo -n openshift-integration --tail=20
+
+oc delete integrationflow ephemeral-camel-demo -n openshift-integration
+oc get deploy -l platform.io/ephemeral=true -n openshift-integration   # expect empty</code></pre>
+        <p>Open the console: <strong>Integration Platform → Overview</strong> (plugin version, catalog mode) and <strong>Integration Flows</strong> for logs.</p>
+
+        <h3>A.2b AI flows (complete properties in CR)</h3>
+        <p>Twenty-four ephemeral AI/MCP examples use plain-text prompts and Quarkus properties in <code>spec.ephemeral.properties</code>. Full provider reference: <a href="ai-models-and-mcp.html">AI Models &amp; MCP</a>. Index: <code>docs/ephemeral-ai-examples.txt</code>.</p>
+        <pre><code>oc create secret generic openai-credentials -n openshift-integration \
+  --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+
+oc apply -f k8s/examples/ephemeral-ai/01-openai-simple-chat.yaml
+oc logs -l platform.io/flow-name=ephemeral-ai-simple-chat -n openshift-integration -f</code></pre>
+
+        <p><strong>Ready for GitOps?</strong> Continue to <a href="#track-b">Track B</a>.</p>
+      </section>
+
       <section class="step" id="prerequisites">
         <h2><span class="step-num">✓</span> Prerequisites</h2>
-        <p>Ensure the following components are available in your environment before installing:</p>
+        <h3>Ephemeral only (Track A)</h3>
         <div class="prereq-grid">
           <div class="prereq-item"><strong>OpenShift 4.14+</strong> Cluster with cluster-admin or sufficient RBAC</div>
-          <div class="prereq-item"><strong>Helm 3</strong> Package manager for operator installation</div>
-          <div class="prereq-item"><strong>oc CLI</strong> OpenShift command-line tool, logged in</div>
-          <div class="prereq-item"><strong>Gitea</strong> Git server (GitOps mode only)</div>
-          <div class="prereq-item"><strong>ArgoCD</strong> GitOps controller (GitOps mode only)</div>
-          <div class="prereq-item"><strong>Tekton Pipelines</strong> CI pipeline for container builds (GitOps mode only)</div>
+          <div class="prereq-item"><strong>oc CLI</strong> Logged in</div>
+          <div class="prereq-item"><strong>operator-sdk</strong> For OLM bundle install (or Helm)</div>
         </div>
-        <p>For <strong>Quick Try (ephemeral)</strong> flows, only the operator and <code>kaotoDesign</code> in the CR are required — no Git, Tekton, or ArgoCD.</p>
+        <h3>Full GitOps stack (Track B)</h3>
+        <div class="prereq-grid">
+          <div class="prereq-item"><strong>Helm 3</strong> Optional chart install</div>
+          <div class="prereq-item"><strong>Gitea</strong> Git server</div>
+          <div class="prereq-item"><strong>Argo CD</strong> GitOps controller (<code>openshift-gitops</code>)</div>
+          <div class="prereq-item"><strong>Tekton Pipelines</strong> CI for container builds</div>
+        </div>
+      </section>
+
+      <section class="step" id="track-b">
+        <h2><span class="step-num">B</span> GitOps Production Path</h2>
+        <p>Install with Helm (Quay images only — no internal registry):</p>
       </section>
 
       <section class="step" id="step-1">
-        <h2><span class="step-num">1</span> Add Helm Repository</h2>
+        <h2><span class="step-num">B.1</span> Add Helm Repository</h2>
         <p>Add the GitHub Pages-hosted Helm chart repository and update your local index:</p>
         <pre><code>helm repo add integration-platform \
   https://maximilianopizarro.github.io/openshift-integration-operator/
@@ -50,28 +102,29 @@ helm repo update</code></pre>
       </section>
 
       <section class="step" id="step-2">
-        <h2><span class="step-num">2</span> Install Operator</h2>
-        <p>Install the operator into the <code>openshift-integration</code> namespace:</p>
-        <pre><code>helm install integration-operator \
-  integration-platform/openshift-integration-operator \
+        <h2><span class="step-num">B.2</span> Install Operator (Helm)</h2>
+        <p>Install into <code>openshift-integration</code> using published Quay images:</p>
+        <pre><code>helm upgrade --install openshift-integration-operator \
+  helm/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
+  --set operator.image.tag=v0.5.0 \
+  --set consolePlugin.image.tag=v0.5.0 \
   --set gitea.password='your-gitea-password' \
   --set tekton.approvalEnabled=false</code></pre>
-        <p>Optional: override image tag or worker scaling limits:</p>
-        <pre><code>helm install integration-operator \
-  integration-platform/openshift-integration-operator \
+        <p>Optional worker scaling:</p>
+        <pre><code>helm upgrade --install openshift-integration-operator \
+  helm/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.4.1 \
-  --set gitea.password='your-gitea-password' \
-  --set tekton.approvalEnabled=false \
-  --set workers.maxReplicas=20</code></pre>
-        <p>For development clusters, build the operator locally and use the Quay CI image for the console plugin. Pin the operator deployment by image digest after <code>oc start-build</code> — <code>:latest</code> is not repulled on existing nodes.</p>
+  --set operator.image.tag=v0.5.0 \
+  --set consolePlugin.image.tag=v0.5.0 \
+  --set workers.maxReplicas=20 \
+  --set gitea.password='your-gitea-password'</code></pre>
       </section>
 
       <section class="step" id="camel-k-bootstrap">
-        <h2><span class="step-num">2b</span> Bootstrap Camel K (Pipe &amp; Kamelet)</h2>
+        <h2><span class="step-num">B.2b</span> Bootstrap Camel K (Pipe &amp; Kamelet)</h2>
         <p>Required once per namespace before deploying Pipe or Kamelet examples (<code>etl-pipe</code>, <code>s3-to-db-kamelet</code>):</p>
         <pre><code>oc apply -f k8s/bootstrap/camel-k-platform.yaml
 
@@ -88,7 +141,7 @@ oc patch integrationplatform camel-k -n openshift-integration --type=merge \
       </section>
 
       <section class="step" id="gitops-examples">
-        <h2><span class="step-num">2c</span> Deploy 8 GitOps Catalog Examples</h2>
+        <h2><span class="step-num">B.2c</span> Deploy 8 GitOps Catalog Examples</h2>
         <p>Pre-built examples in <code>k8s/examples/</code> exercise the full pipeline (Gitea &rarr; Tekton &rarr; Argo CD). Apply sequentially (~12s between flows to avoid Gitea contention):</p>
         <pre><code>for yaml in 01-rest-to-kafka 02-order-routing-cbr 03-parallel-enrichment \
   04-error-handling-dlq 05-s3-to-db-kamelet 06-etl-pipe \
@@ -102,7 +155,7 @@ oc get integrationflow -n openshift-integration</code></pre>
       </section>
 
       <section class="step" id="step-3">
-        <h2><span class="step-num">3</span> Create IntegrationFlow CRs</h2>
+        <h2><span class="step-num">B.3</span> GitOps IntegrationFlow Examples</h2>
         <p>The platform supports <strong>5 integration types</strong>: Camel Route, Kamelet, Pipe, Test, and SonataFlow. Below are production-ready examples for each type.</p>
 
         <h3>1. Camel Route — REST to Kafka</h3>
@@ -423,38 +476,15 @@ spec:
             - to:
                 uri: "http://inventory-service:8080/api/release"</code></pre>
 
-        <h3>9. Ephemeral Quick Try — Camel Route (no Git)</h3>
-        <p>Use <code>deploymentMode: EPHEMERAL</code> to run a flow immediately without a Git repository, Tekton, or ArgoCD. Resources are cleaned up when the TTL expires or the CR is deleted.</p>
-        <pre><code>apiVersion: platform.io/v1alpha1
-kind: IntegrationFlow
-metadata:
-  name: ephemeral-camel-demo
-  namespace: openshift-integration
-spec:
-  deploymentMode: EPHEMERAL
-  integrationType: CAMEL_ROUTE
-  engine: CAMEL
-  ephemeral:
-    ttlSeconds: 3600
-  targeting:
-    strategy: explicit
-    clusters: [local]
-  kaotoDesign: |
-    - route:
-        id: ephemeral-timer
-        from:
-          uri: "timer:tick?period=10000"
-          steps:
-            - log:
-                message: "Hello from ephemeral Quick Try mode"</code></pre>
-        <p>Or use the OpenShift Console <strong>Integration Flows</strong> page with the <strong>Quick Try</strong> toggle enabled when creating a flow.</p>
+        <h3>Ephemeral Quick Try (see Track A)</h3>
+        <p>Use <code>k8s/examples/09-ephemeral-demo.yaml</code> or the console <strong>Quick Try</strong> toggle — covered in <a href="#track-a">Track A</a>.</p>
 
         <h3>Promote Ephemeral to GitOps</h3>
         <p>When an ephemeral flow is running, click <strong>Promote to GitOps</strong> in the console plugin (or call the REST API). The operator creates a Git repository, pushes the scaffolded source, and converts the CR to <code>deploymentMode: GITOPS</code> — triggering Tekton build and ArgoCD sync automatically.</p>
         <pre><code># REST API equivalent
 curl -X POST "https://&lt;operator&gt;/api/flows/ephemeral-camel-demo/promote-to-gitops"   -H "Content-Type: application/json"   -d '{"gitRepository":"https://gitea.example.com/user1/my-flow","branch":"main"}'</code></pre>
 
-        <h3>10. Multi-cluster with Label Selector</h3>
+        <h3>Multicluster with Label Selector</h3>
         <pre><code>apiVersion: platform.io/v1alpha1
 kind: IntegrationFlow
 metadata:
@@ -490,7 +520,7 @@ oc get integrationflows -n openshift-integration -w</code></pre>
       </section>
 
       <section class="step" id="step-4">
-        <h2><span class="step-num">4</span> Verify Deployment</h2>
+        <h2><span class="step-num">B.4</span> Verify Deployment</h2>
         <p>Confirm the operator, CRD, and IntegrationFlow status:</p>
         <pre><code><span class="comment"># Check operator pods</span>
 oc get pods -n openshift-integration
@@ -511,7 +541,7 @@ oc get deployments -n openshift-integration</code></pre>
       </section>
 
       <section class="step" id="step-5">
-        <h2><span class="step-num">5</span> Access the Console Plugin</h2>
+        <h2><span class="step-num">B.5</span> Access the Console Plugin</h2>
         <p>
           The OpenShift Console plugin adds an <strong>Integration Platform</strong> section with
           <strong>Integration Flows</strong> navigation.

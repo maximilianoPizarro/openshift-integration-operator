@@ -93,6 +93,23 @@ helm upgrade --install openshift-integration-operator \
 | `tekton.approvalEnabled` | `false` | Skip ApprovalTask |
 | `ephemeral.preferFullWorker` | `false` | Tier-based worker selection |
 | `operator.watchedNamespaces` | `[]` | Cluster-wide watch |
+| `flowCatalog.source` | `remote` | Set `configmap` for air-gapped clusters |
+
+## Offline flow catalog
+
+For disconnected clusters (no GitHub Pages egress):
+
+```bash
+# OLM / existing install
+./scripts/import-flow-catalog-configmap.sh
+
+# Helm fresh install
+helm upgrade --install openshift-integration-operator helm/openshift-integration-operator \
+  --set flowCatalog.source=configmap \
+  --namespace openshift-integration --create-namespace
+```
+
+See `docs/operations.html#offline-catalog`.
 
 ## Multi-namespace
 
@@ -127,6 +144,7 @@ See skill `ephemeral-mode` for TTL, promote, and worker tiers.
 | `operator-sdk run bundle` ImagePullBackOff | Tag not on Quay | Run `publish-quay.sh` or CI workflow |
 | Stale operator code | Old Quay tag cached | Bump tag to `v0.5.0`, prune old tags |
 | Ephemeral deploys orphaned | Pre-0.5.0 bug | Upgrade to v0.5.0+ with ownerReferences fix |
+| Browse Templates empty (air-gap) | GitHub Pages blocked | `./scripts/import-flow-catalog-configmap.sh` or Helm `flowCatalog.source=configmap` |
 | PipelineRun `Source option 5` | Stale scaffold in Gitea | Redeploy operator; recreate flow |
 | Gitea HTTP 500 | Concurrent reconciles | Apply flows sequentially |
 

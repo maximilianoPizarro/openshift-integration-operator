@@ -72,6 +72,12 @@ spec:
               value: {{ .Values.ephemeral.preferFullWorker | default true | quote }}
             - name: SCAFFOLDS_SOURCE
               value: {{ .Values.scaffolds.source | default "embedded" | quote }}
+            - name: FLOW_CATALOG_SOURCE
+              value: {{ .Values.flowCatalog.source | default "remote" | quote }}
+            - name: FLOW_CATALOG_CONFIG_MAP_NAME
+              value: {{ .Values.flowCatalog.configMapName | default "flow-catalog" | quote }}
+            - name: FLOW_CATALOG_CONFIG_MAP_KEY
+              value: {{ .Values.flowCatalog.configMapKey | default "flow-catalog.json" | quote }}
             - name: EPHEMERAL_CAMEL_WORKER_IMAGE
               value: {{ .Values.ephemeral.camelWorkerImage | quote }}
             - name: EPHEMERAL_CAMEL_WORKER_MESSAGING_IMAGE

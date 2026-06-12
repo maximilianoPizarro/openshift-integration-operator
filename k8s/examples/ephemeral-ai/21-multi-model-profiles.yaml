@@ -1,0 +1,54 @@
+# Ephemeral AI — multi-model OpenAI profiles (fast + strong)
+# Uses named Quarkus LangChain4j profiles; routes reference chatModel beans.
+# See docs/ai-models-and-mcp.html#multi-model
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-multi-model
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.fast.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.fast.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.strong.chat-model.model-name: "gpt-4o"
+      quarkus.langchain4j.openai.strong.api-key: "${OPENAI_API_KEY}"
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-multi-model
+        from:
+          uri: "timer:multiModelTick?period=120000"
+          steps:
+            - setProperty:
+                name: prompt
+                constant: "Summarize why GitOps helps integration platforms in 20 words."
+            - setBody:
+                simple: "${exchangeProperty.prompt}"
+            - to:
+                uri: "langchain4j-chat:fast"
+                parameters:
+                  chatModel: "#fast"
+            - setProperty:
+                name: fastAnswer
+                simple: "${body}"
+            - setBody:
+                simple: "${exchangeProperty.prompt}"
+            - to:
+                uri: "langchain4j-chat:strong"
+                parameters:
+                  chatModel: "#strong"
+            - log:
+                message: "fast=${exchangeProperty.fastAnswer} | strong=${body}"

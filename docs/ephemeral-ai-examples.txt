@@ -1,0 +1,242 @@
+================================================================================
+  Ephemeral AI examples — complete properties in the IntegrationFlow CR
+================================================================================
+
+These flows run in EPHEMERAL mode (no Git). Each example uses plain-text prompts
+in kaotoDesign and expects you to fill credentials in spec.ephemeral.properties
+and/or a Kubernetes Secret before the worker can call an LLM.
+
+Prerequisites (once per namespace)
+----------------------------------
+  oc create secret generic openai-credentials -n openshift-integration \
+    --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+
+Optional overrides in the Secret (instead of properties):
+  OPENAI_MODEL=gpt-4o-mini
+  OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+
+Apply any example:
+  oc apply -f k8s/examples/ephemeral-ai/01-openai-simple-chat.yaml
+  oc get integrationflow -n openshift-integration -w
+  oc logs deploy/iflow-ephemeral-ai-simple-chat-worker -n openshift-integration -f
+
+How CR properties reach the LLM (must all be true)
+--------------------------------------------------
+  1. spec.ephemeral.properties uses Quarkus keys (quarkus.langchain4j.openai.*)
+  2. Operator merges them into ConfigMap application.properties (EphemeralConfigMerger)
+  3. Worker pod sets QUARKUS_CONFIG_LOCATIONS=file:/deployments/config/application.properties
+  4. camel-worker-ai includes quarkus-langchain4j-openai (ChatModel CDI bean)
+  5. Routes use langchain4j-chat without chatModel=#bean — default model from properties
+
+Change model per flow — edit only the CR:
+  spec:
+    ephemeral:
+      properties:
+        quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o"
+        quarkus.langchain4j.openai.chat-model.temperature: "0.2"
+
+Ollama (OpenAI-compatible base-url):
+  spec:
+    ephemeral:
+      properties:
+        quarkus.langchain4j.openai.base-url: "http://ollama.host:11434/v1"
+        quarkus.langchain4j.openai.api-key: "ollama"
+        quarkus.langchain4j.openai.chat-model.model-name: "llama3.2"
+
+Worker image: auto-selects camel-worker-ai when langchain4j-chat is detected.
+Force AI tier: spec.ephemeral.workerImage: quay.io/.../camel-worker-ai:v0.5.0
+
+Property cheat sheet (spec.ephemeral.properties)
+--------------------------------------------------
+  REQUIRED (OpenAI-compatible)
+    quarkus.langchain4j.openai.api-key=${OPENAI_API_KEY}
+    quarkus.langchain4j.openai.chat-model.model-name=gpt-4o-mini
+
+  OPTIONAL tuning
+    quarkus.langchain4j.openai.chat-model.temperature=0.7
+    quarkus.langchain4j.openai.chat-model.max-completion-tokens=1024
+    quarkus.langchain4j.openai.chat-model.log-requests=true
+    quarkus.langchain4j.openai.chat-model.log-responses=true
+
+  Ollama / local OpenAI-compatible API (replace OpenAI block)
+    quarkus.langchain4j.openai.base-url=http://HOST:11434/v1
+    quarkus.langchain4j.openai.api-key=ollama
+    quarkus.langchain4j.openai.chat-model.model-name=llama3.2
+
+  Azure OpenAI (example — adjust endpoint and deployment names)
+    quarkus.langchain4j.openai.base-url=https://YOUR_RESOURCE.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT
+    quarkus.langchain4j.openai.api-key=${AZURE_OPENAI_API_KEY}
+    quarkus.langchain4j.openai.chat-model.model-name=gpt-4o
+
+Secret wiring (spec.secrets)
+----------------------------
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+
+================================================================================
+Example 01 — Simple chat (timer → LLM → log)
+File: k8s/examples/ephemeral-ai/01-openai-simple-chat.yaml
+================================================================================
+  Completa: OPENAI_API_KEY (Secret), model-name si no usas gpt-4o-mini
+  Prompt:   texto fijo "Explain Apache Camel integration in one sentence."
+
+================================================================================
+Example 02 — Chain of thought (two LLM calls)
+File: k8s/examples/ephemeral-ai/02-chain-of-thought.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, max-completion-tokens (recomendado 2048)
+  Prompt:   problema de lógica en texto plano; paso 1 descompone, paso 2 responde
+
+================================================================================
+Example 03 — Sentiment classifier (choice router)
+File: k8s/examples/ephemeral-ai/03-sentiment-classifier.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, temperature=0.0 (clasificación determinista)
+  Prompt:   feedback de cliente en texto plano → POSITIVE|NEGATIVE|NEUTRAL|URGENT
+
+================================================================================
+Example 04 — Translation (JSON body → translated text)
+File: k8s/examples/ephemeral-ai/04-translation.yaml
+================================================================================
+  Completa: OPENAI_API_KEY
+  Prompt:   traduce texto plano ES→EN (cuerpo fijo en la ruta)
+
+================================================================================
+Example 05 — Structured extraction (text → JSON)
+File: k8s/examples/ephemeral-ai/05-structured-extraction.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, temperature=0.0
+  Prompt:   párrafo de reunión en texto plano → JSON persons/dates/action_items
+
+================================================================================
+Example 06 — Document summary (long plain text → bullets)
+File: k8s/examples/ephemeral-ai/06-document-summary.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, max-completion-tokens=1500
+  Prompt:   informe largo embebido como constante multilínea
+
+================================================================================
+Example 07 — Code review (diff plain text → JSON findings)
+File: k8s/examples/ephemeral-ai/07-code-review.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, temperature=0.2
+  Prompt:   diff Java embebido; pide array JSON de issues
+
+================================================================================
+Example 08 — Intent dispatcher (classify → direct routes)
+File: k8s/examples/ephemeral-ai/08-intent-dispatcher.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, temperature=0.0
+  Prompt:   mensaje de soporte → ORDER_STATUS|REFUND|COMPLAINT|GENERAL
+
+================================================================================
+Example 09 — Content moderation (approve / flag)
+File: k8s/examples/ephemeral-ai/09-content-moderation.yaml
+================================================================================
+  Completa: OPENAI_API_KEY
+  Prompt:   UGC en texto plano → JSON approved/flags/confidence
+
+================================================================================
+Example 10 — Error triage (stack trace → category JSON)
+File: k8s/examples/ephemeral-ai/10-error-triage.yaml
+================================================================================
+  Completa: OPENAI_API_KEY
+  Prompt:   stack trace embebido → category/severity/rootCause JSON
+
+================================================================================
+Example 11 — Inline RAG (context in prompt, no vector DB)
+File: k8s/examples/ephemeral-ai/11-inline-rag.yaml
+================================================================================
+  Completa: OPENAI_API_KEY
+  Prompt:   bloque "knowledge base" + pregunta en texto plano (sin Qdrant)
+
+================================================================================
+Example 12 — Temperature A/B (same prompt, two runs)
+File: k8s/examples/ephemeral-ai/12-temperature-compare.yaml
+================================================================================
+  Completa: OPENAI_API_KEY
+  Properties extra: ninguna (usa headers CamelLangChain4jChatTemperature 0.1 vs 1.0)
+
+================================================================================
+Example 13 — Email triage (subject + body plain text)
+File: k8s/examples/ephemeral-ai/13-email-triage.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, temperature=0.0
+  Prompt:   email de ejemplo → BILLING|TECHNICAL|GENERAL|URGENT
+
+================================================================================
+Example 14 — JSON repair (malformed → valid JSON)
+File: k8s/examples/ephemeral-ai/14-json-repair.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, temperature=0.0
+  Prompt:   JSON roto embebido → devuelve solo JSON válido
+
+================================================================================
+Example 15 — Product description generator (features → marketing copy)
+File: k8s/examples/ephemeral-ai/15-product-description.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, temperature=0.8 (creativo)
+  Prompt:   lista de features en texto plano → párrafo de marketing
+
+================================================================================
+Example 16 — Meeting action items (transcript → checklist)
+File: k8s/examples/ephemeral-ai/16-meeting-actions.yaml
+================================================================================
+  Completa: OPENAI_API_KEY
+  Prompt:   transcript corto → lista numerada de action items
+
+================================================================================
+Example 17 — Log line explainer (ops assistant)
+File: k8s/examples/ephemeral-ai/17-log-explainer.yaml
+================================================================================
+  Completa: OPENAI_API_KEY
+  Prompt:   línea de log Kubernetes → explicación en una frase
+
+================================================================================
+Example 18 — Policy Q&A (rules text + question)
+File: k8s/examples/ephemeral-ai/18-policy-qa.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, temperature=0.0
+  Prompt:   política de retención embebida + pregunta del usuario
+
+================================================================================
+Example 19 — Multi-language detect + reply
+File: k8s/examples/ephemeral-ai/19-multilingual-reply.yaml
+================================================================================
+  Completa: OPENAI_API_KEY
+  Prompt:   pregunta en español → responde en el mismo idioma detectado
+
+================================================================================
+Example 20 — Camel route generator (NL → YAML snippet)
+File: k8s/examples/ephemeral-ai/20-route-from-description.yaml
+================================================================================
+  Completa: OPENAI_API_KEY, max-completion-tokens=2048
+  Prompt:   descripción en texto plano → fragmento YAML Camel (solo log)
+
+================================================================================
+Example 21 — Multi-model profiles (fast + strong OpenAI)
+File: k8s/examples/ephemeral-ai/21-multi-model-profiles.yaml
+================================================================================
+  Completa: OPENAI_API_KEY; chatModel: "#fast" / "#strong" in route
+  Guide:    docs/ai-models-and-mcp.html#multi-model
+
+================================================================================
+Example 22 — Ollama local (no OpenAI)
+File: k8s/examples/ephemeral-ai/22-ollama-local.yaml
+================================================================================
+  Completa: OLLAMA_BASE_URL, OLLAMA_MODEL; disables OpenAI chat model
+
+================================================================================
+Example 23 — MCP bridge (list tools + web_search)
+File: k8s/examples/ephemeral-ai/23-mcp-bridge-call.yaml
+================================================================================
+  Completa: OPERATOR_MCP_TOKEN, MCP_SERVER_URL; Helm mcp.allowedServerUrls
+
+================================================================================
+Example 24 — MCP + LLM chain
+File: k8s/examples/ephemeral-ai/24-mcp-llm-chain.yaml
+================================================================================
+  Completa: OPENAI_API_KEY + MCP secrets; MCP stub → LLM synthesis
+
+Full guide: docs/ai-models-and-mcp.html

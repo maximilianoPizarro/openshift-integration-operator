@@ -295,6 +295,20 @@
         "consoleRouteHost": { "type": "string", "default": "sonataflow-management-console-kogito-bpm" }
       }
     },
+    "flowCatalog": {
+      "type": "object",
+      "description": "Template catalog source — remote (GitHub Pages) or local ConfigMap for air-gapped clusters",
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["remote", "configmap"],
+          "default": "remote"
+        },
+        "configMapName": { "type": "string", "default": "flow-catalog" },
+        "configMapKey": { "type": "string", "default": "flow-catalog.json" },
+        "embedOnInstall": { "type": "boolean", "default": true }
+      }
+    },
     "consolePlugin": {
       "type": "object",
       "description": "OpenShift Console Dynamic Plugin — extends the console with Integration Platform views",

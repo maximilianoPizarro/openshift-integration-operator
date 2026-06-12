@@ -1,11 +1,11 @@
 # OpenShift Integration Operator
 
-![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square)
+![Version: 0.5.0](https://img.shields.io/badge/Version-0.5.0-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
-![AppVersion: 0.3.0](https://img.shields.io/badge/AppVersion-0.3.0-informational?style=flat-square)
+![AppVersion: 0.5.0](https://img.shields.io/badge/AppVersion-0.5.0-informational?style=flat-square)
 ![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)
 
-Real-Time Integration & Orchestration Platform for OpenShift — an open-source alternative to n8n, powered by Apache Camel + CNCF SonataFlow with a visual Kaoto designer embedded in the OpenShift Console.
+Real-Time Integration & Orchestration Platform for OpenShift — the missing lifecycle layer for Apache Camel: design visually, deploy with GitOps, observe in real time. Apache Camel + CNCF SonataFlow with a visual Kaoto designer embedded in the OpenShift Console.
 
 ## Features
 
@@ -81,7 +81,9 @@ helm install integration-operator \
 
 ### Development cluster (binary-built operator)
 
-When the operator image is built via `oc start-build` into the internal registry, use local chart + pin digest after upgrade. See [root README — Deploy to a Cluster](../../README.md#deploy-to-a-cluster).
+### Development clusters (Quay only)
+
+Use published Quay images — do not use the OpenShift internal registry or `oc start-build` for operator deployments. See [root README — Deploy to a Cluster](../../README.md#deploy-to-a-cluster) and `.cursor/skills/deploy-to-openshift/SKILL.md`.
 
 ```bash
 helm upgrade --install openshift-integration-operator \
@@ -131,7 +133,7 @@ helm uninstall integration-operator --namespace openshift-integration
 | Parameter | Description | Default |
 |---|---|---|
 | `operator.image.repository` | Operator container image | `quay.io/maximilianopizarro/openshift-integration-operator` |
-| `operator.image.tag` | Image tag | `v0.4.1` (use `latest` from CI on dev clusters) |
+| `operator.image.tag` | Image tag | `v0.5.0` |
 | `operator.image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `operator.replicas` | Number of operator replicas | `1` |
 | `operator.resources.requests.cpu` | CPU request | `250m` |
@@ -201,7 +203,7 @@ helm uninstall integration-operator --namespace openshift-integration
 |---|---|---|
 | `consolePlugin.enabled` | Deploy the OpenShift Console Dynamic Plugin | `true` |
 | `consolePlugin.image.repository` | Console plugin container image | `quay.io/maximilianopizarro/integration-console-plugin` |
-| `consolePlugin.image.tag` | Console plugin image tag | `v0.4.1` (use `latest` from CI) |
+| `consolePlugin.image.tag` | Console plugin image tag | `v0.5.0` |
 | `consolePlugin.replicas` | Console plugin replicas | `1` |
 
 ### SonataFlow
@@ -223,9 +225,9 @@ helm uninstall integration-operator --namespace openshift-integration
 | `ephemeral.defaultTtlSeconds` | Default TTL when not specified in CR | `3600` |
 | `ephemeral.maxTtlSeconds` | Maximum TTL for extend API | `86400` |
 | `ephemeral.preferFullWorker` | Use full worker for all ephemeral routes | `false` |
-| `ephemeral.camelWorkerImage` | Core tier worker image | `quay.io/.../camel-worker-core:v0.4.1` |
-| `ephemeral.camelWorkerHttpImage` | HTTP tier (http, https, jsonpath, jackson) | `quay.io/.../camel-worker-http:v0.4.1` |
-| `ephemeral.camelTestImage` | Ephemeral Camel test jobs | `quay.io/.../camel-test-runner:v0.4.1` |
+| `ephemeral.camelWorkerImage` | Core tier worker image | `quay.io/.../camel-worker-core:v0.5.0` |
+| `ephemeral.camelWorkerHttpImage` | HTTP tier (http, https, jsonpath, jackson) | `quay.io/.../camel-worker-http:v0.5.0` |
+| `ephemeral.camelTestImage` | Ephemeral Camel test jobs | `quay.io/.../camel-test-runner:v0.5.0` |
 | `ephemeral.camelK.detect` | Auto-detect Camel K for Kamelet/Pipe ephemeral deploys | `true` |
 
 ### Tekton

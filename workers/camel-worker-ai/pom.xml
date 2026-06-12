@@ -21,6 +21,11 @@
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-log</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-timer</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-langchain4j-chat</artifactId></dependency>
+        <dependency><groupId>io.quarkiverse.langchain4j</groupId><artifactId>quarkus-langchain4j-openai</artifactId><version>1.11.0</version></dependency>
+        <dependency><groupId>io.quarkiverse.langchain4j</groupId><artifactId>quarkus-langchain4j-ollama</artifactId><version>1.11.0</version></dependency>
+        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-http</artifactId></dependency>
+        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-jackson</artifactId></dependency>
+        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-direct</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-djl</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc</artifactId></dependency>
     </dependencies>

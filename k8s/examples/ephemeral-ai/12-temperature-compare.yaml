@@ -1,0 +1,57 @@
+# Same prompt, low vs high temperature
+# Plain-text prompt in kaotoDesign — complete spec.ephemeral.properties before apply.
+# See docs/ephemeral-ai-examples.txt for the full property cheat sheet.
+#
+# oc create secret generic openai-credentials -n openshift-integration \
+#   --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-temp-compare
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    properties:
+      # COMPLETAR: usa Secret openai-credentials (envFrom) o pega la key aquí
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.7"
+      quarkus.langchain4j.openai.chat-model.max-completion-tokens: "1024"
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-temp-compare
+        from:
+          uri: "timer:tempTick?period=120000"
+          steps:
+            - setProperty:
+                name: prompt
+                constant: "Describe a futuristic integration platform in exactly 15 words."
+            - setBody:
+                simple: "${exchangeProperty.prompt}"
+            - setHeader:
+                name: CamelLangChain4jChatTemperature
+                constant: "0.1"
+            - to:
+                uri: "langchain4j-chat:low-temp"
+            - setProperty:
+                name: lowTemp
+                simple: "${body}"
+            - setBody:
+                simple: "${exchangeProperty.prompt}"
+            - setHeader:
+                name: CamelLangChain4jChatTemperature
+                constant: "1.0"
+            - to:
+                uri: "langchain4j-chat:high-temp"
+            - log:
+                message: "temp=0.1 → ${exchangeProperty.lowTemp} | temp=1.0 → ${body}"

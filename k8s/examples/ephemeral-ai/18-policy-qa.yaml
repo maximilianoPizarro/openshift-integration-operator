@@ -1,0 +1,47 @@
+# Policy text + question
+# Plain-text prompt in kaotoDesign — complete spec.ephemeral.properties before apply.
+# See docs/ephemeral-ai-examples.txt for the full property cheat sheet.
+#
+# oc create secret generic openai-credentials -n openshift-integration \
+#   --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-policy-qa
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.0"
+      quarkus.langchain4j.openai.chat-model.max-completion-tokens: "512"
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-policy-qa
+        from:
+          uri: "timer:policyTick?period=120000"
+          steps:
+            - setProperty:
+                name: policy
+                constant: |
+                  Data retention: application logs 30 days, audit logs 1 year, ephemeral worker pods deleted when TTL expires or CR is removed.
+            - setProperty:
+                name: question
+                constant: "How long are audit logs kept?"
+            - setBody:
+                simple: "Policy:\n${exchangeProperty.policy}\n\nAnswer using ONLY the policy. Question: ${exchangeProperty.question}"
+            - to:
+                uri: "langchain4j-chat:policy"
+            - log:
+                message: "Policy answer: ${body}"

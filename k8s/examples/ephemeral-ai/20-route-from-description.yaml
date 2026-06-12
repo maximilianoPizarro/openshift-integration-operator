@@ -1,0 +1,42 @@
+# NL description → Camel YAML snippet
+# Plain-text prompt in kaotoDesign — complete spec.ephemeral.properties before apply.
+# See docs/ephemeral-ai-examples.txt for the full property cheat sheet.
+#
+# oc create secret generic openai-credentials -n openshift-integration \
+#   --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-route-gen
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.3"
+      quarkus.langchain4j.openai.chat-model.max-completion-tokens: "2048"
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-route-gen
+        from:
+          uri: "timer:routeGenTick?period=180000"
+          steps:
+            - setBody:
+                constant: "Every 10 seconds log hello, then call https://api.github.com/users/octocat and log the login field."
+            - setBody:
+                simple: "Generate a minimal Camel YAML route (kaotoDesign style) for:\n${body}\nReturn YAML only, no explanation."
+            - to:
+                uri: "langchain4j-chat:route-gen"
+            - log:
+                message: "Generated route YAML:\n${body}"

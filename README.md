@@ -5,11 +5,12 @@
 <h1 align="center">OpenShift Integration Operator</h1>
 
 <p align="center">
-  <strong>Real-Time Integration & Orchestration Platform for OpenShift</strong>
+  <strong>The missing lifecycle layer for Apache Camel on OpenShift</strong><br>
+  Design visually, deploy with GitOps, observe in real time.
 </p>
 
 <p align="center">
-  Open-source alternative to n8n, powered by Apache Camel + CNCF SonataFlow, with visual Kaoto designer, MCP/AI integration, and native Kubernetes orchestration.
+  Apache Camel + CNCF SonataFlow, visual Kaoto designer, MCP/AI integration, and native Kubernetes orchestration.
 </p>
 
 <p align="center">
@@ -29,6 +30,8 @@
 </p>
 
 ---
+
+**Who is this for?** Platform engineers (CRD, GitOps, multicluster OLM), integration tech leads [migrating from Camel K or Fuse](https://maximilianopizarro.github.io/openshift-integration-operator/migrating-from-camel-k.html), and architecture evaluators comparing [Camel K, Fuse, and MuleSoft](https://maximilianopizarro.github.io/openshift-integration-operator/index.html#comparison) on the landing page.
 
 ## Features
 
@@ -330,7 +333,9 @@ oc get integrationflow ephemeral-camel-demo -w
 # POST /api/flows/ephemeral-camel-demo/promote-to-gitops
 ```
 
-The platform ships **30 pre-built examples** in `k8s/examples/` — eight GitOps catalog flows (`01`–`08`), one ephemeral demo (`09`), twenty public-API Quick Try flows (`10`–`21`), and the community Open-Meteo sample (`22`). Browse online:
+**AI Quick Try (24 examples):** `k8s/examples/ephemeral-ai/` — timer routes with plain-text prompts; fill `spec.ephemeral.properties` and create Secret `openai-credentials` before apply. Provider & MCP guide: [docs/ai-models-and-mcp.html](docs/ai-models-and-mcp.html) (published as [AI Models & MCP](https://maximilianopizarro.github.io/openshift-integration-operator/ai-models-and-mcp.html)).
+
+The platform ships **50+ pre-built examples** in `k8s/examples/` — eight GitOps catalog flows (`01`–`08`), one ephemeral demo (`09`), twenty public-API Quick Try flows (`10`–`22`), and **twenty AI ephemeral flows** in `ephemeral-ai/` (complete `spec.ephemeral.properties` + Secret — see `docs/ephemeral-ai-examples.txt`). Browse online:
 
 - **[Ready Flows (200+)](https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html)** — Complete IntegrationFlow CRs with full Camel route logic, organized by pattern (AI/LLM, Saga, Circuit Breaker, Decision, Event-Driven, API Gateway, ETL, IoT, Orchestration, Hybrid Cloud & Multi-Cloud SaaS for ROSA/ARO/GCP, Public APIs, Enterprise Automation)
 - **[Examples Catalog (255)](https://maximilianopizarro.github.io/openshift-integration-operator/examples-catalog.html)** — Component-focused examples spanning 15 categories and 310 Apache Camel Quarkus components
@@ -375,7 +380,7 @@ spec:
   deploymentMode: EPHEMERAL
   ephemeral:
     ttlSeconds: 3600
-    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.4.1
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.5.0
 ```
 
 This is useful when you know the target domain or want to pin a specific image version. Set `ephemeral.preferFullWorker: true` in operator config to always use the full image globally.
@@ -473,6 +478,8 @@ docker build -f src/main/docker/Dockerfile.jvm \
 
 ## Deploy to a Cluster
 
+**New here?** Start with the [10-minute Quick Try track](https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html#track-a) — install from Quay and run an ephemeral flow without Gitea, Tekton, or Argo CD.
+
 **Registry policy:** All operator, console plugin, worker, and OLM bundle images are published to **Quay.io only** (`quay.io/maximilianopizarro/*`). Do not use the OpenShift internal registry for operator deployments.
 
 ### Recommended: Quay + Operator SDK (OLM)
@@ -527,7 +534,7 @@ quay.io/maximilianopizarro/integration-console-plugin:latest
 quay.io/maximilianopizarro/camel-worker-{core,messaging,http,data,cloud,ai,full}:latest
 ```
 
-Version tags (`v0.4.1`) are added on git tag push. Validate flow catalog locally before push:
+Version tags (`v0.5.0`) are added on git tag push. Validate flow catalog locally before push:
 
 ```bash
 node scripts/validate-ready-flows.js

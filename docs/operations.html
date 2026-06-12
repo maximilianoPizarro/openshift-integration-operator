@@ -309,9 +309,53 @@ curl -X POST "https://&lt;operator&gt;/api/flows/ephemeral-camel-demo/promote-to
 
         <p>Apply the bundled example:</p>
         <pre><code>oc apply -f k8s/examples/09-ephemeral-demo.yaml</code></pre>
+        <p>AI models, multi-provider properties, and MCP bridge calls from flows: <a href="ai-models-and-mcp.html">AI Models &amp; MCP</a>.</p>
       </section>
 
-      <!-- Section 5: Troubleshooting -->
+      <!-- Section 5: Offline flow catalog -->
+      <section class="doc-section" id="offline-catalog">
+        <h2>Offline Flow Catalog (Air-Gapped)</h2>
+        <p>
+          By default, the console plugin loads templates from GitHub Pages
+          (<code>flow-catalog.json</code>). In disconnected clusters, import the catalog as a
+          ConfigMap and point the operator to serve it via the backend proxy.
+        </p>
+
+        <h3>Option A — Helm install</h3>
+        <pre><code>helm upgrade --install openshift-integration-operator \
+  helm/openshift-integration-operator \
+  --namespace openshift-integration \
+  --create-namespace \
+  --set flowCatalog.source=configmap \
+  --set flowCatalog.embedOnInstall=true</code></pre>
+        <p>This creates ConfigMap <code>flow-catalog</code> from the bundled JSON and sets
+           <code>FLOW_CATALOG_SOURCE=configmap</code> on the operator.</p>
+
+        <h3>Option B — Manual import (OLM / existing install)</h3>
+        <pre><code>./scripts/import-flow-catalog-configmap.sh</code></pre>
+        <p>Or step by step:</p>
+        <pre><code>oc create configmap flow-catalog \
+  --from-file=flow-catalog.json=docs/flow-catalog.json \
+  -n openshift-integration --dry-run=client -o yaml | oc apply -f -
+
+oc set env deployment/openshift-integration-operator -n openshift-integration \
+  FLOW_CATALOG_SOURCE=configmap \
+  FLOW_CATALOG_CONFIG_MAP_NAME=flow-catalog \
+  FLOW_CATALOG_CONFIG_MAP_KEY=flow-catalog.json</code></pre>
+
+        <h3>Verify</h3>
+        <pre><code>oc get configmap flow-catalog -n openshift-integration
+oc get deploy openshift-integration-operator -n openshift-integration \
+  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="FLOW_CATALOG_SOURCE")].value}{"\n"}'</code></pre>
+        <p>In the console: <strong>Integration Platform → Overview</strong> shows
+           <code>Catalog: configmap</code>. <strong>Create Flow → Browse Templates</strong> loads
+           from the ConfigMap (no egress to GitHub).</p>
+        <p>API check (requires authenticated console session or token):</p>
+        <pre><code>curl -sk "https://&lt;console-host&gt;/api/proxy/plugin/integration-console-plugin/backend/api/flow-catalog" \
+  -H "Authorization: Bearer &lt;token&gt;" | head -c 200</code></pre>
+      </section>
+
+      <!-- Section 6: Troubleshooting -->
       <section class="doc-section" id="troubleshooting">
         <h2>Troubleshooting</h2>
         <p>Common issues and their resolutions.</p>
@@ -407,6 +451,15 @@ oc describe pipelinerun &lt;name&gt; -n openshift-integration</code></pre>
           <pre><code>oc exec deploy/openshift-integration-operator -n openshift-integration \
   -- curl -s http://localhost:8080/q/health/ready</code></pre>
         </div>
+      </section>
+
+      <section class="doc-section" id="ecosystem">
+        <h2>Ecosystem (future)</h2>
+        <p>Post-0.5.0 checklist items — not started:</p>
+        <ul>
+          <li><strong>CNCF Landscape</strong> — submit under Integration category when catalog and OperatorHub path are ready</li>
+          <li><strong>Red Hat Certified Operator</strong> — partner certification path; requires supported image lifecycle and support matrix</li>
+        </ul>
       </section>
 
     </div>

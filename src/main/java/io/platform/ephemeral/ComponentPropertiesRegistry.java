@@ -108,7 +108,17 @@ public class ComponentPropertiesRegistry {
             // ── FTP ────────────────────────────────────────────────────
             entry("ftp", Map.of(
                     "camel.component.ftp.host", "${FTP_HOST:localhost}",
-                    "camel.component.ftp.port", "${FTP_PORT:21}"))
+                    "camel.component.ftp.port", "${FTP_PORT:21}")),
+
+            // ── AI / LangChain4j ───────────────────────────────────────
+            entry("langchain4j-chat", Map.of(
+                    "quarkus.langchain4j.openai.api-key", "${OPENAI_API_KEY:}",
+                    "quarkus.langchain4j.openai.chat-model.model-name",
+                            "${OPENAI_MODEL:gpt-4o-mini}")),
+            entry("langchain4j-embeddings", Map.of(
+                    "quarkus.langchain4j.openai.api-key", "${OPENAI_API_KEY:}",
+                    "quarkus.langchain4j.openai.embedding-model.model-name",
+                            "${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}"))
     );
 
     /**

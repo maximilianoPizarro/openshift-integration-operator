@@ -115,17 +115,88 @@
               <td>Target clusters when strategy is <code>explicit</code></td>
             </tr>
             <tr>
+              <td><code>targeting.excludeClusters</code></td>
+              <td>[]object</td>
+              <td>Clusters to exclude from ApplicationSet (<code>name</code> per entry)</td>
+            </tr>
+            <tr>
               <td><code>targeting.clusterSelector.matchLabels</code></td>
               <td>map</td>
               <td>Label selector for dynamic cluster matching (when strategy is <code>selector</code>)</td>
             </tr>
             <tr>
+              <td><code>designRef</code></td>
+              <td>object</td>
+              <td>Preferred reference to external design (ConfigMap, Git path, etc.)</td>
+            </tr>
+            <tr>
               <td><code>kaotoDesign</code></td>
               <td>string</td>
-              <td>Raw Kaoto design — YAML for Camel routes, JSON/YAML for SonataFlow</td>
+              <td><strong>Deprecated.</strong> Inline Kaoto design YAML/JSON — use <code>designRef</code> for new flows</td>
+            </tr>
+            <tr>
+              <td><code>targetClusters</code></td>
+              <td>[]string</td>
+              <td><strong>Deprecated.</strong> Use <code>targeting.clusters</code> instead</td>
+            </tr>
+            <tr>
+              <td><code>ephemeral.workerImage</code></td>
+              <td>string</td>
+              <td>Pin precompiled worker image (EPHEMERAL mode)</td>
+            </tr>
+            <tr>
+              <td><code>ephemeral.properties</code></td>
+              <td>map</td>
+              <td>Key-value properties merged into ephemeral worker ConfigMap</td>
+            </tr>
+            <tr>
+              <td><code>gitProvider</code></td>
+              <td>string</td>
+              <td><code>auto</code>, <code>gitea</code>, <code>github</code>, or <code>gitlab</code></td>
+            </tr>
+            <tr>
+              <td><code>gitCredentialsSecret</code></td>
+              <td>string</td>
+              <td>Secret name for Git push credentials</td>
+            </tr>
+            <tr>
+              <td><code>secrets[]</code></td>
+              <td>[]object</td>
+              <td>Referenced secrets for worker/runtime (<code>name</code>, <code>keys</code>)</td>
+            </tr>
+            <tr>
+              <td><code>desiredState</code></td>
+              <td>string</td>
+              <td><code>running</code>, <code>paused</code>, or <code>stopped</code></td>
+            </tr>
+            <tr>
+              <td><code>schedule</code></td>
+              <td>string</td>
+              <td>Cron expression for scheduled execution</td>
+            </tr>
+            <tr>
+              <td><code>resilience.*</code></td>
+              <td>object</td>
+              <td>Retry, circuit breaker, and backoff settings</td>
+            </tr>
+            <tr>
+              <td><code>alerting.*</code></td>
+              <td>object</td>
+              <td>Prometheus alerting rules configuration</td>
+            </tr>
+            <tr>
+              <td><code>replicas</code></td>
+              <td>integer</td>
+              <td>Worker replica count hint</td>
+            </tr>
+            <tr>
+              <td><code>owner</code>, <code>editors</code>, <code>viewers</code></td>
+              <td>string / []string</td>
+              <td>RBAC metadata for console and API</td>
             </tr>
           </tbody>
         </table>
+        <p>See <a href="index.html#comparison">platform comparison</a> and <a href="migrating-from-camel-k.html">migration guide</a>.</p>
 
         <h3>Status Fields</h3>
         <table>
@@ -176,6 +247,41 @@
               <td><code>message</code></td>
               <td>string</td>
               <td>Human-readable status or error message</td>
+            </tr>
+            <tr>
+              <td><code>applicationSetName</code></td>
+              <td>string</td>
+              <td>Argo CD ApplicationSet name for multicluster flows</td>
+            </tr>
+            <tr>
+              <td><code>clusterDeployments[]</code></td>
+              <td>[]object</td>
+              <td>Per-cluster sync/health (<code>clusterName</code>, <code>syncStatus</code>, <code>healthStatus</code>)</td>
+            </tr>
+            <tr>
+              <td><code>conditions[]</code></td>
+              <td>[]object</td>
+              <td>Standard conditions (<code>type</code>, <code>status</code>, <code>reason</code>, <code>message</code>)</td>
+            </tr>
+            <tr>
+              <td><code>sonataFlowName</code> / <code>sonataFlowNamespace</code></td>
+              <td>string</td>
+              <td>SonataFlow CR location when <code>integrationType</code> is SONATAFLOW</td>
+            </tr>
+            <tr>
+              <td><code>sonataFlowReady</code></td>
+              <td>string</td>
+              <td>SonataFlow readiness indicator</td>
+            </tr>
+            <tr>
+              <td><code>currentState</code></td>
+              <td>string</td>
+              <td>Lifecycle state mirror (<code>running</code>, <code>paused</code>, <code>stopped</code>)</td>
+            </tr>
+            <tr>
+              <td><code>circuitBreakerState</code></td>
+              <td>string</td>
+              <td>Resilience circuit breaker state when configured</td>
             </tr>
           </tbody>
         </table>

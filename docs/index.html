@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="OpenShift Integration Operator — Real-Time Integration & Orchestration Platform for OpenShift">
+  <meta name="description" content="The missing lifecycle layer for Apache Camel on OpenShift — design visually, deploy with GitOps, observe in real time.">
   <title>OpenShift Integration Operator</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
@@ -20,21 +20,92 @@
     <div class="container">
       <span class="badge">Apache 2.0 · Open Source</span>
       <h1>OpenShift Integration Operator</h1>
-      <p class="subtitle">Real-Time Integration &amp; Orchestration Platform for OpenShift</p>
+      <p class="subtitle">The missing lifecycle layer for Apache Camel on OpenShift</p>
       <p class="description">
-        Open-source alternative to n8n, powered by Apache Camel + CNCF SonataFlow, with visual Kaoto designer,
-        MCP/AI integration, and native Kubernetes orchestration.
+        Design visually, deploy with GitOps, observe in real time — Apache Camel + CNCF SonataFlow,
+        visual Kaoto designer, MCP/AI integration, and native Kubernetes orchestration.
       </p>
       <div class="hero-links">
-        <a class="btn btn-primary" href="quickstart.html">Get Started</a>
+        <a class="btn btn-primary" href="quickstart.html#track-a">Try in 10 Minutes</a>
         <a class="btn btn-secondary" href="contributing.html">Contribute a Flow</a>
+        <a class="btn btn-secondary" href="migrating-from-camel-k.html">Migrating from Camel K</a>
         <a class="btn btn-secondary" href="https://github.com/maximilianoPizarro/openshift-integration-operator">View on GitHub</a>
-        <a class="btn btn-secondary" href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>
       </div>
     </div>
   </header>
 
   <main class="site-main">
+    <section id="who-is-this-for">
+      <div class="container">
+        <h2>Who is this for?</h2>
+        <p class="section-lead">A lifecycle and UX layer on top of Apache Camel — not a replacement runtime.</p>
+        <div class="card-grid">
+          <article class="card">
+            <div class="card-icon">🛠</div>
+            <h3>Platform engineer</h3>
+            <p>CRD reconciliation, Tekton + Argo CD GitOps, multicluster ApplicationSets, OLM deployment from Quay.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">🔄</div>
+            <h3>Integration tech lead</h3>
+            <p>Lift-and-shift from <a href="migrating-from-camel-k.html">Camel K or Red Hat Fuse</a> with better console UX and ephemeral try-before-GitOps.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">📋</div>
+            <h3>Architecture evaluator</h3>
+            <p>Compare against Camel K, Fuse, and MuleSoft in the <a href="#comparison">comparison table</a> below or on <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="ephemeral">
+      <div class="container">
+        <h2>Test any Camel route in 30 seconds</h2>
+        <p class="section-lead">No Git, no pipeline, no friction — ephemeral Quick Try with TTL, ownerReference cleanup (v0.5.0), and one-click promote to GitOps.</p>
+        <div class="card-grid">
+          <article class="card">
+            <div class="card-icon">⚡</div>
+            <h3>Quick Try Mode</h3>
+            <p>Set <code>deploymentMode: EPHEMERAL</code> and paste <code>kaotoDesign</code> — the operator deploys a precompiled worker immediately.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">⏱</div>
+            <h3>TTL &amp; cleanup</h3>
+            <p>Configurable TTL with extend in the console. Delete the CR — no orphaned Deployments (v0.5.0 ownerReferences).</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">🔀</div>
+            <h3>Promote to GitOps</h3>
+            <p>When ready, promote from the console — scaffold Git repo, Tekton build, Argo CD sync.</p>
+          </article>
+        </div>
+        <p style="margin-top: 1rem;">
+          <a class="btn btn-primary" href="quickstart.html#track-a">Start the 10-minute eval track →</a>
+        </p>
+      </div>
+    </section>
+
+    <div class="container" style="margin: 2rem auto;">
+      <div class="video-placeholder" style="border: 2px dashed var(--pf-global--BorderColor--100, #3c3f42); border-radius: 8px; padding: 2rem; text-align: center; background: var(--pf-global--BackgroundColor--200, #1b1d21);">
+        <p style="margin: 0 0 0.5rem; font-weight: 600;">3-minute platform demo (coming soon)</p>
+        <p style="margin: 0; color: var(--pf-global--Color--200, #8a8d90);">Recording script available in <a href="demo-script.md">docs/demo-script.md</a>. YouTube embed placeholder.</p>
+      </div>
+    </div>
+
+    <section id="community">
+      <div class="container">
+        <div class="card" style="padding: 1.5rem; border-left: 3px solid #2b9af3;">
+          <h3 style="margin-top: 0;">255+ ready flows — add yours in 5 minutes</h3>
+          <p>Contribute a template to the global catalog — every cluster picks it up via GitHub Pages. No operator upgrade required for catalog-only changes.</p>
+          <p>
+            <a class="btn btn-primary" href="contributing.html">Contribute a Flow</a>
+            <a class="btn btn-secondary" href="https://github.com/maximilianoPizarro/openshift-integration-operator/blob/main/scripts/prepare-flow-contribution.sh">prepare-flow-contribution.sh</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
     <section id="features">
       <div class="container">
         <h2>Features</h2>
@@ -94,28 +165,87 @@
       </div>
     </section>
 
+    <section id="comparison">
+      <div class="container">
+        <h2>How it compares</h2>
+        <p class="section-lead">Apache Camel K remains the runtime underneath — this operator adds lifecycle, GitOps, console UX, and multicluster targeting.</p>
+        <div style="overflow-x: auto;">
+          <table class="doc-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+              <tr style="border-bottom: 2px solid #3c3f42;">
+                <th style="text-align: left; padding: 0.5rem;">Criterion</th>
+                <th style="text-align: left; padding: 0.5rem;">Camel K</th>
+                <th style="text-align: left; padding: 0.5rem;">Red Hat Fuse</th>
+                <th style="text-align: left; padding: 0.5rem;">MuleSoft</th>
+                <th style="text-align: left; padding: 0.5rem;">This operator</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #3c3f42;">
+                <td style="padding: 0.5rem;">Native GitOps (Tekton + Argo CD)</td>
+                <td style="padding: 0.5rem;">Partial</td>
+                <td style="padding: 0.5rem;">Limited</td>
+                <td style="padding: 0.5rem;">No</td>
+                <td style="padding: 0.5rem;"><strong>Yes</strong></td>
+              </tr>
+              <tr style="border-bottom: 1px solid #3c3f42;">
+                <td style="padding: 0.5rem;">Visual designer in console</td>
+                <td style="padding: 0.5rem;">No</td>
+                <td style="padding: 0.5rem;">Fuse Online (EOL)</td>
+                <td style="padding: 0.5rem;">Proprietary</td>
+                <td style="padding: 0.5rem;"><strong>Kaoto + plugin</strong></td>
+              </tr>
+              <tr style="border-bottom: 1px solid #3c3f42;">
+                <td style="padding: 0.5rem;">Multicluster ApplicationSet</td>
+                <td style="padding: 0.5rem;">Manual</td>
+                <td style="padding: 0.5rem;">No</td>
+                <td style="padding: 0.5rem;">SaaS</td>
+                <td style="padding: 0.5rem;"><strong><code>spec.targeting</code></strong></td>
+              </tr>
+              <tr style="border-bottom: 1px solid #3c3f42;">
+                <td style="padding: 0.5rem;">Ephemeral try + promote</td>
+                <td style="padding: 0.5rem;">No</td>
+                <td style="padding: 0.5rem;">No</td>
+                <td style="padding: 0.5rem;">No</td>
+                <td style="padding: 0.5rem;"><strong>Yes</strong></td>
+              </tr>
+              <tr style="border-bottom: 1px solid #3c3f42;">
+                <td style="padding: 0.5rem;">Open source / on-cluster</td>
+                <td style="padding: 0.5rem;">Yes</td>
+                <td style="padding: 0.5rem;">EOL</td>
+                <td style="padding: 0.5rem;">No</td>
+                <td style="padding: 0.5rem;"><strong>Yes (Apache 2.0)</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 0.5rem;">Low-code iPaaS (e.g. n8n-style)</td>
+                <td style="padding: 0.5rem;">No</td>
+                <td style="padding: 0.5rem;">No</td>
+                <td style="padding: 0.5rem;">Different category</td>
+                <td style="padding: 0.5rem;">Enterprise Camel lifecycle — not an iPaaS competitor</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top: 1rem;">See also <a href="architecture.html">Architecture</a> and <a href="migrating-from-camel-k.html">Migrating from Camel K</a>.</p>
+      </div>
+    </section>
+
     <section id="quickstart">
       <div class="container">
         <h2>Quick Start</h2>
-        <p class="section-lead">Install the operator with Helm in under a minute.</p>
-        <pre><code><span class="comment"># Add the Helm repository</span>
-helm repo add integration-platform \
-  https://maximilianopizarro.github.io/openshift-integration-operator/
-
-helm repo update
-
-<span class="comment"># Install the operator</span>
-helm install integration-operator \
-  integration-platform/openshift-integration-operator \
+        <p class="section-lead">Evaluators: <a href="quickstart.html#track-a">Track A — 10 minutes with ephemeral</a>. Production: <a href="quickstart.html#track-b">Track B — full GitOps stack</a>.</p>
+        <pre><code><span class="comment"># Install v0.5.0 from Quay (OLM)</span>
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.5.0 \
   --namespace openshift-integration \
-  --create-namespace
+  --install-mode AllNamespaces \
+  --timeout 10m
 
-<span class="comment"># Verify the deployment</span>
-oc get pods -n openshift-integration
-oc get crd integrationflows.platform.io</code></pre>
+<span class="comment"># First flow — ephemeral Quick Try</span>
+oc apply -f k8s/examples/09-ephemeral-demo.yaml
+oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></pre>
         <p>
-          See the full <a href="quickstart.html">Quick Start Guide</a> for all 9 IntegrationFlow examples (including ephemeral Quick Try), embedded flow logs, and console plugin access.
-          Browse the <a href="examples-catalog.html"><strong>255 Examples Catalog</strong></a> covering 310 Apache Camel Quarkus components across 15 categories.
+          See the full <a href="quickstart.html">Quick Start Guide</a> for GitOps examples, console plugin access, and verification steps.
+          Browse the <a href="examples-catalog.html"><strong>255 Examples Catalog</strong></a> covering 310 Apache Camel Quarkus components.
         </p>
       </div>
     </section>
@@ -129,103 +259,80 @@ oc get crd integrationflows.platform.io</code></pre>
             <a href="images/console-plugin.png" target="_blank">
               <img src="images/console-plugin.png" alt="Integration Flows list page with search bar, integration type filter dropdown, phase filter badges, pagination controls, and direct resource links to Pods and Tekton Pipelines" loading="lazy">
             </a>
-            <figcaption>Integration Flows — search, type/phase filters, Pods &amp; Pipeline links</figcaption>
+            <figcaption>1. Integration Flows — start here; search, filters, links to Pods and Builds</figcaption>
           </figure>
           <figure>
             <a href="images/console-plugin-saga.png" target="_blank">
               <img src="images/console-plugin-saga.png" alt="Visual SVG flow diagram showing saga orchestration with branching logic, choice nodes, parallel multicast, and click-to-YAML node highlighting" loading="lazy">
             </a>
-            <figcaption>Visual Flow Diagram — branching logic, click-to-YAML highlighting</figcaption>
+            <figcaption>2. Visual diagram — saga branching; click nodes for YAML</figcaption>
           </figure>
           <figure>
             <a href="images/console-plugin-kaoto.png" target="_blank">
               <img src="images/console-plugin-kaoto.png" alt="Kaoto drag-and-drop visual route designer embedded in OpenShift Console with component palette, canvas nodes, and property editor panel" loading="lazy">
             </a>
-            <figcaption>Kaoto Designer — visual Camel route editor embedded in the console</figcaption>
+            <figcaption>3. Kaoto designer — edit routes visually in the console</figcaption>
           </figure>
           <figure>
             <a href="images/console-plugin-editor.png" target="_blank">
               <img src="images/console-plugin-editor.png" alt="YAML editor showing kaotoDesign Camel route definition with syntax highlighting and automatic Git sync to configured repository" loading="lazy">
             </a>
-            <figcaption>YAML Editor — edit and save with automatic Git sync</figcaption>
+            <figcaption>4. YAML editor — kaotoDesign with Git sync (GitOps mode)</figcaption>
           </figure>
           <figure>
             <a href="images/console-plugin-spec.png" target="_blank">
               <img src="images/console-plugin-spec.png" alt="IntegrationFlow spec and status panel showing deployment mode, engine type, targeting strategy, resilience settings, circuit breaker state, and lifecycle controls" loading="lazy">
             </a>
-            <figcaption>Spec &amp; Status — lifecycle controls, circuit breaker, RBAC, alerting</figcaption>
+            <figcaption>5. Spec &amp; status — resilience, targeting, lifecycle controls</figcaption>
           </figure>
           <figure>
             <a href="images/console-plugin-status.png" target="_blank">
               <img src="images/console-plugin-status.png" alt="Platform Status dashboard with real-time health indicators for Operator API, Kaoto Designer, Gitea, ArgoCD, Tekton Pipelines, and OpenTelemetry Collector" loading="lazy">
             </a>
-            <figcaption>Platform Status — real-time health checks for all external services</figcaption>
+            <figcaption>6. Platform status — Operator, Kaoto, Gitea, Argo CD, Tekton health</figcaption>
           </figure>
           <figure>
             <a href="images/console-plugin-overview.png" target="_blank">
               <img src="images/console-plugin-overview.png" alt="Flow Overview dashboard with KPI summary cards for total flows, running count, error rate, and distribution charts by integration type and deployment mode" loading="lazy">
             </a>
-            <figcaption>Flow Overview — KPI cards, distribution charts, recent builds</figcaption>
+            <figcaption>7. Flow overview — KPIs, plugin version, catalog mode</figcaption>
           </figure>
           <figure>
             <a href="images/console-plugin-logs.png" target="_blank">
               <img src="images/console-plugin-logs.png" alt="Flow Logs tab with live worker pod log streaming, container selector dropdown, configurable tail lines, and follow mode toggle" loading="lazy">
             </a>
-            <figcaption>Flow Logs — live worker pod logs streamed via operator API</figcaption>
+            <figcaption>8. Flow logs — live worker pod streaming (ephemeral or GitOps)</figcaption>
           </figure>
           <figure>
             <a href="images/console-plugin-pause-flow.png" target="_blank">
               <img src="images/console-plugin-pause-flow.png" alt="Lifecycle Controls showing Pause, Resume, and Stop actions with confirmation modal dialog and current flow phase indicator" loading="lazy">
             </a>
-            <figcaption>Lifecycle Controls — pause, resume, stop flows with confirmation modals</figcaption>
+            <figcaption>9. Lifecycle — pause, resume, stop with confirmation</figcaption>
           </figure>
         </div>
       </div>
     </section>
 
-    <section id="ephemeral">
+    <section id="workers">
       <div class="container">
-        <h2>Ephemeral Mode &amp; Precompiled Workers</h2>
-        <p class="section-lead">Deploy integration flows instantly — no Git, no CI pipeline. Just paste your Camel YAML and run.</p>
-        <div class="card-grid">
-          <article class="card">
-            <div class="card-icon">⚡</div>
-            <h3>Quick Try Mode</h3>
-            <p>Set <code>deploymentMode: EPHEMERAL</code> in your IntegrationFlow CR and the operator deploys a worker pod immediately. Configurable TTL with auto-cleanup.</p>
-          </article>
-          <article class="card">
-            <div class="card-icon">📦</div>
-            <h3>80+ Camel Extensions</h3>
-            <p>The default <code>camel-worker-full</code> image ships with 80+ precompiled Camel Quarkus extensions — no build step required.</p>
-          </article>
-          <article class="card">
-            <div class="card-icon">🔀</div>
-            <h3>Promote to GitOps</h3>
-            <p>When your flow is ready, promote it with one click. The operator scaffolds a Git repo, triggers Tekton, and ArgoCD takes over.</p>
-          </article>
-        </div>
-        <h3>Precompiled Worker Images</h3>
-        <p>All images are published to <a href="https://quay.io/organization/maximilianopizarro">Quay.io</a> and auto-selected based on detected Camel components.
-          The operator parses your <code>kaotoDesign</code> YAML to extract all <code>uri:</code> component schemes (e.g. <code>kafka</code>, <code>platform-http</code>, <code>sql</code>),
-          then selects the smallest tier image whose extension set covers all detected components. If components span multiple domains, it falls back to <code>camel-worker-full</code>.
-          Override with <code>spec.ephemeral.workerImage</code> to pin a specific image.</p>
+        <h2>Precompiled Worker Images</h2>
+        <p class="section-lead">Domain-specific Camel Quarkus workers on Quay — auto-selected from your route, or pin with <code>spec.ephemeral.workerImage</code>.</p>
         <pre><code><span class="comment"># Default (all domains — 80+ extensions)</span>
-quay.io/maximilianopizarro/camel-worker-full:v0.4.1
+quay.io/maximilianopizarro/camel-worker-full:v0.5.0
 
 <span class="comment"># Domain-specific (smaller, faster startup)</span>
-quay.io/maximilianopizarro/camel-worker-core:v0.4.1        <span class="comment"># timer, log, direct, seda, bean</span>
-quay.io/maximilianopizarro/camel-worker-messaging:v0.4.1   <span class="comment"># kafka, amqp, jms, mqtt, nats</span>
-quay.io/maximilianopizarro/camel-worker-http:v0.4.1        <span class="comment"># platform-http, rest, graphql, grpc</span>
-quay.io/maximilianopizarro/camel-worker-data:v0.4.1        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
-quay.io/maximilianopizarro/camel-worker-cloud:v0.4.1       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
-quay.io/maximilianopizarro/camel-worker-ai:v0.4.1          <span class="comment"># langchain4j-chat, djl</span></code></pre>
+quay.io/maximilianopizarro/camel-worker-core:v0.5.0        <span class="comment"># timer, log, direct, seda, bean</span>
+quay.io/maximilianopizarro/camel-worker-messaging:v0.5.0   <span class="comment"># kafka, amqp, jms, mqtt, nats</span>
+quay.io/maximilianopizarro/camel-worker-http:v0.5.0        <span class="comment"># platform-http, rest, graphql, grpc</span>
+quay.io/maximilianopizarro/camel-worker-data:v0.5.0        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
+quay.io/maximilianopizarro/camel-worker-cloud:v0.5.0       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
+quay.io/maximilianopizarro/camel-worker-ai:v0.5.0          <span class="comment"># langchain4j-chat, djl</span></code></pre>
         <h4>Override auto-selection</h4>
-        <pre><code><span class="comment"># Force a specific worker image instead of auto-detection</span>
-spec:
+        <pre><code>spec:
   deploymentMode: EPHEMERAL
   ephemeral:
     ttlSeconds: 3600
-    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.4.1</code></pre>
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.5.0</code></pre>
 
         <h3>Full Worker — Included Extensions</h3>
         <p>

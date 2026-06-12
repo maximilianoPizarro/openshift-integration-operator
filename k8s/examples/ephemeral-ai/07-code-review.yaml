@@ -1,0 +1,50 @@
+# Diff review → JSON findings
+# Plain-text prompt in kaotoDesign — complete spec.ephemeral.properties before apply.
+# See docs/ephemeral-ai-examples.txt for the full property cheat sheet.
+#
+# oc create secret generic openai-credentials -n openshift-integration \
+#   --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-code-review
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    properties:
+      # COMPLETAR: usa Secret openai-credentials (envFrom) o pega la key aquí
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.2"
+      quarkus.langchain4j.openai.chat-model.max-completion-tokens: "1024"
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-code-review
+        from:
+          uri: "timer:reviewTick?period=120000"
+          steps:
+            - setBody:
+                constant: |
+                  --- a/OrderService.java
+                  +++ b/OrderService.java
+                  @@ -10,7 +10,7 @@
+                   public void save(Order o) {
+                  -    jdbc.update("INSERT INTO orders VALUES (" + o.getId() + "," + o.getTotal() + ")");
+                  +    jdbc.update("INSERT INTO orders VALUES (?,?)", o.getId(), o.getTotal());
+                   }
+            - setBody:
+                simple: "${body}\n\nReturn a JSON array of objects with line, severity(INFO/WARNING/ERROR), issue, suggestion."
+            - to:
+                uri: "langchain4j-chat:reviewer"
+            - log:
+                message: "Code review: ${body}"

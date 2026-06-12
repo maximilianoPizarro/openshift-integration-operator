@@ -1,0 +1,46 @@
+# Email subject+body → category
+# Plain-text prompt in kaotoDesign — complete spec.ephemeral.properties before apply.
+# See docs/ephemeral-ai-examples.txt for the full property cheat sheet.
+#
+# oc create secret generic openai-credentials -n openshift-integration \
+#   --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-email-triage
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.0"
+      quarkus.langchain4j.openai.chat-model.max-completion-tokens: "512"
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-email-triage
+        from:
+          uri: "timer:emailTick?period=90000"
+          steps:
+            - setProperty:
+                name: subject
+                constant: "Invoice #9921 payment failed"
+            - setProperty:
+                name: body
+                constant: "Our credit card was declined when renewing the OpenShift subscription."
+            - setBody:
+                simple: "Classify this email into ONE category: BILLING, TECHNICAL, GENERAL, URGENT.\nSubject: ${exchangeProperty.subject}\nBody: ${exchangeProperty.body}\nRespond with the category only."
+            - to:
+                uri: "langchain4j-chat:email-triage"
+            - log:
+                message: "Email category: ${body}"

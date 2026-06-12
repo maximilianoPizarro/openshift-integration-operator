@@ -1,0 +1,50 @@
+# Chain of thought — decompose then answer
+# Plain-text prompt in kaotoDesign — complete spec.ephemeral.properties before apply.
+# See docs/ephemeral-ai-examples.txt for the full property cheat sheet.
+#
+# oc create secret generic openai-credentials -n openshift-integration \
+#   --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-ai-chain-of-thought
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.3"
+      quarkus.langchain4j.openai.chat-model.max-completion-tokens: "2048"
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: ai-chain-of-thought
+        from:
+          uri: "timer:cotTick?period=120000"
+          steps:
+            - setProperty:
+                name: question
+                constant: "A farmer has 17 sheep. All but 9 die. How many are left?"
+            - setBody:
+                simple: "Break this into numbered reasoning steps only. Problem: ${exchangeProperty.question}"
+            - to:
+                uri: "langchain4j-chat:step1"
+            - setProperty:
+                name: steps
+                simple: "${body}"
+            - setBody:
+                simple: "Reasoning steps:\n${exchangeProperty.steps}\n\nGive the final numeric answer only."
+            - to:
+                uri: "langchain4j-chat:step2"
+            - log:
+                message: "CoT answer: ${body}"

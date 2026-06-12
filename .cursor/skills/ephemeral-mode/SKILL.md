@@ -27,7 +27,9 @@ spec:
 
 No `gitRepository` required. Example: `k8s/examples/09-ephemeral-demo.yaml`.
 
-Public API templates: `k8s/examples/10`–`21` (bitcoin, jsonplaceholder, saga-multi-api, etc.).
+Public API templates: `k8s/examples/10`–`22` (bitcoin, jsonplaceholder, saga-multi-api, etc.).
+
+AI templates (complete `spec.ephemeral.properties` + Secret): `k8s/examples/ephemeral-ai/` (24 flows). Guide: `docs/ai-models-and-mcp.html`.
 
 ## Status fields
 

@@ -1,0 +1,58 @@
+# Ephemeral — call operator MCP Bridge from worker (HTTP + bearer token)
+# COMPLETAR: MCP_SERVER_URL, OPERATOR_MCP_TOKEN; allowlist MCP URL in Helm mcp.allowedServerUrls
+# See docs/ai-models-and-mcp.html#mcp-from-flows
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-mcp-bridge
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0
+    properties:
+      platform.operator.url: "${OPERATOR_URL:http://openshift-integration-operator.openshift-integration.svc:8080}"
+      mcp.server.url: "${MCP_SERVER_URL:https://mcp.example.com}"
+  secrets:
+    - name: mcp-flow-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: mcp-list-tools
+        from:
+          uri: "timer:mcpTick?period=120000"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: GET
+            - setHeader:
+                name: Authorization
+                simple: "Bearer ${env:OPERATOR_MCP_TOKEN}"
+            - to:
+                uri: "https://openshift-integration-operator.openshift-integration.svc:8080/api/mcp/tools?serverUrl=${env:MCP_SERVER_URL}"
+                parameters:
+                  bridgeEndpoint: true
+                  throwExceptionOnFailure: false
+            - log:
+                message: "MCP tools: ${body}"
+            - setHeader:
+                name: CamelHttpMethod
+                constant: POST
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+            - setBody:
+                constant: '{"query":"OpenShift Camel integration patterns"}'
+            - to:
+                uri: "https://openshift-integration-operator.openshift-integration.svc:8080/api/mcp/tools/web_search/call?serverUrl=${env:MCP_SERVER_URL}"
+                parameters:
+                  bridgeEndpoint: true
+                  throwExceptionOnFailure: false
+            - log:
+                message: "MCP web_search result: ${body}"

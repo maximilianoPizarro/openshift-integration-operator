@@ -1,0 +1,59 @@
+# Ephemeral — MCP tool result augmented by LLM (tool → prompt → langchain4j-chat)
+# COMPLETAR: OPENAI_API_KEY, MCP_SERVER_URL, OPERATOR_MCP_TOKEN
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-mcp-llm-chain
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.2"
+      mcp.server.url: "${MCP_SERVER_URL:https://mcp.example.com}"
+  secrets:
+    - name: mcp-llm-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: mcp-llm-chain
+        from:
+          uri: "timer:mcpLlmTick?period=180000"
+          steps:
+            - setProperty:
+                name: userQuestion
+                constant: "What are best practices for GitOps with Apache Camel on OpenShift?"
+            - setHeader:
+                name: CamelHttpMethod
+                constant: POST
+            - setHeader:
+                name: Authorization
+                simple: "Bearer ${env:OPERATOR_MCP_TOKEN}"
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+            - setBody:
+                simple: '{"query":"${exchangeProperty.userQuestion}"}'
+            - to:
+                uri: "https://openshift-integration-operator.openshift-integration.svc:8080/api/mcp/tools/web_search/call?serverUrl=${env:MCP_SERVER_URL}"
+                parameters:
+                  bridgeEndpoint: true
+                  throwExceptionOnFailure: false
+            - setProperty:
+                name: mcpContext
+                simple: "${body}"
+            - setBody:
+                simple: "User question: ${exchangeProperty.userQuestion}\n\nTool results:\n${exchangeProperty.mcpContext}\n\nAnswer concisely using the tool results."
+            - to:
+                uri: "langchain4j-chat:synthesizer"
+            - log:
+                message: "MCP+LLM answer: ${body}"
