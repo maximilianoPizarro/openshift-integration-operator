@@ -49,67 +49,23 @@
   }
 
   function initMasthead() {
-    var placeholder = document.getElementById('site-masthead');
-    if (!placeholder) return;
+    var nav = document.getElementById('site-nav');
+    var toggle = document.querySelector('.site-masthead__toggle');
+    var header = document.querySelector('.site-masthead');
+    if (!nav || !toggle || !header) return;
 
+    // Set active link
     var activePage = currentPage();
-    var isHome = activePage === 'index';
-
-    var header = document.createElement('header');
-    header.className = 'site-masthead';
-    header.setAttribute('role', 'banner');
-
-    var brand = document.createElement('div');
-    brand.className = 'site-masthead__brand';
-
-    var toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'site-masthead__toggle';
-    toggle.setAttribute('aria-label', 'Toggle navigation menu');
-    toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-controls', 'site-nav');
-    toggle.innerHTML = '<span class="site-masthead__toggle-icon" aria-hidden="true"></span>';
-
-    var logo = document.createElement('a');
-    logo.className = 'site-masthead__logo';
-    logo.href = 'index.html';
-    logo.innerHTML =
-      '<img src="assets/logo.png" alt="" width="28" height="28">' +
-      '<span>OpenShift Integration Operator</span>';
-
-    brand.appendChild(toggle);
-    brand.appendChild(logo);
-
-    var nav = document.createElement('nav');
-    nav.className = 'site-masthead__nav';
-    nav.id = 'site-nav';
-    nav.setAttribute('aria-label', 'Primary');
-
-    var list = document.createElement('ul');
-    list.className = 'site-masthead__nav-list';
-
-    NAV_ITEMS.forEach(function (item) {
-      list.appendChild(buildNavLink(item, activePage));
+    var links = nav.querySelectorAll('.site-masthead__nav-link');
+    links.forEach(function(link) {
+      var href = link.getAttribute('href');
+      if (href === activePage + '.html' || (activePage === 'index' && href === 'index.html')) {
+        link.classList.add('is-active');
+        link.setAttribute('aria-current', 'page');
+      }
     });
 
-    if (isHome) {
-      HOME_ANCHORS.forEach(function (item) {
-        var li = document.createElement('li');
-        var a = document.createElement('a');
-        a.className = 'site-masthead__nav-link';
-        a.href = item.href;
-        a.textContent = item.label;
-        li.appendChild(a);
-        list.appendChild(li);
-      });
-    }
-
-    nav.appendChild(list);
-    header.appendChild(brand);
-    header.appendChild(nav);
-
-    placeholder.replaceWith(header);
-
+    // Mobile toggle
     toggle.addEventListener('click', function () {
       var open = nav.classList.toggle('is-open');
       toggle.setAttribute('aria-expanded', String(open));
@@ -130,6 +86,69 @@
     });
   }
 
+
+  function initLightbox() {
+    var links = document.querySelectorAll('.lightbox-link');
+    if (links.length === 0) return;
+
+    var modal = document.createElement('div');
+    modal.className = 'lightbox-modal';
+    modal.innerHTML = '<button class="lightbox-close" aria-label="Close">&times;</button><img src="" alt="">';
+    document.body.appendChild(modal);
+
+    var img = modal.querySelector('img');
+    var closeBtn = modal.querySelector('.lightbox-close');
+
+    function closeModal() {
+      modal.classList.remove('is-open');
+      img.src = '';
+    }
+
+    links.forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        img.src = this.href;
+        modal.classList.add('is-open');
+      });
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+    });
+  }
+
+
+  function initCopyButtons() {
+    var blocks = document.querySelectorAll('pre');
+    blocks.forEach(function(pre) {
+      // Only add copy button if it contains a code block or text
+      if (!pre.textContent.trim()) return;
+      
+      var btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = 'Copy';
+      btn.setAttribute('aria-label', 'Copy code to clipboard');
+      
+      btn.addEventListener('click', function() {
+        var code = pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText;
+        navigator.clipboard.writeText(code).then(function() {
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(function() {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      });
+      
+      pre.appendChild(btn);
+    });
+  }
+
   function initFooter() {
     var placeholder = document.getElementById('site-footer');
     if (!placeholder) return;
@@ -145,8 +164,8 @@
           '<a href="quickstart.html">Guide</a>' +
           '<a href="ai-models-and-mcp.html">AI &amp; MCP</a>' +
           '<a href="operations.html">Operations</a>' +
-          '<a href="examples-catalog.html">Examples (255)</a>' +
-          '<a href="ready-flows.html">Ready Flows (200+)</a>' +
+          '<a href="examples-catalog.html">Examples (250+)</a>' +
+          '<a href="ready-flows.html">Ready Flows (250+)</a>' +
           '<a href="contributing.html">Contribute</a>' +
           '<a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>' +
           '<a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>' +
@@ -160,10 +179,14 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       initMasthead();
+      initLightbox();
+      initCopyButtons();
       initFooter();
     });
   } else {
     initMasthead();
+    initLightbox();
+    initCopyButtons();
     initFooter();
   }
 })();

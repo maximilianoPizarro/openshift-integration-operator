@@ -14,11 +14,31 @@
   <script defer src="assets/site.js"></script>
 </head>
 <body class="site-page">
-  <div id="site-masthead"></div>
+  <header class="site-masthead" role="banner">
+    <div class="site-masthead__brand">
+      <button type="button" class="site-masthead__toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="site-nav">
+        <span class="site-masthead__toggle-icon" aria-hidden="true"></span>
+      </button>
+      <a class="site-masthead__logo" href="index.html">
+        <img src="assets/logo.png" alt="" width="28" height="28">
+        <span>OpenShift Integration Operator</span>
+      </a>
+    </div>
+    <nav class="site-masthead__nav" id="site-nav" aria-label="Primary">
+      <ul class="site-masthead__nav-list">
+        <li><a class="site-masthead__nav-link" href="index.html">Home</a></li>
+        <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
+        <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
+        <li><a class="site-masthead__nav-link" href="operations.html">Operations</a></li>
+        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li><a class="site-masthead__nav-link" href="contributing.html">Contribute</a></li>
+      </ul>
+    </nav>
+  </header>
 
   <header class="site-hero">
     <div class="container">
-      <span class="badge">Apache 2.0 · Open Source</span>
+      <span class="badge">Apache 2.0 · Open Source</span> <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/releases/tag/v0.5.0" class="badge badge--version" style="text-decoration: none; color: inherit; border: 1px solid var(--pf-v5-global--primary-color--100, #0066cc); background: rgba(0,102,204,0.1);">v0.5.0</a>
       <h1>OpenShift Integration Operator</h1>
       <p class="subtitle">The missing lifecycle layer for Apache Camel on OpenShift</p>
       <p class="description">
@@ -26,39 +46,15 @@
         visual Kaoto designer, MCP/AI integration, and native Kubernetes orchestration.
       </p>
       <div class="hero-links">
-        <a class="btn btn-primary" href="quickstart.html#track-a">Try in 10 Minutes</a>
-        <a class="btn btn-secondary" href="contributing.html">Contribute a Flow</a>
-        <a class="btn btn-secondary" href="migrating-from-camel-k.html">Migrating from Camel K</a>
-        <a class="btn btn-secondary" href="https://github.com/maximilianoPizarro/openshift-integration-operator">View on GitHub</a>
+        <a class="btn btn-primary" href="#ephemeral">Try it now — no prerequisites</a>
+        <a class="btn btn-tertiary" href="contributing.html">Contribute a Flow</a>
+        <a class="btn btn-tertiary" href="migrating-from-camel-k.html">Migrating from Camel K</a>
+        <a class="btn btn-tertiary" href="https://github.com/maximilianoPizarro/openshift-integration-operator">View on GitHub</a>
       </div>
     </div>
   </header>
 
   <main class="site-main">
-    <section id="who-is-this-for">
-      <div class="container">
-        <h2>Who is this for?</h2>
-        <p class="section-lead">A lifecycle and UX layer on top of Apache Camel — not a replacement runtime.</p>
-        <div class="card-grid">
-          <article class="card">
-            <div class="card-icon">🛠</div>
-            <h3>Platform engineer</h3>
-            <p>CRD reconciliation, Tekton + Argo CD GitOps, multicluster ApplicationSets, OLM deployment from Quay.</p>
-          </article>
-          <article class="card">
-            <div class="card-icon">🔄</div>
-            <h3>Integration tech lead</h3>
-            <p>Lift-and-shift from <a href="migrating-from-camel-k.html">Camel K or Red Hat Fuse</a> with better console UX and ephemeral try-before-GitOps.</p>
-          </article>
-          <article class="card">
-            <div class="card-icon">📋</div>
-            <h3>Architecture evaluator</h3>
-            <p>Compare against Camel K, Fuse, and MuleSoft in the <a href="#comparison">comparison table</a> below or on <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
     <section id="ephemeral">
       <div class="container">
         <h2>Test any Camel route in 30 seconds</h2>
@@ -86,6 +82,31 @@
       </div>
     </section>
 
+    <section id="who-is-this-for">
+      <div class="container">
+        <h2>Who is this for?</h2>
+        <p class="section-lead">A lifecycle and UX layer on top of Apache Camel — not a replacement runtime.</p>
+        <div class="card-grid">
+          <article class="card">
+            <div class="card-icon">🛠</div>
+            <h3>Platform engineer</h3>
+            <p>CRD reconciliation, Tekton + Argo CD GitOps, multicluster ApplicationSets, OLM deployment from Quay.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">🔄</div>
+            <h3>Integration tech lead</h3>
+            <p>Lift-and-shift from <a href="migrating-from-camel-k.html">Camel K or Red Hat Fuse</a> with better console UX and ephemeral try-before-GitOps.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon">📋</div>
+            <h3>Architecture evaluator</h3>
+            <p>Compare against Camel K, Fuse, and MuleSoft in the <a href="#comparison">comparison table</a> below or on <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator">Artifact Hub</a>.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+
     <div class="container" style="margin: 2rem auto;">
       <div class="video-placeholder" style="border: 2px dashed var(--pf-global--BorderColor--100, #3c3f42); border-radius: 8px; padding: 2rem; text-align: center; background: var(--pf-global--BackgroundColor--200, #1b1d21);">
         <p style="margin: 0 0 0.5rem; font-weight: 600;">3-minute platform demo (coming soon)</p>
@@ -96,7 +117,7 @@
     <section id="community">
       <div class="container">
         <div class="card" style="padding: 1.5rem; border-left: 3px solid #2b9af3;">
-          <h3 style="margin-top: 0;">255+ ready flows — add yours in 5 minutes</h3>
+          <h3 style="margin-top: 0;">250+ ready flows — add yours in 5 minutes</h3>
           <p>Contribute a template to the global catalog — every cluster picks it up via GitHub Pages. No operator upgrade required for catalog-only changes.</p>
           <p>
             <a class="btn btn-primary" href="contributing.html">Contribute a Flow</a>
@@ -129,7 +150,7 @@
           <article class="card">
             <div class="card-icon">📋</div>
             <h3>Template Catalog</h3>
-            <p>Browse 200+ ready flows from the console create form — search, filter by category, and deploy in one click.</p>
+            <p>Browse 250+ ready flows from the console create form — search, filter by category, and deploy in one click.</p>
           </article>
           <article class="card">
             <div class="card-icon">🔄</div>
@@ -245,7 +266,7 @@ oc apply -f k8s/examples/09-ephemeral-demo.yaml
 oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></pre>
         <p>
           See the full <a href="quickstart.html">Quick Start Guide</a> for GitOps examples, console plugin access, and verification steps.
-          Browse the <a href="examples-catalog.html"><strong>255 Examples Catalog</strong></a> covering 310 Apache Camel Quarkus components.
+          Browse the <a href="examples-catalog.html"><strong>250+ Examples Catalog</strong></a> covering 310 Apache Camel Quarkus components.
         </p>
       </div>
     </section>
@@ -256,58 +277,67 @@ oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></
         <p class="section-lead">Integration Platform embedded in the OpenShift Console — manage flows, monitor services, and design workflows visually.</p>
         <div class="screenshot-grid">
           <figure>
-            <a href="images/console-plugin.png" target="_blank">
+            <a href="images/console-plugin.png" class="lightbox-link">
               <img src="images/console-plugin.png" alt="Integration Flows list page with search bar, integration type filter dropdown, phase filter badges, pagination controls, and direct resource links to Pods and Tekton Pipelines" loading="lazy">
             </a>
-            <figcaption>1. Integration Flows — start here; search, filters, links to Pods and Builds</figcaption>
+            <h4>1 &mdash; Browse flows</h4>
+            <figcaption>Integration Flows — start here; search, filters, links to Pods and Builds</figcaption>
           </figure>
           <figure>
-            <a href="images/console-plugin-saga.png" target="_blank">
+            <a href="images/console-plugin-saga.png" class="lightbox-link">
               <img src="images/console-plugin-saga.png" alt="Visual SVG flow diagram showing saga orchestration with branching logic, choice nodes, parallel multicast, and click-to-YAML node highlighting" loading="lazy">
             </a>
-            <figcaption>2. Visual diagram — saga branching; click nodes for YAML</figcaption>
+            <h4>2 &mdash; Inspect visually</h4>
+            <figcaption>Visual diagram — saga branching; click nodes for YAML</figcaption>
           </figure>
           <figure>
-            <a href="images/console-plugin-kaoto.png" target="_blank">
+            <a href="images/console-plugin-kaoto.png" class="lightbox-link">
               <img src="images/console-plugin-kaoto.png" alt="Kaoto drag-and-drop visual route designer embedded in OpenShift Console with component palette, canvas nodes, and property editor panel" loading="lazy">
             </a>
-            <figcaption>3. Kaoto designer — edit routes visually in the console</figcaption>
+            <h4>3 &mdash; Edit in Kaoto</h4>
+            <figcaption>Kaoto designer — edit routes visually in the console</figcaption>
           </figure>
           <figure>
-            <a href="images/console-plugin-editor.png" target="_blank">
+            <a href="images/console-plugin-editor.png" class="lightbox-link">
               <img src="images/console-plugin-editor.png" alt="YAML editor showing kaotoDesign Camel route definition with syntax highlighting and automatic Git sync to configured repository" loading="lazy">
             </a>
-            <figcaption>4. YAML editor — kaotoDesign with Git sync (GitOps mode)</figcaption>
+            <h4>4 &mdash; Sync to Git</h4>
+            <figcaption>YAML editor — kaotoDesign with Git sync (GitOps mode)</figcaption>
           </figure>
           <figure>
-            <a href="images/console-plugin-spec.png" target="_blank">
+            <a href="images/console-plugin-spec.png" class="lightbox-link">
               <img src="images/console-plugin-spec.png" alt="IntegrationFlow spec and status panel showing deployment mode, engine type, targeting strategy, resilience settings, circuit breaker state, and lifecycle controls" loading="lazy">
             </a>
-            <figcaption>5. Spec &amp; status — resilience, targeting, lifecycle controls</figcaption>
+            <h4>5 &mdash; Configure spec</h4>
+            <figcaption>Spec &amp; status — resilience, targeting, lifecycle controls</figcaption>
           </figure>
           <figure>
-            <a href="images/console-plugin-status.png" target="_blank">
+            <a href="images/console-plugin-status.png" class="lightbox-link">
               <img src="images/console-plugin-status.png" alt="Platform Status dashboard with real-time health indicators for Operator API, Kaoto Designer, Gitea, ArgoCD, Tekton Pipelines, and OpenTelemetry Collector" loading="lazy">
             </a>
-            <figcaption>6. Platform status — Operator, Kaoto, Gitea, Argo CD, Tekton health</figcaption>
+            <h4>6 &mdash; Check platform health</h4>
+            <figcaption>Platform status — Operator, Kaoto, Gitea, Argo CD, Tekton health</figcaption>
           </figure>
           <figure>
-            <a href="images/console-plugin-overview.png" target="_blank">
+            <a href="images/console-plugin-overview.png" class="lightbox-link">
               <img src="images/console-plugin-overview.png" alt="Flow Overview dashboard with KPI summary cards for total flows, running count, error rate, and distribution charts by integration type and deployment mode" loading="lazy">
             </a>
-            <figcaption>7. Flow overview — KPIs, plugin version, catalog mode</figcaption>
+            <h4>7 &mdash; Monitor KPIs</h4>
+            <figcaption>Flow overview — KPIs, plugin version, catalog mode</figcaption>
           </figure>
           <figure>
-            <a href="images/console-plugin-logs.png" target="_blank">
+            <a href="images/console-plugin-logs.png" class="lightbox-link">
               <img src="images/console-plugin-logs.png" alt="Flow Logs tab with live worker pod log streaming, container selector dropdown, configurable tail lines, and follow mode toggle" loading="lazy">
             </a>
-            <figcaption>8. Flow logs — live worker pod streaming (ephemeral or GitOps)</figcaption>
+            <h4>8 &mdash; Stream logs</h4>
+            <figcaption>Flow logs — live worker pod streaming (ephemeral or GitOps)</figcaption>
           </figure>
           <figure>
-            <a href="images/console-plugin-pause-flow.png" target="_blank">
+            <a href="images/console-plugin-pause-flow.png" class="lightbox-link">
               <img src="images/console-plugin-pause-flow.png" alt="Lifecycle Controls showing Pause, Resume, and Stop actions with confirmation modal dialog and current flow phase indicator" loading="lazy">
             </a>
-            <figcaption>9. Lifecycle — pause, resume, stop with confirmation</figcaption>
+            <h4>9 &mdash; Manage lifecycle</h4>
+            <figcaption>Lifecycle — pause, resume, stop with confirmation</figcaption>
           </figure>
         </div>
       </div>

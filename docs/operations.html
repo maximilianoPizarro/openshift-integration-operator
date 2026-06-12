@@ -14,11 +14,36 @@
   <script defer src="assets/site.js"></script>
 </head>
 <body class="site-page site-page--doc">
-  <div id="site-masthead"></div>
+  <header class="site-masthead" role="banner">
+    <div class="site-masthead__brand">
+      <button type="button" class="site-masthead__toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="site-nav">
+        <span class="site-masthead__toggle-icon" aria-hidden="true"></span>
+      </button>
+      <a class="site-masthead__logo" href="index.html">
+        <img src="assets/logo.png" alt="" width="28" height="28">
+        <span>OpenShift Integration Operator</span>
+      </a>
+    </div>
+    <nav class="site-masthead__nav" id="site-nav" aria-label="Primary">
+      <ul class="site-masthead__nav-list">
+        <li><a class="site-masthead__nav-link" href="index.html">Home</a></li>
+        <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
+        <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
+        <li><a class="site-masthead__nav-link" href="operations.html">Operations</a></li>
+        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li><a class="site-masthead__nav-link" href="contributing.html">Contribute</a></li>
+      </ul>
+    </nav>
+  </header>
 
 <header class="page-header">
     <div class="container">
-      <a href="index.html" class="back-link">&larr; Back to Home</a>
+      <nav class="site-breadcrumbs" aria-label="breadcrumb">
+        <ol>
+          <li><a href="index.html">Home</a><span class="separator">/</span></li>
+          <li aria-current="page">Operations &amp; Validation Guide</li>
+        </ol>
+      </nav>
       <h1>Operations &amp; Validation Guide</h1>
       <p>Verify that all platform components are operational.</p>
     </div>

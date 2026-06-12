@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="255 ready-to-use IntegrationFlow examples covering 310 Apache Camel Quarkus components">
+  <meta name="description" content="250+ ready-to-use IntegrationFlow examples covering 310 Apache Camel Quarkus components">
   <title>Integration Flow Examples Catalog — OpenShift Integration Operator</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
@@ -20,9 +20,9 @@
 <header>
   <div class="container">
     <h1>IntegrationFlow Examples Catalog</h1>
-    <p>255 ready-to-use examples covering the Apache Camel Quarkus component catalog</p>
+    <p>250+ ready-to-use examples covering the Apache Camel Quarkus component catalog</p>
     <div class="badge-row">
-      <span class="badge">255 Examples</span>
+      <span class="badge">250+ Examples</span>
       <span class="badge">15 Categories</span>
       <span class="badge">310 Camel Components</span>
       <span class="badge">Camel 4.18 / Quarkus 3.36</span>
@@ -54,13 +54,13 @@
     <button class="filter-btn" data-cat="monitoring">Monitoring</button>
     <button class="filter-btn" data-cat="integration">Integration</button>
     <button class="filter-btn" data-cat="enterprise">Enterprise</button>
-    <span class="count-label" id="countLabel">Showing 255 of 255</span>
+    <span class="count-label" id="countLabel">Showing 250+ of 250+</span>
   </div>
 
   <div id="catalog"></div>
   <noscript>
     <div style="padding:2rem;text-align:center;color:var(--text-muted);">
-      <p>This page requires JavaScript to display the 255 IntegrationFlow examples.</p>
+      <p>This page requires JavaScript to display the 250+ IntegrationFlow examples.</p>
       <p>Please enable JavaScript or browse the <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/tree/main/k8s/examples">k8s/examples/</a> directory on GitHub.</p>
     </div>
   </noscript>
@@ -449,7 +449,7 @@ function renderCatalog() {
   });
 
   container.innerHTML = html || `<p style="text-align:center;color:var(--text-muted);padding:3rem;">No examples match your search.</p>`;
-  document.getElementById("countLabel").textContent = `Showing ${totalVisible} of 255`;
+  document.getElementById("countLabel").textContent = `Showing ${totalVisible} of 250+`;
 
   container.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => showModal(card.dataset.num, card.dataset.name, card.dataset.cat));

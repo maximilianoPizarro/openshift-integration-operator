@@ -14,11 +14,36 @@
   <script defer src="assets/site.js"></script>
 </head>
 <body class="site-page site-page--doc">
-  <div id="site-masthead"></div>
+  <header class="site-masthead" role="banner">
+    <div class="site-masthead__brand">
+      <button type="button" class="site-masthead__toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="site-nav">
+        <span class="site-masthead__toggle-icon" aria-hidden="true"></span>
+      </button>
+      <a class="site-masthead__logo" href="index.html">
+        <img src="assets/logo.png" alt="" width="28" height="28">
+        <span>OpenShift Integration Operator</span>
+      </a>
+    </div>
+    <nav class="site-masthead__nav" id="site-nav" aria-label="Primary">
+      <ul class="site-masthead__nav-list">
+        <li><a class="site-masthead__nav-link" href="index.html">Home</a></li>
+        <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
+        <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
+        <li><a class="site-masthead__nav-link" href="operations.html">Operations</a></li>
+        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li><a class="site-masthead__nav-link" href="contributing.html">Contribute</a></li>
+      </ul>
+    </nav>
+  </header>
 
 <header class="page-header">
     <div class="container">
-      <a href="index.html" class="back-link">← Back to Home</a>
+      <nav class="site-breadcrumbs" aria-label="breadcrumb">
+        <ol>
+          <li><a href="index.html">Home</a><span class="separator">/</span></li>
+          <li aria-current="page">Quick Start Guide</li>
+        </ol>
+      </nav>
       <h1>Quick Start Guide</h1>
       <p>Track A: evaluate in 10 minutes with ephemeral. Track B: full GitOps production stack.</p>
     </div>
@@ -124,7 +149,7 @@ helm repo update</code></pre>
       </section>
 
       <section class="step" id="camel-k-bootstrap">
-        <h2><span class="step-num">B.2b</span> Bootstrap Camel K (Pipe &amp; Kamelet)</h2>
+        <h2><span class="step-num">B.2b</span> Optional: Bootstrap Camel K (Pipe &amp; Kamelet)</h2>
         <p>Required once per namespace before deploying Pipe or Kamelet examples (<code>etl-pipe</code>, <code>s3-to-db-kamelet</code>):</p>
         <pre><code>oc apply -f k8s/bootstrap/camel-k-platform.yaml
 
@@ -141,7 +166,7 @@ oc patch integrationplatform camel-k -n openshift-integration --type=merge \
       </section>
 
       <section class="step" id="gitops-examples">
-        <h2><span class="step-num">B.2c</span> Deploy 8 GitOps Catalog Examples</h2>
+        <h2><span class="step-num">B.2c</span> Optional: Deploy 8 GitOps Catalog Examples</h2>
         <p>Pre-built examples in <code>k8s/examples/</code> exercise the full pipeline (Gitea &rarr; Tekton &rarr; Argo CD). Apply sequentially (~12s between flows to avoid Gitea contention):</p>
         <pre><code>for yaml in 01-rest-to-kafka 02-order-routing-cbr 03-parallel-enrichment \
   04-error-handling-dlq 05-s3-to-db-kamelet 06-etl-pipe \
@@ -557,7 +582,7 @@ oc get pods -n openshift-integration -l app.kubernetes.io/component=console-plug
 
         <h3>List Page Features</h3>
         <ul style="margin-left: 1.25rem; color: var(--text-muted);">
-          <li><strong>Browse Templates</strong> — Pick from 200+ ready flows in the create form (backed by <code>flow-catalog.json</code>)</li>
+          <li><strong>Browse Templates</strong> — Pick from 250+ ready flows in the create form (backed by <code>flow-catalog.json</code>)</li>
           <li><strong>Search</strong> — Filter by name, repository URL, or status message</li>
           <li><strong>Filters</strong> — Filter by integration type (CAMEL_ROUTE, CAMEL_KAMELET, etc.) and phase (Running, Building, Error)</li>
           <li><strong>Summary badges</strong> — Click on Running/Building/Error counts to quick-filter</li>
