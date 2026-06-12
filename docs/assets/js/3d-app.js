@@ -146,28 +146,38 @@ document.addEventListener('DOMContentLoaded', () => {
             ease: "none",
             onComplete: () => {
                 scene.remove(particle);
-                particles.splice(particles.indexOf(particle), 1);
+                const index = particles.indexOf(particle);
+                if (index > -1) {
+                    particles.splice(index, 1);
+                }
             }
         });
         particles.push(particle);
     }
 
-    // Spawn particles continuously
-    setInterval(() => {
-        const conn = connections[Math.floor(Math.random() * connections.length)];
-        const startNode = nodeData.find(n => n.id === conn[0]);
-        const endNode = nodeData.find(n => n.id === conn[1]);
-        if(startNode && endNode) {
-            spawnParticle(
-                new THREE.Vector3(startNode.pos.x, startNode.pos.y, startNode.pos.z),
-                new THREE.Vector3(endNode.pos.x, endNode.pos.y, endNode.pos.z)
-            );
-        }
-    }, 500);
+    const clock = new THREE.Clock();
+    let timeSinceLastSpawn = 0;
 
     // Animation loop
     function animate() {
         requestAnimationFrame(animate);
+        
+        const delta = clock.getDelta();
+        timeSinceLastSpawn += delta;
+
+        if (timeSinceLastSpawn >= 0.5) {
+            timeSinceLastSpawn = 0;
+            const conn = connections[Math.floor(Math.random() * connections.length)];
+            const startNode = nodeData.find(n => n.id === conn[0]);
+            const endNode = nodeData.find(n => n.id === conn[1]);
+            if(startNode && endNode) {
+                spawnParticle(
+                    new THREE.Vector3(startNode.pos.x, startNode.pos.y, startNode.pos.z),
+                    new THREE.Vector3(endNode.pos.x, endNode.pos.y, endNode.pos.z)
+                );
+            }
+        }
+
         controls.update();
         renderer.render(scene, camera);
     }
