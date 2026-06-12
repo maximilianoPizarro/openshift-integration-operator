@@ -45,20 +45,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const nodes = []; // Store meshes for raycasting
     const textureLoader = new THREE.TextureLoader();
 
+    // Shared Geometries and Materials
+    const pedGeo = new THREE.CylinderGeometry(3, 3.5, 1, 32);
+    const pedMat = new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.8, metalness: 0.2 });
+    const cubeGeo = new THREE.BoxGeometry(4, 4, 4);
+    const planeGeo = new THREE.PlaneGeometry(3, 3);
+
     function createNode(data) {
         const group = new THREE.Group();
         group.position.set(data.pos.x, data.pos.y, data.pos.z);
         group.userData = data; // Store data for click events
 
         // Pedestal
-        const pedGeo = new THREE.CylinderGeometry(3, 3.5, 1, 32);
-        const pedMat = new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.8, metalness: 0.2 });
         const pedestal = new THREE.Mesh(pedGeo, pedMat);
         pedestal.position.y = -0.5;
         group.add(pedestal);
 
         // Glass Cube
-        const cubeGeo = new THREE.BoxGeometry(4, 4, 4);
         const cubeMat = new THREE.MeshPhysicalMaterial({
             color: data.color,
             transmission: 0.9, // glass effect
@@ -74,17 +77,23 @@ document.addEventListener('DOMContentLoaded', () => {
         group.add(cube);
         
         // Logo Plane inside cube
-        textureLoader.load(data.logo, (texture) => {
-            const planeGeo = new THREE.PlaneGeometry(3, 3);
-            const planeMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
-            const plane = new THREE.Mesh(planeGeo, planeMat);
-            plane.position.y = 2;
-            // Make logo always face camera (billboard)
-            plane.onBeforeRender = function(renderer, scene, camera) {
-                this.quaternion.copy(camera.quaternion);
-            };
-            group.add(plane);
-        });
+        textureLoader.load(
+            data.logo, 
+            (texture) => {
+                const planeMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+                const plane = new THREE.Mesh(planeGeo, planeMat);
+                plane.position.y = 2;
+                // Make logo always face camera (billboard)
+                plane.onBeforeRender = function(renderer, scene, camera) {
+                    this.quaternion.copy(camera.quaternion);
+                };
+                group.add(plane);
+            },
+            undefined,
+            (err) => {
+                console.error(`Failed to load texture: ${data.logo}`, err);
+            }
+        );
 
         scene.add(group);
         nodes.push(cube); // Add cube to interactable objects
