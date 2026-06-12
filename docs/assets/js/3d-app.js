@@ -158,10 +158,127 @@ document.addEventListener('DOMContentLoaded', () => {
     const clock = new THREE.Clock();
     let timeSinceLastSpawn = 0;
 
+    // Step 1: Setup Raycaster for Hover Effects
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let hoveredNode = null;
+    let isAutoRotating = true;
+
+    window.addEventListener('mousemove', (event) => {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(nodes);
+        
+        if (intersects.length > 0) {
+            document.body.style.cursor = 'pointer';
+            if (hoveredNode !== intersects[0].object) {
+                if (hoveredNode) hoveredNode.material.emissive.setHex(0x000000);
+                hoveredNode = intersects[0].object;
+                hoveredNode.material.emissive.setHex(hoveredNode.userData.color);
+                hoveredNode.material.emissiveIntensity = 0.5;
+                isAutoRotating = false;
+            }
+        } else {
+            document.body.style.cursor = 'default';
+            if (hoveredNode) {
+                hoveredNode.material.emissive.setHex(0x000000);
+                hoveredNode = null;
+                if (infoPanel && infoPanel.classList.contains('hidden')) {
+                    isAutoRotating = true;
+                }
+            }
+        }
+    });
+
+    // Step 2: Handle Click Events and Camera Animation
+    const infoPanel = document.getElementById('info-panel');
+    const panelTitle = document.getElementById('panel-title');
+    const panelDesc = document.getElementById('panel-desc');
+    const panelCode = document.getElementById('panel-code');
+    const closeBtn = document.getElementById('close-panel-btn');
+
+    let originalCameraPos = new THREE.Vector3();
+    let originalTarget = new THREE.Vector3();
+
+    renderer.domElement.addEventListener('click', () => {
+        if (hoveredNode) {
+            const data = hoveredNode.userData;
+            
+            // Populate UI
+            panelTitle.innerText = data.name;
+            panelDesc.innerText = data.desc;
+            panelCode.innerText = data.code;
+            
+            // Save current camera state if not already focused
+            if(infoPanel.classList.contains('hidden')) {
+                originalCameraPos.copy(camera.position);
+                originalTarget.copy(controls.target);
+            }
+
+            // Show Panel
+            infoPanel.classList.remove('hidden');
+
+            // Calculate new camera position (offset from node)
+            // Adjust for scene rotation
+            const worldPos = new THREE.Vector3();
+            hoveredNode.getWorldPosition(worldPos);
+            
+            const offset = new THREE.Vector3(0, 5, 15);
+            offset.applyEuler(scene.quaternion);
+            const targetCamPos = worldPos.clone().add(offset);
+
+            // Animate Camera
+            gsap.to(camera.position, {
+                x: targetCamPos.x,
+                y: targetCamPos.y,
+                z: targetCamPos.z,
+                duration: 1.5,
+                ease: "power2.inOut"
+            });
+            
+            gsap.to(controls.target, {
+                x: worldPos.x,
+                y: worldPos.y,
+                z: worldPos.z,
+                duration: 1.5,
+                ease: "power2.inOut"
+            });
+            
+            isAutoRotating = false;
+        }
+    });
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            infoPanel.classList.add('hidden');
+            isAutoRotating = true;
+            
+            // Reset Camera
+            gsap.to(camera.position, {
+                x: originalCameraPos.x, y: originalCameraPos.y, z: originalCameraPos.z,
+                duration: 1.5,
+                ease: "power2.inOut"
+            });
+            
+            gsap.to(controls.target, {
+                x: originalTarget.x, y: originalTarget.y, z: originalTarget.z,
+                duration: 1.5,
+                ease: "power2.inOut"
+            });
+        });
+    }
+
     // Animation loop
     function animate() {
         requestAnimationFrame(animate);
         
+        if (isAutoRotating) {
+            scene.rotation.y += 0.001;
+        }
+
         const delta = clock.getDelta();
         timeSinceLastSpawn += delta;
 
