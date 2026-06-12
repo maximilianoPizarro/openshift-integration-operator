@@ -102,6 +102,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
     nodeData.forEach(data => createNode(data));
 
+    const connections = [
+        ['openshift', 'camel'],
+        ['openshift', 'sonataflow'],
+        ['openshift', 'kafka'],
+        ['camel', 'kafka'],
+        ['sonataflow', 'kafka']
+    ];
+
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x445588, transparent: true, opacity: 0.5 });
+
+    connections.forEach(conn => {
+        const startNode = nodeData.find(n => n.id === conn[0]);
+        const endNode = nodeData.find(n => n.id === conn[1]);
+        
+        if(startNode && endNode) {
+            const points = [];
+            // Connect from center of pedestal
+            points.push(new THREE.Vector3(startNode.pos.x, startNode.pos.y, startNode.pos.z));
+            points.push(new THREE.Vector3(endNode.pos.x, endNode.pos.y, endNode.pos.z));
+            
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, lineMaterial);
+            scene.add(line);
+        }
+    });
+
+    const particles = [];
+    const particleGeo = new THREE.SphereGeometry(0.3, 8, 8);
+    const particleMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+
+    function spawnParticle(startPos, endPos) {
+        const particle = new THREE.Mesh(particleGeo, particleMat);
+        particle.position.copy(startPos);
+        scene.add(particle);
+        
+        // Animate particle from start to end
+        gsap.to(particle.position, {
+            x: endPos.x,
+            y: endPos.y,
+            z: endPos.z,
+            duration: 2 + Math.random() * 2,
+            ease: "none",
+            onComplete: () => {
+                scene.remove(particle);
+                particles.splice(particles.indexOf(particle), 1);
+            }
+        });
+        particles.push(particle);
+    }
+
+    // Spawn particles continuously
+    setInterval(() => {
+        const conn = connections[Math.floor(Math.random() * connections.length)];
+        const startNode = nodeData.find(n => n.id === conn[0]);
+        const endNode = nodeData.find(n => n.id === conn[1]);
+        if(startNode && endNode) {
+            spawnParticle(
+                new THREE.Vector3(startNode.pos.x, startNode.pos.y, startNode.pos.z),
+                new THREE.Vector3(endNode.pos.x, endNode.pos.y, endNode.pos.z)
+            );
+        }
+    }, 500);
+
     // Animation loop
     function animate() {
         requestAnimationFrame(animate);
