@@ -20,6 +20,8 @@ export interface FlowTemplate {
   description: string;
   pattern: string;
   kaotoDesign: string;
+  suggestedProperties?: Record<string, string>;
+  requiredSecrets?: string[];
 }
 
 export interface FlowCategory {
@@ -38,6 +40,8 @@ export interface TemplateSelection {
   pattern: string;
   components: string;
   description: string;
+  suggestedProperties?: Record<string, string>;
+  requiredSecrets?: string[];
 }
 
 export interface TemplateCatalogModalProps {
@@ -107,6 +111,8 @@ const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
       pattern: flow.pattern,
       components: flow.components,
       description: flow.description,
+      suggestedProperties: flow.suggestedProperties,
+      requiredSecrets: flow.requiredSecrets,
     });
     onClose();
   };

@@ -26,7 +26,9 @@ import {
 import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
 import { SearchIcon, CubesIcon } from '@patternfly/react-icons';
 import EphemeralModeToggle from './ephemeral/EphemeralModeToggle';
+import EphemeralPropertiesEditor from './ephemeral/EphemeralPropertiesEditor';
 import EphemeralBadge from './ephemeral/EphemeralBadge';
+import { resolveMinimalTemplateProperties, type TemplatePropertyConfig } from '../utils/templateProperties';
 import ConfirmDeleteModal from './modals/ConfirmDeleteModal';
 import ConfirmLifecycleModal from './modals/ConfirmLifecycleModal';
 import TemplateCatalogModal, { TemplateSelection } from './modals/TemplateCatalogModal';
@@ -191,6 +193,9 @@ const IntegrationFlowPage: React.FC = () => {
   const [showTemplateModal, setShowTemplateModal] = React.useState(false);
   const [templateDesign, setTemplateDesign] = React.useState('');
   const [templateLoaded, setTemplateLoaded] = React.useState('');
+  const [ephemeralProperties, setEphemeralProperties] = React.useState<Record<string, string>>({});
+  const [ephemeralSecretName, setEphemeralSecretName] = React.useState('');
+  const [templatePropertyConfig, setTemplatePropertyConfig] = React.useState<TemplatePropertyConfig | null>(null);
 
   const [search, setSearch] = React.useState('');
   const [filterType, setFilterType] = React.useState('');
@@ -250,12 +255,24 @@ const IntegrationFlowPage: React.FC = () => {
     setNewEngine(selection.type);
     setTemplateDesign(selection.kaotoDesign);
     setTemplateLoaded(selection.templateName);
+    const config = resolveMinimalTemplateProperties(
+      selection.components,
+      selection.suggestedProperties,
+      selection.requiredSecrets,
+    );
+    setTemplatePropertyConfig(config);
+    setEphemeralProperties(config.properties);
+    setEphemeralSecretName(config.defaultSecretName);
+    setEphemeralMode(true);
     setShowCreate(true);
   };
 
   const clearTemplate = () => {
     setTemplateDesign('');
     setTemplateLoaded('');
+    setEphemeralProperties({});
+    setEphemeralSecretName('');
+    setTemplatePropertyConfig(null);
   };
 
   const handleCreate = async () => {
@@ -271,7 +288,14 @@ const IntegrationFlowPage: React.FC = () => {
         };
       if (ephemeralMode) {
         spec.deploymentMode = 'EPHEMERAL';
-        spec.ephemeral = { ttlSeconds };
+        const ephemeral: Record<string, unknown> = { ttlSeconds };
+        if (Object.keys(ephemeralProperties).length > 0) {
+          ephemeral.properties = ephemeralProperties;
+        }
+        spec.ephemeral = ephemeral;
+        if (ephemeralSecretName.trim()) {
+          spec.secrets = [{ name: ephemeralSecretName.trim(), envFrom: true }];
+        }
       } else {
         spec.deploymentMode = 'GITOPS';
         spec.gitRepository = `https://gitea-gitea.apps.cluster-xtvzv.dynamic.redhatworkshops.io/user1/${flowName}`;
@@ -509,6 +533,15 @@ const IntegrationFlowPage: React.FC = () => {
               onChange={setEphemeralMode}
               ttlSeconds={ttlSeconds}
               onTtlChange={setTtlSeconds}
+            />
+            <EphemeralPropertiesEditor
+              enabled={ephemeralMode}
+              properties={ephemeralProperties}
+              onPropertiesChange={setEphemeralProperties}
+              secretName={ephemeralSecretName}
+              onSecretNameChange={setEphemeralSecretName}
+              templateConfig={templatePropertyConfig}
+              templateName={templateLoaded || undefined}
             />
           </div>
         </div>
