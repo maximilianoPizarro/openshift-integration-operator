@@ -115,11 +115,11 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.5.0
-    created: "2026-06-12T02:35:27.702916071Z"
+    created: "2026-06-12T03:06:47.068799283Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
-    digest: d43308a275f39f2adfb5175b845b1fba63c649ba33107e14a1555715cd62fff0
+    digest: 5f93e18e1245df20444dbe539d8c7231c76e757b289a4bd2e9a5dc4b6c161f96
     home: https://maximilianopizarro.github.io/openshift-integration-operator/
     icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.svg
     keywords:
@@ -266,7 +266,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.3.0
-    created: "2026-06-12T02:35:27.700506524Z"
+    created: "2026-06-12T03:06:47.065711133Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -405,7 +405,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.2.0
-    created: "2026-06-12T02:35:27.699557243Z"
+    created: "2026-06-12T03:06:47.064576187Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -504,7 +504,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: v0.1.0
-    created: "2026-06-12T02:35:27.698807301Z"
+    created: "2026-06-12T03:06:47.063620588Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -539,4 +539,4 @@ entries:
     urls:
     - https://maximilianopizarro.github.io/openshift-integration-operator/openshift-integration-operator-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-12T02:35:27.698211218Z"
+generated: "2026-06-12T03:06:47.062892859Z"
