@@ -98,10 +98,13 @@ const EphemeralPropertiesEditor: React.FC<EphemeralPropertiesEditorProps> = ({
       {templateName && templateConfig && Object.keys(templateConfig.properties).length > 0 && (
         <Alert variant="info" isInline title={`Minimum properties for ${templateName}`} style={{ marginBottom: '12px' }}>
           Pre-filled from template components. Values use <code>${'${ENV_VAR}'}</code> placeholders — bind a Secret below
-          or edit keys before Create.
+          or edit values before Create (e.g. <code>base-url</code> for MaaS/OpenAI-compatible gateways).
           {requiredSecrets.length > 0 && (
             <div style={{ marginTop: '6px' }}>
-              Required Secret keys: <code>{requiredSecrets.join(', ')}</code>
+              Typical Secret keys: <code>{requiredSecrets.join(', ')}</code>
+              {requiredSecrets.includes('OPENAI_API_KEY') && (
+                <span> — optional <code>OPENAI_BASE_URL</code>, <code>OPENAI_MODEL</code></span>
+              )}
             </div>
           )}
         </Alert>

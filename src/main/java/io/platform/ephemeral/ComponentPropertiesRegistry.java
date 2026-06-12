@@ -51,7 +51,10 @@ public class ComponentPropertiesRegistry {
                     "camel.component.mongodb.port", "${MONGODB_PORT:27017}")),
             entry("elasticsearch", Map.of(
                     "camel.component.elasticsearch.host-addresses",
-                            "${ELASTICSEARCH_HOSTS:localhost:9200}")),
+                            "${ELASTICSEARCH_HOSTS:elasticsearch:9200}")),
+            entry("elasticsearch-rest-client", Map.of(
+                    "camel.component.elasticsearch.host-addresses",
+                            "${ELASTICSEARCH_HOSTS:elasticsearch:9200}")),
             entry("cassandraql", Map.of(
                     "camel.component.cql.host", "${CASSANDRA_HOST:localhost}",
                     "camel.component.cql.port", "${CASSANDRA_PORT:9042}")),
@@ -59,10 +62,14 @@ public class ComponentPropertiesRegistry {
             // ── Cache (Infinispan transitive via spring-redis) ─────────
             entry("spring-redis", Map.of(
                     "quarkus.infinispan-client.hosts",
-                            "${INFINISPAN_HOSTS:localhost:11222}",
+                            "${REDIS_HOST:redis-server:6379}",
                     "quarkus.infinispan-client.devservices.enabled", "false",
                     "quarkus.infinispan-client.health.enabled", "false",
                     "quarkus.infinispan-client.use-auth", "false")),
+            entry("redis", Map.of(
+                    "quarkus.infinispan-client.hosts",
+                            "${REDIS_HOST:redis-server:6379}",
+                    "quarkus.infinispan-client.devservices.enabled", "false")),
 
             // ── Healthcare ─────────────────────────────────────────────
             entry("fhir", Map.of(
@@ -110,13 +117,24 @@ public class ComponentPropertiesRegistry {
                     "camel.component.ftp.host", "${FTP_HOST:localhost}",
                     "camel.component.ftp.port", "${FTP_PORT:21}")),
 
+            // ── Vector store ───────────────────────────────────────────
+            entry("qdrant", Map.of(
+                    "camel.component.qdrant.host", "${QDRANT_HOST:qdrant-server}",
+                    "camel.component.qdrant.port", "${QDRANT_PORT:6334}")),
+
             // ── AI / LangChain4j ───────────────────────────────────────
             entry("langchain4j-chat", Map.of(
                     "quarkus.langchain4j.openai.api-key", "${OPENAI_API_KEY:}",
+                    "quarkus.langchain4j.openai.base-url",
+                            "${OPENAI_BASE_URL:https://api.openai.com/v1}",
                     "quarkus.langchain4j.openai.chat-model.model-name",
-                            "${OPENAI_MODEL:gpt-4o-mini}")),
+                            "${OPENAI_MODEL:gpt-4o-mini}",
+                    "quarkus.langchain4j.openai.chat-model.temperature", "0.7",
+                    "quarkus.langchain4j.openai.chat-model.max-completion-tokens", "1024")),
             entry("langchain4j-embeddings", Map.of(
                     "quarkus.langchain4j.openai.api-key", "${OPENAI_API_KEY:}",
+                    "quarkus.langchain4j.openai.base-url",
+                            "${OPENAI_BASE_URL:https://api.openai.com/v1}",
                     "quarkus.langchain4j.openai.embedding-model.model-name",
                             "${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}"))
     );
