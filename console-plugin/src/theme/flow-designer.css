@@ -1,119 +1,4 @@
-/* Flow designer workspace layout */
-
-.integration-workspace {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-}
-
-.integration-workspace__main {
-  flex: 3;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-  border: 1px solid var(--integration-border);
-  border-radius: 6px 0 0 6px;
-  overflow: hidden;
-}
-
-.integration-workspace__sidebar {
-  width: 240px;
-  flex-shrink: 0;
-  overflow: auto;
-  border-top: 1px solid var(--integration-border);
-  border-right: 1px solid var(--integration-border);
-  border-bottom: 1px solid var(--integration-border);
-  border-radius: 0 6px 6px 0;
-}
-
-.integration-workspace__main .pf-v5-c-tabs,
-.integration-workspace__main .pf-v6-c-tabs {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.integration-workspace__main .pf-v5-c-tabs__content,
-.integration-workspace__main .pf-v6-c-tabs__content {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
-}
-
-/*
- * Patternfly hides inactive panels with [hidden]. Do NOT set display:flex on all
- * tabpanels — that overrides [hidden] and stacks every visited tab vertically.
- */
-.integration-workspace__main .pf-v5-c-tab-content[hidden],
-.integration-workspace__main .pf-v6-c-tab-content[hidden],
-.integration-workspace__main [role='tabpanel'][hidden] {
-  display: none !important;
-}
-
-.integration-workspace__main .pf-v5-c-tab-content:not([hidden]),
-.integration-workspace__main .pf-v6-c-tab-content:not([hidden]),
-.integration-workspace__main [role='tabpanel']:not([hidden]) {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.integration-tab-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.integration-tab-panel--scroll {
-  flex: 1;
-  overflow: auto;
-  min-height: 0;
-}
-
-.integration-tab-panel__body {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.integration-tab-panel__canvas {
-  flex: 1;
-  background-color: var(--integration-bg-dark);
-  overflow: auto;
-  min-height: 0;
-}
-
-.integration-tab-panel__editor {
-  flex: 1;
-  width: 100%;
-  padding: 16px;
-  font-family: var(--pf-global--FontFamily--monospace, 'Liberation Mono', consolas, monospace);
-  font-size: 13px;
-  line-height: 1.6;
-  border: none;
-  resize: none;
-  outline: none;
-  background-color: var(--integration-bg-dark);
-  color: var(--pf-global--Color--light-100, #e0e0e0);
-  min-height: 0;
-}
-
-.integration-zoom-toolbar {
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--integration-border);
-  background: var(--integration-bg-dark);
-}
-
-/* Fullscreen: fill viewport and hide sidebar by default */
+/* Fullscreen workspace — normal tab layout uses inline heights (v0.6.2 style) */
 
 .integration-workspace--fullscreen:fullscreen {
   flex: none;
@@ -122,26 +7,24 @@
   background: var(--pf-global--BackgroundColor--dark-300, #151515);
 }
 
-.integration-workspace--fullscreen:fullscreen .integration-workspace__main {
-  flex: 1;
-  border-radius: 0;
-  border-left: none;
-  border-bottom: none;
-  border-top: none;
-}
-
 .integration-workspace--fullscreen:fullscreen .integration-workspace__sidebar {
   display: none;
 }
 
 .integration-workspace--fullscreen.integration-workspace--sidebar-visible:fullscreen .integration-workspace__sidebar {
   display: block;
-  width: 260px;
-  border-radius: 0;
 }
 
-.integration-workspace--fullscreen:fullscreen .integration-zoom-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+.integration-workspace--fullscreen:fullscreen [data-integration-tab-fill] {
+  height: calc(100vh - 88px) !important;
+}
+
+.integration-workspace--fullscreen:fullscreen .integration-workspace__main {
+  flex: 1;
+  min-height: 0;
+}
+
+.integration-workspace--fullscreen:fullscreen .integration-workspace__main > .pf-v5-c-tabs,
+.integration-workspace--fullscreen:fullscreen .integration-workspace__main > .pf-v6-c-tabs {
+  height: 100%;
 }

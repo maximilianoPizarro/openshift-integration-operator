@@ -19,8 +19,7 @@ import { flowApiPath } from '../utils/k8sUrls';
 export interface FlowLogsTabProps {
   flowNamespace: string;
   flowName: string;
-  /** When true, tab fills parent flex container (fullscreen / workspace layout). */
-  fillHeight?: boolean;
+  height?: string;
 }
 
 interface LogsResponse {
@@ -33,7 +32,7 @@ interface LogsResponse {
   error?: string;
 }
 
-const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName, fillHeight = false }) => {
+const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName, height = 'calc(100vh - 260px)' }) => {
   const [data, setData] = React.useState<LogsResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -99,14 +98,7 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName, fill
   }, [data?.logs, follow]);
 
   return (
-    <div
-      className={fillHeight ? 'integration-tab-panel' : undefined}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        ...(fillHeight ? {} : { height: 'calc(100vh - 260px)' }),
-      }}
-    >
+    <div style={{ display: 'flex', flexDirection: 'column', height }} data-integration-tab-fill>
       <Toolbar style={{ padding: '8px 12px', borderBottom: '1px solid var(--pf-global--BorderColor--100, #3c3f42)' }}>
         <ToolbarContent>
           <ToolbarItem>
