@@ -94,6 +94,157 @@ entries:
                           message: "Hello from IntegrationFlow"
       artifacthub.io/images: |
         - name: operator
+          image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.0
+        - name: console-plugin
+          image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.0
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Documentation
+          url: https://maximilianopizarro.github.io/openshift-integration-operator/
+        - name: Architecture
+          url: https://maximilianopizarro.github.io/openshift-integration-operator/architecture.html
+        - name: Quick Start
+          url: https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html
+        - name: Source Code
+          url: https://github.com/maximilianoPizarro/openshift-integration-operator
+      artifacthub.io/operator: "true"
+      artifacthub.io/operatorCapabilities: Basic Install
+      artifacthub.io/prerelease: "true"
+      artifacthub.io/recommendations: |
+        - url: https://artifacthub.io/packages/helm/openshift-gitops/openshift-gitops
+        - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
+    apiVersion: v2
+    appVersion: 0.6.0
+    created: "2026-06-12T13:31:19.99682328Z"
+    description: The missing lifecycle layer for Apache Camel on OpenShift — design
+      visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
+      with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
+    digest: 0e1a751b70238078701cb26be3e9937221c06b5b207ab9537794503ca64a0618
+    home: https://maximilianopizarro.github.io/openshift-integration-operator/
+    icon: https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/logo.svg
+    keywords:
+    - openshift
+    - kubernetes
+    - operator
+    - camel
+    - apache-camel
+    - sonataflow
+    - integration
+    - kaoto
+    - workflow
+    - gitops
+    - tekton
+    - argocd
+    - mcp
+    - ai
+    - opentelemetry
+    - camel-k
+    - integration-platform
+    - gitops
+    kubeVersion: '>=1.27.0-0'
+    maintainers:
+    - name: maximilianoPizarro
+      url: https://github.com/maximilianoPizarro
+    name: openshift-integration-operator
+    sources:
+    - https://github.com/maximilianoPizarro/openshift-integration-operator
+    type: application
+    urls:
+    - https://maximilianopizarro.github.io/openshift-integration-operator/openshift-integration-operator-0.6.0.tgz
+    version: 0.6.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
+          description: Embedded scaffold registry with Tekton populate-scaffold task for placeholder Git URLs
+        - kind: added
+          description: Domain-specific ephemeral worker images (core, messaging, http, data, cloud, ai, full) with auto-selection
+        - kind: added
+          description: External Secrets Operator template and secrets provider configuration
+        - kind: added
+          description: Catalog validation CI job and Java 17/21 build matrix
+        - kind: changed
+          description: Console plugin served by Go static server (golang runtime label)
+        - kind: added
+          description: Five integration types — Camel Route, Kamelet, Pipe, Test, SonataFlow
+        - kind: added
+          description: Multi-provider Git support — Gitea, GitHub, GitLab with auto-detection
+        - kind: added
+          description: Visual flow diagram with branching logic (choice, multicast, doTry) and click-to-YAML
+        - kind: added
+          description: Embedded SonataFlow Management Console for workflow monitoring
+        - kind: added
+          description: Console plugin search, filters, pagination, and resource links (Pods, Pipelines, ArgoCD)
+        - kind: added
+          description: Tekton Pipeline template (git-clone, maven, buildah) with workspace bindings
+        - kind: added
+          description: OpenTelemetry Collector deployment and operator integration
+        - kind: added
+          description: Camel BOM dependency management in scaffolded worker pom.xml
+        - kind: added
+          description: 9 production-ready example IntegrationFlows including ephemeral Quick Try
+        - kind: added
+          description: Ephemeral Quick Try mode — deploy without Git, TTL extend, promote to GitOps
+        - kind: added
+          description: Console plugin served from Deployment on port 9443 with backend proxy integration-console-plugin
+        - kind: added
+          description: Flow Logs tab — live worker pod logs via operator REST API
+        - kind: fixed
+          description: Operator HTTPS on port 8443 with serving cert for console plugin backend proxy (fixes 502 on logs/telemetry/lifecycle)
+        - kind: added
+          description: GitUrlResolver rewrites placeholder git hosts to configured provider URLs
+        - kind: added
+          description: MCP Bridge for AI tool discovery and invocation
+        - kind: added
+          description: HPA v2 worker autoscaling with configurable thresholds
+        - kind: added
+          description: SonataFlow CR auto-deployment to OpenShift Serverless Logic operator (kogito-bpm)
+        - kind: added
+          description: Git sync on flow modification — Save pushes design changes to Git immediately
+        - kind: added
+          description: Platform Status dashboard — real-time health checks for Operator, Kaoto, Gitea, ArgoCD, Tekton, OTel
+        - kind: added
+          description: Flow Overview dashboard — KPI cards, flow distribution by type/phase, recent builds
+        - kind: added
+          description: Pause/Resume/Stop lifecycle controls, circuit breaker toggle, scheduled execution
+        - kind: added
+          description: Declarative retry policy and circuit breaker configuration in IntegrationFlow spec
+        - kind: added
+          description: PrometheusRule auto-generation for per-flow alerting
+        - kind: added
+          description: RBAC for SonataFlow CRs, PrometheusRules, CronJobs, and ApplicationSets
+        - kind: added
+          description: values.schema.json for Helm chart validation and IDE autocompletion
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/crds: |
+        - kind: IntegrationFlow
+          version: v1alpha1
+          name: integrationflows.platform.io
+          displayName: Integration Flow
+          description: Defines an integration workflow using Apache Camel or SonataFlow engine with Kaoto visual design
+      artifacthub.io/crdsExamples: |
+        - apiVersion: platform.io/v1alpha1
+          kind: IntegrationFlow
+          metadata:
+            name: sample-camel-flow
+          spec:
+            engine: CAMEL
+            gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
+            branch: main
+            targeting:
+              strategy: explicit
+              clusters:
+                - local
+            kaotoDesign: |
+              - route:
+                  from:
+                    uri: timer:tick
+                    parameters:
+                      period: 5000
+                    steps:
+                      - log:
+                          message: "Hello from IntegrationFlow"
+      artifacthub.io/images: |
+        - name: operator
           image: quay.io/maximilianopizarro/openshift-integration-operator:v0.5.0
         - name: console-plugin
           image: quay.io/maximilianopizarro/integration-console-plugin:v0.5.0
@@ -115,7 +266,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.5.0
-    created: "2026-06-12T03:06:47.068799283Z"
+    created: "2026-06-12T13:31:19.994338622Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -266,7 +417,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.3.0
-    created: "2026-06-12T03:06:47.065711133Z"
+    created: "2026-06-12T13:31:19.991101335Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -289,7 +440,7 @@ entries:
     - mcp
     - ai
     - opentelemetry
-    - camel-lifecycle
+    - n8n-alternative
     kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro
@@ -405,7 +556,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.2.0
-    created: "2026-06-12T03:06:47.064576187Z"
+    created: "2026-06-12T13:31:19.989880959Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -428,7 +579,7 @@ entries:
     - mcp
     - ai
     - opentelemetry
-    - camel-lifecycle
+    - n8n-alternative
     kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro
@@ -465,28 +616,22 @@ entries:
         - apiVersion: platform.io/v1alpha1
           kind: IntegrationFlow
           metadata:
-            name: rest-to-kafka
-            namespace: openshift-integration
+            name: sample-camel-flow
           spec:
-            deploymentMode: GITOPS
-            integrationType: CAMEL_ROUTE
             engine: CAMEL
-            gitRepository: https://gitea.example.com/user1/rest-to-kafka
+            gitRepository: https://gitea.example.com/demo/sample-camel-worker.git
             branch: main
-            targeting:
-              strategy: explicit
-              clusters:
-                - local
+            targetClusters:
+              - local
             kaotoDesign: |
               - route:
-                  id: rest-to-kafka
                   from:
-                    uri: "platform-http:/api/ingest"
+                    uri: timer:tick
+                    parameters:
+                      period: 5000
                     steps:
                       - log:
-                          message: "Received: ${body}"
-                      - to:
-                          uri: "kafka:integration-events?brokers=my-cluster-kafka-bootstrap:9092"
+                          message: "Hello from IntegrationFlow"
       artifacthub.io/images: |
         - name: operator
           image: quay.io/maximilianopizarro/openshift-integration-operator:v0.1.0
@@ -510,7 +655,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: v0.1.0
-    created: "2026-06-12T03:06:47.063620588Z"
+    created: "2026-06-12T13:31:19.988881599Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -533,7 +678,7 @@ entries:
     - mcp
     - ai
     - opentelemetry
-    - camel-lifecycle
+    - n8n-alternative
     kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro
@@ -545,4 +690,4 @@ entries:
     urls:
     - https://maximilianopizarro.github.io/openshift-integration-operator/openshift-integration-operator-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-12T03:06:47.062892859Z"
+generated: "2026-06-12T13:31:19.988069227Z"
