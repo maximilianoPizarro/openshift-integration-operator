@@ -1,6 +1,6 @@
 {
   "name": "integration-console-plugin",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "private": true,
   "scripts": {
     "build": "webpack --mode production",
@@ -9,7 +9,7 @@
   },
   "consolePlugin": {
     "name": "integration-console-plugin",
-    "version": "0.6.5",
+    "version": "0.6.6",
     "displayName": "Integration Platform",
     "description": "Real-Time Integration & Orchestration Platform - Apache Camel + SonataFlow with Kaoto designer",
     "exposedModules": {
