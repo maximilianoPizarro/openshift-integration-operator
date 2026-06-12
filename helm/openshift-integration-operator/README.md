@@ -531,9 +531,10 @@ oc describe hpa iflow-rest-to-kafka-hpa -n openshift-integration
 
 - **GitHub**: [maximilianoPizarro/openshift-integration-operator](https://github.com/maximilianoPizarro/openshift-integration-operator)
 - **Documentation**: [GitHub Pages](https://maximilianopizarro.github.io/openshift-integration-operator/)
-- **OperatorHub**: [community-operators/openshift-integration-operator](https://operatorhub.io/operator/community-operators/openshift-integration-operator)
+- **OperatorHub**: [openshift-integration-operator](https://operatorhub.io/operator/openshift-integration-operator)
 - **Artifact Hub**: [openshift-integration-operator](https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator)
 - **Security report**: [Trivy scan on Artifact Hub](https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report)
+- **Vulnerability dashboard**: [GitHub Pages — per-image breakdown](https://maximilianopizarro.github.io/openshift-integration-operator/security.html)
 - **Container Images**: [quay.io/maximilianopizarro](https://quay.io/organization/maximilianopizarro)
 
 ## License

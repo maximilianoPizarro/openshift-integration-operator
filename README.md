@@ -17,15 +17,16 @@
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></a>
   <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/actions"><img src="https://github.com/maximilianoPizarro/openshift-integration-operator/actions/workflows/build-push-quay.yml/badge.svg" alt="GitHub Actions"></a>
   <a href="https://quay.io/repository/maximilianopizarro/openshift-integration-operator"><img src="https://img.shields.io/badge/Quay.io-operator-EE3300?logo=redhat" alt="Quay.io"></a>
-  <a href="https://operatorhub.io/operator/community-operators/openshift-integration-operator"><img src="https://img.shields.io/badge/OperatorHub-community--operators-0078d4?logo=redhat" alt="OperatorHub"></a>
+  <a href="https://operatorhub.io/operator/openshift-integration-operator"><img src="https://img.shields.io/badge/OperatorHub-openshift--integration--operator-0078d4?logo=redhat" alt="OperatorHub"></a>
   <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator"><img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/openshift-integration-operator" alt="Artifact Hub"></a>
 </p>
 
 <p align="center">
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/">Documentation</a> ·
-  <a href="https://operatorhub.io/operator/community-operators/openshift-integration-operator">OperatorHub</a> ·
+  <a href="https://operatorhub.io/operator/openshift-integration-operator">OperatorHub</a> ·
   <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator">Artifact Hub</a> ·
   <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report">Security report</a> ·
+  <a href="https://maximilianopizarro.github.io/openshift-integration-operator/security.html">Vulnerability dashboard</a> ·
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/architecture.html">Architecture</a> ·
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html">Quick Start</a> ·
   <a href="https://maximilianopizarro.github.io/openshift-integration-operator/ready-flows.html">Ready Flows (200+)</a> ·
@@ -598,7 +599,7 @@ Please follow existing code conventions and keep changes focused.
 
 ## OperatorHub Publication
 
-Published on [OperatorHub.io](https://operatorhub.io/operator/community-operators/openshift-integration-operator) (community-operators catalog). Install from the OpenShift Console OperatorHub or follow the community-operators PR process below to publish updates.
+Published on [OperatorHub.io](https://operatorhub.io/operator/openshift-integration-operator). Install from the OpenShift Console OperatorHub or follow the community-operators PR process below to publish updates.
 
 The operator automatically generates an OLM bundle with each Maven build via `quarkus-operator-sdk-bundle-generator`.
 

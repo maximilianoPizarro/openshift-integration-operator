@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Frequently Asked Questions about the OpenShift Integration Operator">
-  <title>FAQ | OpenShift Integration Operator</title>
+  <meta name="description" content="Container vulnerability report for OpenShift Integration Operator — operator, console plugin, and all Camel worker images on Artifact Hub (Trivy).">
+  <title>Security Report | OpenShift Integration Operator</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/patternfly.min.css">
@@ -12,15 +12,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatDisplay/RedHatDisplay.css">
   <link rel="stylesheet" href="assets/site.css">
   <script defer src="assets/site.js"></script>
-  <style>
-    .faq-item {
-      margin-bottom: 2rem;
-    }
-    .faq-item h3 {
-      margin-bottom: 0.5rem;
-      color: var(--pf-v5-global--primary-color--100);
-    }
-  </style>
+  <script defer src="assets/security-report.js"></script>
 </head>
 <body class="site-page site-page--doc">
   <header class="site-masthead" role="banner">
@@ -70,37 +62,46 @@
       <nav class="site-breadcrumbs" aria-label="breadcrumb">
         <ol>
           <li><a href="index.html">Home</a><span class="separator">/</span></li>
-          <li aria-current="page">FAQ</li>
+          <li aria-current="page">Security Report</li>
         </ol>
       </nav>
-      <h1>Frequently Asked Questions</h1>
-      <p>Answers to common questions about the operator, GitOps, and Ephemeral mode.</p>
+      <h1>Container Security Report</h1>
+      <p>Trivy vulnerability scan for the operator, console plugin, and all ephemeral worker images — synced from <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report" target="_blank" rel="noopener noreferrer">Artifact Hub</a>.</p>
     </div>
   </header>
 
   <main class="site-main site-main--compact">
     <div class="container">
-      
-      <div class="faq-item">
-        <h3>Does it work without OpenShift GitOps?</h3>
-        <p>Yes. You can use <strong>Ephemeral Mode</strong> without any GitOps tools. For production (GitOps Mode), you need Tekton and Argo CD (OpenShift GitOps), but you can theoretically use other tools if you manage the generated repositories manually.</p>
-      </div>
+      <section class="doc-section">
+        <div class="sec-toolbar">
+          <label for="sec-version">Chart version</label>
+          <select id="sec-version" aria-label="Chart version"></select>
+          <button type="button" class="btn btn-secondary" id="sec-refresh">↻ Refresh</button>
+          <a class="btn btn-primary" href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report" target="_blank" rel="noopener noreferrer">Artifact Hub ↗</a>
+        </div>
+        <div id="sec-meta" class="sec-meta"></div>
+        <div id="sec-status" class="sec-loading" role="status">Loading vulnerability data…</div>
+        <div id="sec-summary" class="sec-summary-grid"></div>
+      </section>
 
-      <div class="faq-item">
-        <h3>Can I use my own Gitea/GitHub/GitLab?</h3>
-        <p>Yes. The operator can scaffold repositories in any Git provider. You just need to configure the <code>gitCredentialsSecret</code> in the <code>IntegrationFlow</code> CR with the appropriate tokens.</p>
-      </div>
+      <section class="doc-section">
+        <h2>How scanning works</h2>
+        <p class="section-lead">
+          Artifact Hub runs <a href="https://github.com/aquasecurity/trivy" target="_blank" rel="noopener noreferrer">Trivy</a> daily on container images declared in the Helm chart
+          (<code>artifacthub.io/images</code> in <code>Chart.yaml</code>). The dashboard below groups findings by image tier so you can assess platform vs worker exposure before deploying ephemeral flows.
+        </p>
+        <ul>
+          <li><strong>Platform</strong> — operator and console plugin (always running).</li>
+          <li><strong>Ephemeral workers</strong> — tiered Camel images selected by route components; only the matching worker runs per flow.</li>
+          <li><strong>Testing</strong> — <code>camel-test-runner</code> for <code>CAMEL_TEST</code> IntegrationFlows.</li>
+        </ul>
+        <p>
+          Artifact Hub scans up to <strong>15 images</strong> per chart version. This project lists <strong>11</strong> Quay images under the release tag.
+          After a new Helm release, allow up to ~1 hour for Artifact Hub to index and generate the first report.
+        </p>
+      </section>
 
-      <div class="faq-item">
-        <h3>What happens when the TTL expires in Ephemeral mode?</h3>
-        <p>The operator automatically deletes the <code>IntegrationFlow</code> CR. Thanks to Kubernetes <code>ownerReferences</code>, all child resources (Deployments, Services, ConfigMaps) are garbage-collected immediately by the cluster.</p>
-      </div>
-
-      <div class="faq-item">
-        <h3>Does it support vanilla Kubernetes?</h3>
-        <p>Currently, the operator is optimized for OpenShift (using OpenShift Routes, Console Plugins, etc.). While the core logic might run on vanilla Kubernetes, the full experience (especially the UI) requires OpenShift.</p>
-      </div>
-
+      <div id="sec-tables"></div>
     </div>
   </main>
 
@@ -109,19 +110,10 @@
       <p>Built by <a href="https://github.com/maximilianoPizarro"><strong>maximilianoPizarro</strong></a></p>
       <nav class="site-footer__links" aria-label="Footer">
         <a href="index.html">Home</a>
-        <a href="try-it-now.html">Try It Now</a>
-        <a href="quickstart.html">Guide</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="ready-flows.html">Ready Flows</a>
-        <a href="examples-catalog.html">Examples Catalog</a>
-            <li><a href="security.html">Security Report</a></li>
-        <a href="worker-selector.html">Tools</a>
-        <a href="faq.html">FAQ</a>
-        <a href="contributing.html">Contribute</a>
-        <a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="security.html">Security</a>
         <a href="https://operatorhub.io/operator/openshift-integration-operator" target="_blank" rel="noopener noreferrer">OperatorHub</a>
         <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>
-        <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report" target="_blank" rel="noopener noreferrer">Security report</a>
+        <a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>
       </nav>
       <p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>
     </div>

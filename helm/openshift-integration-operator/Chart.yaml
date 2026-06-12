@@ -2,8 +2,8 @@ apiVersion: v2
 name: openshift-integration-operator
 description: The missing lifecycle layer for Apache Camel on OpenShift — design visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
 type: application
-version: 0.6.2
-appVersion: "0.6.2"
+version: 0.6.3
+appVersion: "0.6.3"
 kubeVersion: ">=1.27.0-0"
 home: https://maximilianopizarro.github.io/openshift-integration-operator/
 sources:
@@ -45,32 +45,36 @@ annotations:
     - name: Quick Start
       url: https://maximilianopizarro.github.io/openshift-integration-operator/quickstart.html
     - name: OperatorHub
-      url: https://operatorhub.io/operator/community-operators/openshift-integration-operator
+      url: https://operatorhub.io/operator/openshift-integration-operator
     - name: Security report
       url: https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report
+    - name: Vulnerability dashboard
+      url: https://maximilianopizarro.github.io/openshift-integration-operator/security.html
     - name: Source Code
       url: https://github.com/maximilianoPizarro/openshift-integration-operator
   artifacthub.io/images: |
     - name: operator
-      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.2
+      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.3
     - name: console-plugin
-      image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.2
+      image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.3
     - name: camel-worker-core
-      image: quay.io/maximilianopizarro/camel-worker-core:v0.6.2
+      image: quay.io/maximilianopizarro/camel-worker-core:v0.6.3
     - name: camel-worker-messaging
-      image: quay.io/maximilianopizarro/camel-worker-messaging:v0.6.2
+      image: quay.io/maximilianopizarro/camel-worker-messaging:v0.6.3
     - name: camel-worker-http
-      image: quay.io/maximilianopizarro/camel-worker-http:v0.6.2
+      image: quay.io/maximilianopizarro/camel-worker-http:v0.6.3
     - name: camel-worker-data
-      image: quay.io/maximilianopizarro/camel-worker-data:v0.6.2
+      image: quay.io/maximilianopizarro/camel-worker-data:v0.6.3
     - name: camel-worker-cloud
-      image: quay.io/maximilianopizarro/camel-worker-cloud:v0.6.2
+      image: quay.io/maximilianopizarro/camel-worker-cloud:v0.6.3
     - name: camel-worker-ai
-      image: quay.io/maximilianopizarro/camel-worker-ai:v0.6.2
+      image: quay.io/maximilianopizarro/camel-worker-ai:v0.6.3
     - name: camel-worker-full
-      image: quay.io/maximilianopizarro/camel-worker-full:v0.6.2
+      image: quay.io/maximilianopizarro/camel-worker-full:v0.6.3
+    - name: camel-yaml-worker
+      image: quay.io/maximilianopizarro/camel-yaml-worker:v0.6.3
     - name: camel-test-runner
-      image: quay.io/maximilianopizarro/camel-test-runner:v0.6.2
+      image: quay.io/maximilianopizarro/camel-test-runner:v0.6.3
   artifacthub.io/crds: |
     - kind: IntegrationFlow
       version: v1alpha1
@@ -103,8 +107,10 @@ annotations:
     - url: https://artifacthub.io/packages/helm/openshift-gitops/openshift-gitops
     - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
   artifacthub.io/changes: |
-    - kind: fixed
-      description: OLM ClusterRole includes autoscaling/horizontalpodautoscalers for multi-namespace ephemeral flows
+    - kind: added
+      description: Full worker image list in artifacthub.io/images for Trivy scans (core, messaging, http, data, cloud, ai, full, yaml, test-runner)
+    - kind: added
+      description: GitHub Pages security dashboard with per-image vulnerability breakdown from Artifact Hub
     - kind: changed
       description: Console plugin uses manual Refresh instead of aggressive auto-polling on list and overview pages
     - kind: added

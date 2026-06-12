@@ -37,6 +37,7 @@
             <li><a href="worker-selector.html">Worker Image Selector</a></li>
             <li><a href="yaml-generator.html">CR YAML Generator</a></li>
             <li><a href="examples-catalog.html">Examples Catalog</a></li>
+            <li><a href="security.html">Security Report</a></li>
             <li><a href="operations.html">Operations</a></li>
             <li><a href="troubleshooting.html">Troubleshooting</a></li>
           </ul>
@@ -57,7 +58,7 @@
 
   <header class="site-hero">
     <div class="container">
-      <span class="badge">Apache 2.0 · Open Source</span> <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/releases/tag/v0.6.2" class="badge badge--version" style="text-decoration: none; color: inherit; border: 1px solid var(--pf-v5-global--primary-color--100, #0066cc); background: rgba(0,102,204,0.1);">v0.6.2</a>
+      <span class="badge">Apache 2.0 · Open Source</span> <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/releases/tag/v0.6.3" class="badge badge--version" style="text-decoration: none; color: inherit; border: 1px solid var(--pf-v5-global--primary-color--100, #0066cc); background: rgba(0,102,204,0.1);">v0.6.3</a>
       <h1>OpenShift Integration Operator</h1>
       <p class="subtitle">The missing lifecycle layer for Apache Camel on OpenShift</p>
       <p class="description">
@@ -65,8 +66,8 @@
         visual Kaoto designer, MCP/AI integration, and native Kubernetes orchestration.
       </p>
       <p class="description" style="margin-top: 1rem;">
-        <a href="https://operatorhub.io/operator/community-operators/openshift-integration-operator" target="_blank" rel="noopener noreferrer">
-          <img src="https://img.shields.io/badge/OperatorHub-community--operators-0078d4?logo=redhat" alt="OperatorHub">
+        <a href="https://operatorhub.io/operator/openshift-integration-operator" target="_blank" rel="noopener noreferrer">
+          <img src="https://img.shields.io/badge/OperatorHub-openshift--integration--operator-0078d4?logo=redhat" alt="OperatorHub">
         </a>
         <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator" target="_blank" rel="noopener noreferrer">
           <img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/openshift-integration-operator" alt="Artifact Hub">
@@ -74,9 +75,13 @@
         <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report" target="_blank" rel="noopener noreferrer">
           <img src="https://img.shields.io/badge/Vulnerability%20report-Artifact%20Hub-orange" alt="Vulnerability report on Artifact Hub">
         </a>
+        <a href="security.html">
+          <img src="https://img.shields.io/badge/Security%20dashboard-GitHub%20Pages-blue" alt="Security dashboard on GitHub Pages">
+        </a>
       </p>
       <div class="hero-links">
         <a class="btn btn-primary" href="try-it-now.html">Try it now — no prerequisites</a>
+        <a class="btn btn-secondary" href="security.html">Security report</a>
         <a class="btn btn-secondary" href="comparison.html">Compare platforms</a>
         <a class="btn btn-tertiary" href="contributing.html">Contribute a Flow</a>
         <a class="btn btn-tertiary" href="migrating-from-camel-k.html">Migrating from Camel K</a>
@@ -131,7 +136,7 @@
           <article class="card">
             <div class="card-icon">📋</div>
             <h3>Architecture evaluator</h3>
-            <p>Compare against Camel K, Fuse, and MuleSoft in the <a href="comparison.html">full comparison table</a>, on <a href="https://operatorhub.io/operator/community-operators/openshift-integration-operator" target="_blank" rel="noopener noreferrer">OperatorHub</a>, or on <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a> (including the <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report" target="_blank" rel="noopener noreferrer">Trivy security report</a>).</p>
+            <p>Compare against Camel K, Fuse, and MuleSoft in the <a href="comparison.html">full comparison table</a>, on <a href="https://operatorhub.io/operator/openshift-integration-operator" target="_blank" rel="noopener noreferrer">OperatorHub</a>, or on <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a> (including the <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report" target="_blank" rel="noopener noreferrer">Trivy security report</a>).</p>
           </article>
         </div>
       </div>
@@ -299,6 +304,7 @@ oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></
           See the full <a href="quickstart.html">Quick Start Guide</a> for GitOps examples, console plugin access, and verification steps.
           Browse <a href="ready-flows.html"><strong>250+ Ready Flows</strong></a> or the
           <a href="examples-catalog.html">Examples Catalog</a> (310 Apache Camel Quarkus components).
+            <li><a href="security.html">Security Report</a></li>
         </p>
       </div>
     </section>
@@ -440,12 +446,13 @@ quay.io/maximilianopizarro/camel-worker-ai:v0.5.0          <span class="comment"
         <a href="architecture.html">Architecture</a>
         <a href="ready-flows.html">Ready Flows</a>
         <a href="examples-catalog.html">Examples Catalog</a>
+            <li><a href="security.html">Security Report</a></li>
         <a href="comparison.html">Comparison</a>
         <a href="worker-selector.html">Tools</a>
         <a href="faq.html">FAQ</a>
         <a href="contributing.html">Contribute</a>
         <a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://operatorhub.io/operator/community-operators/openshift-integration-operator" target="_blank" rel="noopener noreferrer">OperatorHub</a>
+        <a href="https://operatorhub.io/operator/openshift-integration-operator" target="_blank" rel="noopener noreferrer">OperatorHub</a>
         <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>
         <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report" target="_blank" rel="noopener noreferrer">Security report</a>
       </nav>

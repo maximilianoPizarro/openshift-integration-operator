@@ -1,4 +1,5 @@
 import '../theme/tokens.css';
+import '../theme/flow-designer.css';
 import * as React from 'react';
 import {
   Alert,
@@ -176,6 +177,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const [lifecycleModal, setLifecycleModal] = React.useState<'pause' | 'stop' | null>(null);
   const [zoom, setZoom] = React.useState(1);
   const [fullscreen, setFullscreen] = React.useState(false);
+  const [sidebarInFullscreen, setSidebarInFullscreen] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
   const editorRef = React.useRef<HTMLTextAreaElement>(null);
   const [selectedYamlRange, setSelectedYamlRange] = React.useState<{ start: number; end: number } | null>(null);
@@ -196,6 +198,16 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
       .then(r => r.ok ? r.json() : null)
       .then(cfg => { if (cfg) setPlatformConfig(cfg); })
       .catch(() => undefined);
+  }, []);
+
+  React.useEffect(() => {
+    const onFullscreenChange = () => {
+      const isFs = document.fullscreenElement === contentRef.current;
+      setFullscreen(isFs);
+      if (!isFs) setSidebarInFullscreen(false);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
   const [bannerDismissed, setBannerDismissed] = React.useState(false);
 
@@ -346,23 +358,31 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
 
   const toggleFullscreen = () => {
     if (!fullscreen && contentRef.current) {
-      contentRef.current.requestFullscreen?.();
-      setFullscreen(true);
-    } else if (document.exitFullscreen) {
+      contentRef.current.requestFullscreen?.().catch(() => setFullscreen(false));
+    } else if (document.fullscreenElement) {
       document.exitFullscreen();
-      setFullscreen(false);
     }
   };
 
   const renderZoomToolbar = () => (
-    <Toolbar style={{ padding: '0 8px', minHeight: 'auto' }}>
+    <Toolbar className="integration-zoom-toolbar" style={{ padding: '0 8px', minHeight: 'auto' }}>
       <ToolbarContent style={{ padding: 0 }}>
         <ToolbarItem style={{ marginLeft: 'auto' }}>
+          {fullscreen && (
+            <Button
+              variant="plain"
+              onClick={() => setSidebarInFullscreen(v => !v)}
+              title={sidebarInFullscreen ? 'Hide sidebar' : 'Show sidebar'}
+              style={{ padding: '4px 8px', fontSize: '11px' }}
+            >
+              {sidebarInFullscreen ? 'Hide panel' : 'Panel'}
+            </Button>
+          )}
           <Button variant="plain" onClick={() => setZoom(z => Math.max(0.25, z - 0.1))} title="Zoom Out" style={{ padding: '4px 8px' }}>{'\u2212'}</Button>
           <span style={{ fontSize: '12px', minWidth: '40px', textAlign: 'center', color: 'var(--pf-global--Color--200, #6a6e73)', display: 'inline-block' }}>{Math.round(zoom * 100)}%</span>
           <Button variant="plain" onClick={() => setZoom(z => Math.min(3, z + 0.1))} title="Zoom In" style={{ padding: '4px 8px' }}>+</Button>
           <Button variant="plain" onClick={() => setZoom(1)} title="Reset Zoom" style={{ padding: '4px 8px', fontSize: '12px' }}>1:1</Button>
-          <Button variant="plain" title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'} onClick={toggleFullscreen} style={{ padding: '4px 8px' }}>
+          <Button variant="plain" title={fullscreen ? 'Exit Fullscreen (Esc)' : 'Fullscreen'} onClick={toggleFullscreen} style={{ padding: '4px 8px' }}>
             {fullscreen ? '\u2716' : '\u26F6'}
           </Button>
         </ToolbarItem>
@@ -486,9 +506,22 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
       />
 
       {/* Tabs + Content + Sidebar */}
-      <div ref={contentRef} style={{ flex: 1, display: 'flex', minHeight: 0, backgroundColor: fullscreen ? 'var(--pf-global--BackgroundColor--dark-300, #151515)' : undefined }}>
+      <div
+        ref={contentRef}
+        className={`integration-workspace${fullscreen ? ' integration-workspace--fullscreen' : ''}${sidebarInFullscreen ? ' integration-workspace--sidebar-visible' : ''}`}
+      >
         {/* Main area with Tabs */}
-        <div style={{ flex: 3, display: 'flex', flexDirection: 'column', border: '1px solid var(--integration-border)', borderRadius: '6px 0 0 6px', overflow: 'hidden' }}>
+        <div className="integration-workspace__main">
+          {fullscreen && (
+            <div className="integration-zoom-toolbar" style={{ padding: '4px 12px', display: 'flex', justifyContent: 'flex-end', gap: '4px', flexShrink: 0 }}>
+              <Button variant="plain" onClick={() => setSidebarInFullscreen(v => !v)} style={{ fontSize: '11px', padding: '2px 8px' }}>
+                {sidebarInFullscreen ? 'Hide panel' : 'Show panel'}
+              </Button>
+              <Button variant="plain" onClick={toggleFullscreen} style={{ fontSize: '11px', padding: '2px 8px' }}>
+                Exit fullscreen (Esc)
+              </Button>
+            </div>
+          )}
           <Tabs
             activeKey={activeTab}
             onSelect={(event, eventKey) => {
@@ -500,13 +533,14 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             mountOnEnter
           >
             <Tab eventKey="visual" title={<TabTitleText>Visual Flow</TabTitleText>}>
-              {renderZoomToolbar()}
-              <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-                <div style={{ flex: selectedYamlRange ? 1 : 1, backgroundColor: 'var(--integration-bg-dark)', overflow: 'auto' }}>
-                  <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', minHeight: '100%' }}>
-                    <FlowVisualizer design={design} engine={flow.spec.engine} onNodeClick={handleNodeClick} />
+              <div className="integration-tab-panel">
+                {renderZoomToolbar()}
+                <div className="integration-tab-panel__body">
+                  <div className="integration-tab-panel__canvas">
+                    <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', minHeight: '100%', display: 'flex', justifyContent: 'center' }}>
+                      <FlowVisualizer design={design} engine={flow.spec.engine} onNodeClick={handleNodeClick} />
+                    </div>
                   </div>
-                </div>
                 {selectedYamlRange && (
                   <div style={{ width: '340px', borderLeft: '1px solid var(--integration-border)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--integration-bg-dark)' }}>
                     <div style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--integration-border)' }}>
@@ -532,13 +566,14 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                     </pre>
                   </div>
                 )}
+                </div>
               </div>
             </Tab>
 
             {!isSonataFlow && (
               <Tab eventKey="kaoto" title={<TabTitleText>Kaoto Designer</TabTitleText>}>
-                <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 260px)' }}>
-                  <div style={{ padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)' }}>
+                <div className="integration-tab-panel">
+                  <div style={{ padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)', flexShrink: 0 }}>
                     <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
                       Kaoto Designer &mdash; <strong>{flowName}</strong>
                     </span>
@@ -553,9 +588,9 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                     </Button>
                   </div>
                   {renderZoomToolbar()}
-                  <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+                  <div className="integration-tab-panel__body">
                     <iframe src={kaotoUrl}
-                      style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
+                      style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%`, minHeight: 0 }}
                       title="Kaoto Designer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
                     <div style={{ width: '280px', borderLeft: '1px solid var(--integration-border)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--integration-bg-dark)' }}>
                       <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--integration-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -582,8 +617,8 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                     ? `${sonataFlowConsoleUrl}/Workflow/${sfName}`
                     : sonataFlowConsoleUrl;
                   return (
-                    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 260px)' }}>
-                      <div style={{ padding: '8px 12px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)' }}>
+                    <div className="integration-tab-panel">
+                      <div style={{ padding: '8px 12px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)', flexShrink: 0 }}>
                         <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
                           SonataFlow Management Console
                         </span>
@@ -611,7 +646,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                       </div>
                       {renderZoomToolbar()}
                       <iframe src={sfWorkflowUrl}
-                        style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
+                        style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%`, minHeight: 0 }}
                         title="SonataFlow Management Console" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
                     </div>
                   );
@@ -620,29 +655,25 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             )}
 
             <Tab eventKey="design" title={<TabTitleText>YAML Editor</TabTitleText>}>
-              <div style={{ display: 'flex', gap: '8px', padding: '8px 12px', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)', alignItems: 'center' }}>
-                <Button variant="secondary" onClick={copyDesignToClipboard} style={{ fontSize: '11px' }}>
-                  {copiedDesign ? '\u2713 Copied!' : '\u2398 Copy kaotoDesign'}
-                </Button>
-                <Button variant="secondary" onClick={copyFullYamlToClipboard} style={{ fontSize: '11px' }}>
-                  {copiedFull ? '\u2713 Copied!' : '\u2398 Copy Full CR YAML'}
-                </Button>
-                <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginLeft: 'auto' }}>
-                  {design.split('\n').length} lines
-                </span>
+              <div className="integration-tab-panel">
+                <div style={{ display: 'flex', gap: '8px', padding: '8px 12px', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)', alignItems: 'center', flexShrink: 0 }}>
+                  <Button variant="secondary" onClick={copyDesignToClipboard} style={{ fontSize: '11px' }}>
+                    {copiedDesign ? '\u2713 Copied!' : '\u2398 Copy kaotoDesign'}
+                  </Button>
+                  <Button variant="secondary" onClick={copyFullYamlToClipboard} style={{ fontSize: '11px' }}>
+                    {copiedFull ? '\u2713 Copied!' : '\u2398 Copy Full CR YAML'}
+                  </Button>
+                  <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', marginLeft: 'auto' }}>
+                    {design.split('\n').length} lines
+                  </span>
+                </div>
+                <textarea ref={editorRef} value={design} onChange={(e) => setDesign(e.target.value)} spellCheck={false}
+                  className="integration-tab-panel__editor" />
               </div>
-              <textarea ref={editorRef} value={design} onChange={(e) => setDesign(e.target.value)} spellCheck={false}
-                style={{
-                  width: '100%', height: 'calc(100vh - 300px)', padding: '16px',
-                  fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
-                  fontSize: '13px', lineHeight: 1.6, border: 'none', resize: 'none', outline: 'none',
-                  backgroundColor: 'var(--integration-bg-dark)',
-                  color: 'var(--pf-global--Color--light-100, #e0e0e0)',
-                }} />
             </Tab>
 
             <Tab eventKey="history" title={<TabTitleText>History</TabTitleText>}>
-              <div style={{ padding: '16px', backgroundColor: 'var(--integration-bg-dark)', minHeight: '300px' }}>
+              <div className="integration-tab-panel integration-tab-panel--scroll" style={{ padding: '16px', backgroundColor: 'var(--integration-bg-dark)' }}>
                 <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
                   Version History
                 </Title>
@@ -700,7 +731,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             </Tab>
 
             <Tab eventKey="dependencies" title={<TabTitleText>Dependencies</TabTitleText>}>
-              <div style={{ padding: '16px', backgroundColor: 'var(--integration-bg-dark)', minHeight: '300px' }}>
+              <div className="integration-tab-panel integration-tab-panel--scroll" style={{ padding: '16px', backgroundColor: 'var(--integration-bg-dark)' }}>
                 <Title headingLevel="h3" size="md" style={{ marginBottom: '8px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
                   Dependency Graph
                 </Title>
@@ -731,9 +762,9 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             </Tab>
 
             <Tab eventKey="spec" title={<TabTitleText>Spec</TabTitleText>}>
-              <div style={{ display: 'flex', minHeight: '300px' }}>
+              <div className="integration-tab-panel integration-tab-panel__body">
                 <pre style={{
-                  flex: 1, margin: 0, padding: '16px', overflow: 'auto',
+                  flex: 1, margin: 0, padding: '16px', overflow: 'auto', minHeight: 0,
                   fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
                   fontSize: '13px', lineHeight: 1.6,
                   backgroundColor: 'var(--integration-bg-dark)',
@@ -806,12 +837,12 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             </Tab>
 
             <Tab eventKey="logs" title={<TabTitleText>Logs</TabTitleText>}>
-              <FlowLogsTab flowNamespace={flowNamespace} flowName={flowName} />
+              <FlowLogsTab flowNamespace={flowNamespace} flowName={flowName} fillHeight />
             </Tab>
 
             <Tab eventKey="cr-status" title={<TabTitleText>Status</TabTitleText>}>
-              <pre style={{
-                margin: 0, padding: '16px', overflow: 'auto', minHeight: '300px',
+              <pre className="integration-tab-panel integration-tab-panel--scroll" style={{
+                margin: 0, padding: '16px', overflow: 'auto',
                 fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
                 fontSize: '13px', lineHeight: 1.6,
                 backgroundColor: 'var(--integration-bg-dark)',
@@ -822,7 +853,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
         </div>
 
         {/* Sidebar */}
-        <Card isCompact isPlain style={{ width: '240px', overflow: 'auto', borderTop: '1px solid var(--integration-border)', borderRight: '1px solid var(--integration-border)', borderBottom: '1px solid var(--integration-border)', borderRadius: '0 6px 6px 0' }}>
+        <Card isCompact isPlain className="integration-workspace__sidebar">
           <CardBody>
             <TelemetryOverlay flowId={flowName} />
           </CardBody>

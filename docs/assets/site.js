@@ -2,9 +2,10 @@
   'use strict';
 
   var SITE_LINKS = {
-    operatorHub: 'https://operatorhub.io/operator/community-operators/openshift-integration-operator',
+    operatorHub: 'https://operatorhub.io/operator/openshift-integration-operator',
     artifactHub: 'https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator',
     artifactHubSecurity: 'https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator?tab=security-report',
+    securityDashboard: 'security.html',
     github: 'https://github.com/maximilianoPizarro/openshift-integration-operator'
   };
 
@@ -33,6 +34,7 @@
                 '<li><a href="worker-selector.html">Worker Image Selector</a></li>' +
                 '<li><a href="yaml-generator.html">CR YAML Generator</a></li>' +
                 '<li><a href="examples-catalog.html">Examples Catalog</a></li>' +
+                '<li><a href="security.html">Security Report</a></li>' +
                 '<li><a href="operations.html">Operations</a></li>' +
                 '<li><a href="troubleshooting.html">Troubleshooting</a></li>' +
               '</ul>' +
@@ -70,6 +72,7 @@
             '<a href="faq.html">FAQ</a>' +
             '<a href="contributing.html">Contribute</a>' +
             '<a href="' + SITE_LINKS.github + '" target="_blank" rel="noopener noreferrer">GitHub</a>' +
+            '<a href="security.html">Security</a>' +
             '<a href="' + SITE_LINKS.operatorHub + '" target="_blank" rel="noopener noreferrer">OperatorHub</a>' +
             '<a href="' + SITE_LINKS.artifactHub + '" target="_blank" rel="noopener noreferrer">Artifact Hub</a>' +
             '<a href="' + SITE_LINKS.artifactHubSecurity + '" target="_blank" rel="noopener noreferrer">Security report</a>' +
