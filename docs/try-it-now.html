@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Try OpenShift Integration Operator in 5 minutes with Ephemeral mode. No Git, no pipelines.">
+  <title>Try It Now | OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/patternfly.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatText/RedHatText.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatDisplay/RedHatDisplay.css">
+  <link rel="stylesheet" href="assets/site.css">
+  <script defer src="assets/site.js"></script>
+</head>
+<body class="site-page site-page--doc">
+  <header class="site-masthead" role="banner">
+    <div class="site-masthead__brand">
+      <button type="button" class="site-masthead__toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="site-nav">
+        <span class="site-masthead__toggle-icon" aria-hidden="true"></span>
+      </button>
+      <a class="site-masthead__logo" href="index.html">
+        <img src="assets/logo.png" alt="" width="28" height="28">
+        <span>OpenShift Integration Operator</span>
+      </a>
+    </div>
+    <nav class="site-masthead__nav" id="site-nav" aria-label="Primary">
+      <ul class="site-masthead__nav-list">
+        <li><a class="site-masthead__nav-link" href="index.html">Home</a></li>
+        <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
+        <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
+        <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
+        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="worker-selector.html">Worker Image Selector</a></li>
+            <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="operations.html">Operations</a></li>
+            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+          </ul>
+        </li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">About ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="comparison.html">Comparison</a></li>
+            <li><a href="migrating-from-camel-k.html">Migrate</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+            <li><a href="contributing.html">Contribute</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <header class="page-header">
+    <div class="container">
+      <nav class="site-breadcrumbs" aria-label="breadcrumb">
+        <ol>
+          <li><a href="index.html">Home</a><span class="separator">/</span></li>
+          <li aria-current="page">Try It Now</li>
+        </ol>
+      </nav>
+      <h1>Try It Now (Ephemeral Mode)</h1>
+      <p>Evaluate the platform in 5 minutes. No Git repositories, no Tekton pipelines, no Argo CD required.</p>
+    </div>
+  </header>
+
+  <main class="site-main site-main--compact">
+    <div class="container">
+      
+      <section class="doc-section">
+        <div class="card" style="padding: 1.5rem; border-left: 4px solid var(--pf-v5-global--primary-color--100); background: var(--pf-v5-global--BackgroundColor--200);">
+          <h2 style="margin-top: 0; font-size: 1.25rem;">Available on OperatorHub</h2>
+          <p style="margin-bottom: 0;">
+            The easiest way to install is directly from the OpenShift Console. Search for <strong>Integration Platform</strong> in the OperatorHub.
+          </p>
+        </div>
+      </section>
+
+      <section class="doc-section">
+        <h2>1. Install the Operator</h2>
+        <p>If you prefer the CLI, install the latest release using Helm (Quay.io images):</p>
+        <pre><code>helm upgrade --install openshift-integration-operator \
+  https://github.com/maximilianoPizarro/openshift-integration-operator/releases/download/v0.5.0/openshift-integration-operator-0.5.0.tgz \
+  --namespace openshift-integration \
+  --create-namespace</code></pre>
+      </section>
+
+      <section class="doc-section">
+        <h2>2. Deploy an Ephemeral Flow</h2>
+        <p>Create a simple Camel route that logs a message every 10 seconds. The operator will instantly deploy a precompiled worker pod.</p>
+        <pre><code>cat &lt;&lt;EOF | oc apply -f -
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: hello-ephemeral
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  engine: CAMEL
+  integrationType: CAMEL_ROUTE
+  ephemeral:
+    ttlSeconds: 3600
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: hello-route
+        from:
+          uri: "timer:tick?period=10000"
+          steps:
+            - log:
+                message: "Hello from Ephemeral Mode!"
+EOF</code></pre>
+      </section>
+
+      <section class="doc-section">
+        <h2>3. Watch it run</h2>
+        <p>Check the status of the flow. It should transition to <code>Running</code> within seconds.</p>
+        <pre><code>oc get integrationflow hello-ephemeral -n openshift-integration -w</code></pre>
+        <p>Once running, check the logs of the worker pod:</p>
+        <pre><code>oc logs -l platform.io/flow-name=hello-ephemeral -n openshift-integration -f</code></pre>
+      </section>
+
+      <section class="doc-section">
+        <h2>Next Steps</h2>
+        <ul>
+          <li>Open the <strong>OpenShift Console</strong>, navigate to the new <strong>Integration Platform</strong> menu, and edit your flow visually using Kaoto.</li>
+          <li>When you are ready for production, click <strong>Promote to GitOps</strong> in the UI to generate a Git repository and CI/CD pipelines.</li>
+          <li>Read the <a href="architecture.html">Architecture</a> guide to understand how it works under the hood.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Built by <a href="https://github.com/maximilianoPizarro"><strong>maximilianoPizarro</strong></a></p>
+      <nav class="site-footer__links" aria-label="Footer">
+        <a href="index.html">Home</a>
+        <a href="try-it-now.html">Try It Now</a>
+        <a href="quickstart.html">Guide</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="examples-catalog.html">Examples</a>
+        <a href="worker-selector.html">Tools</a>
+        <a href="faq.html">FAQ</a>
+        <a href="contributing.html">Contribute</a>
+        <a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>
+      </nav>
+      <p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>
+    </div>
+  </footer>
+</body>
+</html>

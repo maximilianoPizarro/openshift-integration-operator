@@ -27,11 +27,29 @@
     <nav class="site-masthead__nav" id="site-nav" aria-label="Primary">
       <ul class="site-masthead__nav-list">
         <li><a class="site-masthead__nav-link" href="index.html">Home</a></li>
+        <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
         <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
         <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
-        <li><a class="site-masthead__nav-link" href="operations.html">Operations</a></li>
         <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
-        <li><a class="site-masthead__nav-link" href="contributing.html">Contribute</a></li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="worker-selector.html">Worker Image Selector</a></li>
+            <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="operations.html">Operations</a></li>
+            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+          </ul>
+        </li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">About ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="comparison.html">Comparison</a></li>
+            <li><a href="migrating-from-camel-k.html">Migrate</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+            <li><a href="contributing.html">Contribute</a></li>
+          </ul>
+        </li>
       </ul>
     </nav>
   </header>
@@ -448,6 +466,23 @@ Content-Type: application/json
     </div>
   </main>
 
-  <div id="site-footer"></div>
+  <footer class="site-footer">
+    <div class="container">
+      <p>Built by <a href="https://github.com/maximilianoPizarro"><strong>maximilianoPizarro</strong></a></p>
+      <nav class="site-footer__links" aria-label="Footer">
+        <a href="index.html">Home</a>
+        <a href="try-it-now.html">Try It Now</a>
+        <a href="quickstart.html">Guide</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="examples-catalog.html">Examples</a>
+        <a href="worker-selector.html">Tools</a>
+        <a href="faq.html">FAQ</a>
+        <a href="contributing.html">Contribute</a>
+        <a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>
+      </nav>
+      <p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>
+    </div>
+  </footer>
 </body>
 </html>

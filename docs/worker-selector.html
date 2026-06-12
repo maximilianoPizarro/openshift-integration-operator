@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Worker Image Selector — OpenShift Integration Operator">
+  <title>Worker Image Selector | OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/patternfly.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatText/RedHatText.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatDisplay/RedHatDisplay.css">
+  <link rel="stylesheet" href="assets/site.css">
+  <script defer src="assets/site.js"></script>
+  <style>
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .component-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border: 1px solid var(--pf-v5-global--BorderColor--100);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .component-checkbox:hover {
+      background-color: var(--pf-v5-global--BackgroundColor--200);
+    }
+    .component-checkbox input {
+      cursor: pointer;
+    }
+    .result-box {
+      background-color: var(--pf-v5-global--BackgroundColor--dark-100);
+      color: var(--pf-v5-global--Color--light-100);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-top: 2rem;
+    }
+    .result-image {
+      font-family: monospace;
+      font-size: 1.2rem;
+      color: var(--pf-v5-global--success-color--100);
+      margin: 1rem 0;
+      word-break: break-all;
+    }
+    .domain-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-left: auto;
+    }
+    .domain-core { background: #e0e0e0; color: #333; }
+    .domain-messaging { background: #d0e2ff; color: #004080; }
+    .domain-http { background: #d4edda; color: #155724; }
+    .domain-data { background: #fff3cd; color: #856404; }
+    .domain-cloud { background: #cce5ff; color: #004085; }
+    .domain-ai { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body class="site-page site-page--doc">
+  <header class="site-masthead" role="banner">
+    <div class="site-masthead__brand">
+      <button type="button" class="site-masthead__toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="site-nav">
+        <span class="site-masthead__toggle-icon" aria-hidden="true"></span>
+      </button>
+      <a class="site-masthead__logo" href="index.html">
+        <img src="assets/logo.png" alt="" width="28" height="28">
+        <span>OpenShift Integration Operator</span>
+      </a>
+    </div>
+    <nav class="site-masthead__nav" id="site-nav" aria-label="Primary">
+      <ul class="site-masthead__nav-list">
+        <li><a class="site-masthead__nav-link" href="index.html">Home</a></li>
+        <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
+        <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
+        <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
+        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="worker-selector.html">Worker Image Selector</a></li>
+            <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="operations.html">Operations</a></li>
+            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+          </ul>
+        </li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">About ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="comparison.html">Comparison</a></li>
+            <li><a href="migrating-from-camel-k.html">Migrate</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+            <li><a href="contributing.html">Contribute</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <header class="page-header">
+    <div class="container">
+      <nav class="site-breadcrumbs" aria-label="breadcrumb">
+        <ol>
+          <li><a href="index.html">Home</a><span class="separator">/</span></li>
+          <li aria-current="page">Worker Image Selector</li>
+        </ol>
+      </nav>
+      <h1>Worker Image Selector</h1>
+      <p>Select the Camel components you need, and we'll calculate the lightest precompiled worker image for Ephemeral mode.</p>
+    </div>
+  </header>
+
+  <main class="site-main site-main--compact">
+    <div class="container">
+      <section class="doc-section">
+        <h2>Select Components</h2>
+        <p>The operator automatically selects the smallest image that contains all your required components. If your components span multiple domains, it falls back to the <code>camel-worker-full</code> image.</p>
+        
+        <div class="component-grid" id="componentGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="result-box">
+          <h3>Recommended Image</h3>
+          <p>Based on your selection, you should use:</p>
+          <div class="result-image" id="resultImage">quay.io/maximilianopizarro/camel-worker-core:v0.5.0</div>
+          <p id="resultReason">Reason: Only core components selected.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Built by <a href="https://github.com/maximilianoPizarro"><strong>maximilianoPizarro</strong></a></p>
+      <nav class="site-footer__links" aria-label="Footer">
+        <a href="index.html">Home</a>
+        <a href="try-it-now.html">Try It Now</a>
+        <a href="quickstart.html">Guide</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="examples-catalog.html">Examples</a>
+        <a href="worker-selector.html">Tools</a>
+        <a href="faq.html">FAQ</a>
+        <a href="contributing.html">Contribute</a>
+        <a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>
+      </nav>
+      <p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const domains = {
+        core: ["timer", "log", "direct", "seda", "bean", "yaml-dsl", "mock", "quartz", "cron", "exec", "controlbus", "scheduler"],
+        messaging: ["kafka", "amqp", "jms", "activemq", "paho-mqtt5", "mqtt", "nats", "pulsar", "stomp", "aws2-sqs", "aws2-sns", "azure-servicebus", "google-pubsub", "spring-rabbitmq", "disruptor", "knative", "sjms2"],
+        http: ["platform-http", "http", "https", "rest", "rest-openapi", "vertx-http", "netty-http", "graphql", "grpc", "websocket", "vertx-websocket", "coap", "jackson", "jsonpath"],
+        data: ["sql", "jdbc", "mongodb", "cassandraql", "couchdb", "redis", "spring-redis", "elasticsearch", "solr", "minio", "file", "ftp"],
+        cloud: ["aws2-s3", "aws2-sqs", "aws2-sns", "aws2-ddb", "aws2-lambda", "aws2-kinesis", "aws2-ses", "aws-bedrock", "azure-storage-blob", "azure-cosmosdb", "azure-eventhubs", "google-storage", "google-bigquery", "google-pubsub", "ibm-cos"],
+        ai: ["langchain4j", "langchain4j-chat", "djl", "aws-bedrock"]
+      };
+
+      const grid = document.getElementById('componentGrid');
+      const resultImage = document.getElementById('resultImage');
+      const resultReason = document.getElementById('resultReason');
+      const selectedComponents = new Set();
+
+      // Flatten and sort components
+      const allComponents = [];
+      for (const [domain, comps] of Object.entries(domains)) {
+        comps.forEach(c => {
+          if (!allComponents.find(x => x.name === c)) {
+            allComponents.push({ name: c, domain: domain });
+          }
+        });
+      }
+      allComponents.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Render checkboxes
+      allComponents.forEach(comp => {
+        const label = document.createElement('label');
+        label.className = 'component-checkbox';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = comp.name;
+        checkbox.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            selectedComponents.add(comp.name);
+          } else {
+            selectedComponents.delete(comp.name);
+          }
+          calculateImage();
+        });
+
+        const text = document.createTextNode(comp.name);
+        
+        const badge = document.createElement('span');
+        badge.className = `domain-badge domain-${comp.domain}`;
+        badge.textContent = comp.domain;
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        label.appendChild(badge);
+        grid.appendChild(label);
+      });
+
+      function calculateImage() {
+        if (selectedComponents.size === 0) {
+          resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-core:v0.5.0";
+          resultReason.textContent = "Reason: No components selected, defaulting to core.";
+          return;
+        }
+
+        const requiredDomains = new Set();
+        selectedComponents.forEach(comp => {
+          for (const [domain, comps] of Object.entries(domains)) {
+            if (comps.includes(comp) && domain !== 'core') {
+              requiredDomains.add(domain);
+            }
+          }
+        });
+
+        if (requiredDomains.size === 0) {
+          resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-core:v0.5.0";
+          resultReason.textContent = "Reason: Only core components selected.";
+        } else if (requiredDomains.size === 1) {
+          const domain = Array.from(requiredDomains)[0];
+          resultImage.textContent = `quay.io/maximilianopizarro/camel-worker-${domain}:v0.5.0`;
+          resultReason.textContent = `Reason: All components fit within the '${domain}' domain.`;
+        } else {
+          resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-full:v0.5.0";
+          resultReason.textContent = `Reason: Components span multiple domains (${Array.from(requiredDomains).join(', ')}). Falling back to the full image.`;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

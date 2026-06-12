@@ -149,44 +149,19 @@
     });
   }
 
-  function initFooter() {
-    var placeholder = document.getElementById('site-footer');
-    if (!placeholder) return;
 
-    var footer = document.createElement('footer');
-    footer.className = 'site-footer';
-    footer.innerHTML =
-      '<div class="container">' +
-        '<p>Built by <a href="https://github.com/maximilianoPizarro"><strong>maximilianoPizarro</strong></a></p>' +
-        '<nav class="site-footer__links" aria-label="Footer">' +
-          '<a href="index.html">Home</a>' +
-          '<a href="architecture.html">Architecture</a>' +
-          '<a href="quickstart.html">Guide</a>' +
-          '<a href="ai-models-and-mcp.html">AI &amp; MCP</a>' +
-          '<a href="operations.html">Operations</a>' +
-          '<a href="examples-catalog.html">Examples (250+)</a>' +
-          '<a href="ready-flows.html">Ready Flows (250+)</a>' +
-          '<a href="contributing.html">Contribute</a>' +
-          '<a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>' +
-          '<a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>' +
-        '</nav>' +
-        '<p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>' +
-      '</div>';
-
-    placeholder.replaceWith(footer);
-  }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       initMasthead();
       initLightbox();
       initCopyButtons();
-      initFooter();
+      
     });
   } else {
     initMasthead();
     initLightbox();
     initCopyButtons();
-    initFooter();
+    
   }
 })();

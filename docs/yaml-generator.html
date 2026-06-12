@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CR YAML Generator — OpenShift Integration Operator">
+  <title>CR YAML Generator | OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/patternfly.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatText/RedHatText.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatDisplay/RedHatDisplay.css">
+  <link rel="stylesheet" href="assets/site.css">
+  <script defer src="assets/site.js"></script>
+  <style>
+    .generator-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 768px) {
+      .generator-container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .form-control {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--pf-v5-global--BorderColor--100);
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--pf-v5-global--primary-color--100);
+      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.25);
+    }
+    .radio-group {
+      display: flex;
+      gap: 1rem;
+    }
+    .radio-group label {
+      font-weight: normal;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .output-pane {
+      background: var(--pf-v5-global--BackgroundColor--dark-100);
+      border-radius: 8px;
+      padding: 1rem;
+      position: relative;
+    }
+    .output-pane pre {
+      margin: 0;
+      background: transparent;
+      padding: 0;
+      color: #e6edf3;
+      font-family: monospace;
+      font-size: 0.875rem;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body class="site-page site-page--doc">
+  <header class="site-masthead" role="banner">
+    <div class="site-masthead__brand">
+      <button type="button" class="site-masthead__toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="site-nav">
+        <span class="site-masthead__toggle-icon" aria-hidden="true"></span>
+      </button>
+      <a class="site-masthead__logo" href="index.html">
+        <img src="assets/logo.png" alt="" width="28" height="28">
+        <span>OpenShift Integration Operator</span>
+      </a>
+    </div>
+    <nav class="site-masthead__nav" id="site-nav" aria-label="Primary">
+      <ul class="site-masthead__nav-list">
+        <li><a class="site-masthead__nav-link" href="index.html">Home</a></li>
+        <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
+        <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
+        <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
+        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="worker-selector.html">Worker Image Selector</a></li>
+            <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="operations.html">Operations</a></li>
+            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+          </ul>
+        </li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">About ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="comparison.html">Comparison</a></li>
+            <li><a href="migrating-from-camel-k.html">Migrate</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+            <li><a href="contributing.html">Contribute</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <header class="page-header">
+    <div class="container">
+      <nav class="site-breadcrumbs" aria-label="breadcrumb">
+        <ol>
+          <li><a href="index.html">Home</a><span class="separator">/</span></li>
+          <li aria-current="page">CR YAML Generator</li>
+        </ol>
+      </nav>
+      <h1>IntegrationFlow YAML Generator</h1>
+      <p>Generate the Custom Resource definition for your integration without memorizing the syntax.</p>
+    </div>
+  </header>
+
+  <main class="site-main site-main--compact">
+    <div class="container">
+      <div class="generator-container">
+        <div class="input-pane">
+          <form id="yamlForm">
+            <div class="form-group">
+              <label for="flowName">Flow Name</label>
+              <input type="text" id="flowName" class="form-control" value="my-integration" required>
+            </div>
+
+            <div class="form-group">
+              <label>Deployment Mode</label>
+              <div class="radio-group">
+                <label><input type="radio" name="deployMode" value="EPHEMERAL" checked> Ephemeral (Quick Try)</label>
+                <label><input type="radio" name="deployMode" value="GITOPS"> GitOps (Production)</label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="engine">Engine</label>
+              <select id="engine" class="form-control">
+                <option value="CAMEL">Apache Camel</option>
+                <option value="SONATAFLOW">SonataFlow</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="integrationTypeGroup">
+              <label for="integrationType">Integration Type</label>
+              <select id="integrationType" class="form-control">
+                <option value="CAMEL_ROUTE">Camel Route</option>
+                <option value="CAMEL_KAMELET">Kamelet</option>
+                <option value="CAMEL_PIPE">Pipe</option>
+                <option value="CAMEL_TEST">Test</option>
+              </select>
+            </div>
+
+            <!-- Ephemeral Specific -->
+            <div id="ephemeralFields">
+              <div class="form-group">
+                <label for="ttlSeconds">TTL Seconds (Time to live)</label>
+                <input type="number" id="ttlSeconds" class="form-control" value="3600">
+              </div>
+            </div>
+
+            <!-- GitOps Specific -->
+            <div id="gitopsFields" style="display: none;">
+              <div class="form-group">
+                <label for="gitRepo">Git Repository URL</label>
+                <input type="url" id="gitRepo" class="form-control" value="https://github.com/myorg/my-integration.git">
+              </div>
+              <div class="form-group">
+                <label for="gitBranch">Branch</label>
+                <input type="text" id="gitBranch" class="form-control" value="main">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="kaotoDesign">kaotoDesign (Inline Route YAML)</label>
+              <textarea id="kaotoDesign" class="form-control" rows="6" style="font-family: monospace;">- route:
+    id: my-route
+    from:
+      uri: "timer:tick?period=5000"
+      steps:
+        - log:
+            message: "Hello World"</textarea>
+            </div>
+          </form>
+        </div>
+
+        <div class="output-pane">
+          <pre><code id="yamlOutput"></code></pre>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Built by <a href="https://github.com/maximilianoPizarro"><strong>maximilianoPizarro</strong></a></p>
+      <nav class="site-footer__links" aria-label="Footer">
+        <a href="index.html">Home</a>
+        <a href="try-it-now.html">Try It Now</a>
+        <a href="quickstart.html">Guide</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="examples-catalog.html">Examples</a>
+        <a href="worker-selector.html">Tools</a>
+        <a href="faq.html">FAQ</a>
+        <a href="contributing.html">Contribute</a>
+        <a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>
+      </nav>
+      <p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('yamlForm');
+      const output = document.getElementById('yamlOutput');
+      
+      const inputs = {
+        flowName: document.getElementById('flowName'),
+        deployMode: document.getElementsByName('deployMode'),
+        engine: document.getElementById('engine'),
+        integrationType: document.getElementById('integrationType'),
+        integrationTypeGroup: document.getElementById('integrationTypeGroup'),
+        ttlSeconds: document.getElementById('ttlSeconds'),
+        gitRepo: document.getElementById('gitRepo'),
+        gitBranch: document.getElementById('gitBranch'),
+        kaotoDesign: document.getElementById('kaotoDesign'),
+        ephemeralFields: document.getElementById('ephemeralFields'),
+        gitopsFields: document.getElementById('gitopsFields')
+      };
+
+      function updateVisibility() {
+        const mode = Array.from(inputs.deployMode).find(r => r.checked).value;
+        const engine = inputs.engine.value;
+
+        inputs.ephemeralFields.style.display = mode === 'EPHEMERAL' ? 'block' : 'none';
+        inputs.gitopsFields.style.display = mode === 'GITOPS' ? 'block' : 'none';
+        inputs.integrationTypeGroup.style.display = engine === 'CAMEL' ? 'block' : 'none';
+      }
+
+      function generateYAML() {
+        const mode = Array.from(inputs.deployMode).find(r => r.checked).value;
+        const engine = inputs.engine.value;
+        const name = inputs.flowName.value || 'my-integration';
+        
+        let yaml = `apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ${name}
+  namespace: openshift-integration
+spec:
+  deploymentMode: ${mode}
+  engine: ${engine}`;
+
+        if (engine === 'CAMEL') {
+          yaml += `\n  integrationType: ${inputs.integrationType.value}`;
+        }
+
+        if (mode === 'EPHEMERAL') {
+          yaml += `\n  ephemeral:
+    ttlSeconds: ${inputs.ttlSeconds.value || 3600}`;
+        } else {
+          yaml += `\n  gitRepository: "${inputs.gitRepo.value}"
+  branch: "${inputs.gitBranch.value}"`;
+        }
+
+        yaml += `\n  targeting:
+    strategy: explicit
+    clusters: [local]`;
+
+        const design = inputs.kaotoDesign.value.trim();
+        if (design) {
+          yaml += `\n  kaotoDesign: |\n`;
+          yaml += design.split('\n').map(line => `    ${line}`).join('\n');
+        }
+
+        output.textContent = yaml;
+      }
+
+      form.addEventListener('input', () => {
+        updateVisibility();
+        generateYAML();
+      });
+
+      updateVisibility();
+      generateYAML();
+    });
+  </script>
+</body>
+</html>

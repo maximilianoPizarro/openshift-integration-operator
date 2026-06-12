@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Compare OpenShift Integration Operator with Camel K, Red Hat Fuse, n8n, and MuleSoft">
+  <title>Platform Comparison | OpenShift Integration Operator</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/patternfly.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatText/RedHatText.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@patternfly/patternfly@5.4.0/assets/fonts/RedHatDisplay/RedHatDisplay.css">
+  <link rel="stylesheet" href="assets/site.css">
+  <script defer src="assets/site.js"></script>
+  <style>
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+      background: var(--pf-v5-global--BackgroundColor--100);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .comparison-table th, .comparison-table td {
+      padding: 1rem;
+      text-align: left;
+      border: 1px solid var(--pf-v5-global--BorderColor--100);
+    }
+    .comparison-table th {
+      background: var(--pf-v5-global--BackgroundColor--200);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    .comparison-table th:first-child {
+      width: 20%;
+    }
+    .col-this {
+      background: rgba(0, 102, 204, 0.05) !important;
+      border-left: 2px solid var(--pf-v5-global--primary-color--100) !important;
+      border-right: 2px solid var(--pf-v5-global--primary-color--100) !important;
+    }
+    .col-this-header {
+      background: rgba(0, 102, 204, 0.1) !important;
+      border-top: 2px solid var(--pf-v5-global--primary-color--100) !important;
+      color: var(--pf-v5-global--primary-color--100);
+    }
+    .check { color: var(--pf-v5-global--success-color--100); font-weight: bold; }
+    .cross { color: var(--pf-v5-global--danger-color--100); }
+    .partial { color: var(--pf-v5-global--warning-color--100); }
+  </style>
+</head>
+<body class="site-page site-page--doc">
+  <header class="site-masthead" role="banner">
+    <div class="site-masthead__brand">
+      <button type="button" class="site-masthead__toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="site-nav">
+        <span class="site-masthead__toggle-icon" aria-hidden="true"></span>
+      </button>
+      <a class="site-masthead__logo" href="index.html">
+        <img src="assets/logo.png" alt="" width="28" height="28">
+        <span>OpenShift Integration Operator</span>
+      </a>
+    </div>
+    <nav class="site-masthead__nav" id="site-nav" aria-label="Primary">
+      <ul class="site-masthead__nav-list">
+        <li><a class="site-masthead__nav-link" href="index.html">Home</a></li>
+        <li><a class="site-masthead__nav-link" href="try-it-now.html">Try It Now</a></li>
+        <li><a class="site-masthead__nav-link" href="quickstart.html">Quick Start</a></li>
+        <li><a class="site-masthead__nav-link" href="architecture.html">Architecture</a></li>
+        <li><a class="site-masthead__nav-link" href="examples-catalog.html">Examples</a></li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">Tools ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="worker-selector.html">Worker Image Selector</a></li>
+            <li><a href="yaml-generator.html">CR YAML Generator</a></li>
+            <li><a href="operations.html">Operations</a></li>
+            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+          </ul>
+        </li>
+        <li class="nav-dropdown">
+          <a class="site-masthead__nav-link" href="#" onclick="event.preventDefault(); this.parentElement.classList.toggle('is-open');">About ▾</a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="comparison.html">Comparison</a></li>
+            <li><a href="migrating-from-camel-k.html">Migrate</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+            <li><a href="contributing.html">Contribute</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <header class="page-header">
+    <div class="container">
+      <nav class="site-breadcrumbs" aria-label="breadcrumb">
+        <ol>
+          <li><a href="index.html">Home</a><span class="separator">/</span></li>
+          <li aria-current="page">Platform Comparison</li>
+        </ol>
+      </nav>
+      <h1>Platform Comparison</h1>
+      <p>An honest look at how the OpenShift Integration Operator compares to other integration tools.</p>
+    </div>
+  </header>
+
+  <main class="site-main site-main--compact">
+    <div class="container">
+      <section class="doc-section">
+        <p>This operator is not a new runtime; it's a lifecycle and UX layer built on top of Apache Camel. It aims to bridge the gap between developer-friendly low-code tools and enterprise-grade GitOps workflows.</p>
+        
+        <div style="overflow-x: auto;">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th class="col-this col-this-header">Integration Operator</th>
+                <th>Camel K</th>
+                <th>Red Hat Fuse (EOL)</th>
+                <th>MuleSoft / Boomi</th>
+                <th>n8n / Zapier</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Primary Focus</strong></td>
+                <td class="col-this">Lifecycle & UX on OpenShift</td>
+                <td>Serverless runtime</td>
+                <td>Legacy ESB</td>
+                <td>Enterprise iPaaS</td>
+                <td>Citizen automation</td>
+              </tr>
+              <tr>
+                <td><strong>Visual Designer</strong></td>
+                <td class="col-this"><span class="check">✔</span> Yes (Kaoto embedded)</td>
+                <td><span class="cross">✘</span> No (CLI/IDE only)</td>
+                <td><span class="partial">~</span> Yes (Eclipse tooling)</td>
+                <td><span class="check">✔</span> Yes (Proprietary)</td>
+                <td><span class="check">✔</span> Yes (Web UI)</td>
+              </tr>
+              <tr>
+                <td><strong>GitOps Native</strong></td>
+                <td class="col-this"><span class="check">✔</span> Yes (Tekton + Argo CD)</td>
+                <td><span class="cross">✘</span> No (Operator builds)</td>
+                <td><span class="partial">~</span> Manual CI/CD</td>
+                <td><span class="partial">~</span> Proprietary CI/CD</td>
+                <td><span class="cross">✘</span> No (DB driven)</td>
+              </tr>
+              <tr>
+                <td><strong>Ephemeral Testing</strong></td>
+                <td class="col-this"><span class="check">✔</span> Yes (Precompiled workers)</td>
+                <td><span class="check">✔</span> Yes (Fast builds)</td>
+                <td><span class="cross">✘</span> No</td>
+                <td><span class="partial">~</span> Yes (Cloud hub)</td>
+                <td><span class="check">✔</span> Yes (Instant execution)</td>
+              </tr>
+              <tr>
+                <td><strong>Multi-cluster Targeting</strong></td>
+                <td class="col-this"><span class="check">✔</span> Yes (ApplicationSets)</td>
+                <td><span class="cross">✘</span> No</td>
+                <td><span class="cross">✘</span> No</td>
+                <td><span class="check">✔</span> Yes</td>
+                <td><span class="cross">✘</span> No</td>
+              </tr>
+              <tr>
+                <td><strong>AI / LLM Integration</strong></td>
+                <td class="col-this"><span class="check">✔</span> Native (LangChain4j)</td>
+                <td><span class="partial">~</span> Manual config</td>
+                <td><span class="cross">✘</span> No</td>
+                <td><span class="check">✔</span> Yes (Add-ons)</td>
+                <td><span class="check">✔</span> Yes (Nodes)</td>
+              </tr>
+              <tr>
+                <td><strong>Vendor Lock-in</strong></td>
+                <td class="col-this"><span class="check">Low</span> (Standard Camel YAML)</td>
+                <td><span class="check">Low</span> (Standard Camel)</td>
+                <td><span class="check">Low</span> (Camel XML)</td>
+                <td><span class="cross">High</span> (Proprietary XML)</td>
+                <td><span class="cross">High</span> (Proprietary JSON)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Built by <a href="https://github.com/maximilianoPizarro"><strong>maximilianoPizarro</strong></a></p>
+      <nav class="site-footer__links" aria-label="Footer">
+        <a href="index.html">Home</a>
+        <a href="try-it-now.html">Try It Now</a>
+        <a href="quickstart.html">Guide</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="examples-catalog.html">Examples</a>
+        <a href="worker-selector.html">Tools</a>
+        <a href="faq.html">FAQ</a>
+        <a href="contributing.html">Contribute</a>
+        <a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://artifacthub.io/packages/search?repo=openshift-integration-operator" target="_blank" rel="noopener noreferrer">Artifact Hub</a>
+      </nav>
+      <p>Licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>
+    </div>
+  </footer>
+</body>
+</html>
