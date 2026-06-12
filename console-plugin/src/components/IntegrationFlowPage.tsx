@@ -36,6 +36,17 @@ import { API_BASE as K8S_FLOW_API, NAMESPACE, PROXY_BASE } from '../constants';
 import { buildPodLinks } from '../utils/podLinks';
 
 const API_BASE = K8S_FLOW_API;
+
+function extractPlaceholders(properties: Record<string, string>): string[] {
+  const keys = new Set<string>();
+  for (const val of Object.values(properties)) {
+    const matches = val.matchAll(/\$\{([A-Z0-9_]+)(?::[^}]*)?\}/g);
+    for (const match of matches) {
+      keys.add(match[1]);
+    }
+  }
+  return Array.from(keys);
+}
 const PAGE_SIZE = 10;
 
 interface Condition {
@@ -196,6 +207,8 @@ const IntegrationFlowPage: React.FC = () => {
   const [ephemeralProperties, setEphemeralProperties] = React.useState<Record<string, string>>({});
   const [ephemeralSecretName, setEphemeralSecretName] = React.useState('');
   const [templatePropertyConfig, setTemplatePropertyConfig] = React.useState<TemplatePropertyConfig | null>(null);
+  const [createSecretMode, setCreateSecretMode] = React.useState(false);
+  const [ephemeralSecretData, setEphemeralSecretData] = React.useState<Record<string, string>>({});
 
   const [search, setSearch] = React.useState('');
   const [filterType, setFilterType] = React.useState('');
@@ -263,6 +276,19 @@ const IntegrationFlowPage: React.FC = () => {
     setTemplatePropertyConfig(config);
     setEphemeralProperties(config.properties);
     setEphemeralSecretName(config.defaultSecretName);
+    
+    // Auto-populate secret data if there are placeholders
+    const placeholders = extractPlaceholders(config.properties);
+    if (placeholders.length > 0) {
+      const initialSecretData: Record<string, string> = {};
+      placeholders.forEach(p => initialSecretData[p] = '');
+      setEphemeralSecretData(initialSecretData);
+      setCreateSecretMode(true);
+    } else {
+      setEphemeralSecretData({});
+      setCreateSecretMode(false);
+    }
+    
     setEphemeralMode(true);
     setShowCreate(true);
   };
@@ -273,6 +299,8 @@ const IntegrationFlowPage: React.FC = () => {
     setEphemeralProperties({});
     setEphemeralSecretName('');
     setTemplatePropertyConfig(null);
+    setCreateSecretMode(false);
+    setEphemeralSecretData({});
   };
 
   const handleCreate = async () => {
@@ -286,6 +314,31 @@ const IntegrationFlowPage: React.FC = () => {
           kaotoDesign: templateDesign || defaultDesign[newEngine] || '',
           targeting: { strategy: 'explicit', clusters: ['local'] },
         };
+      let finalSecretName = ephemeralSecretName.trim();
+      
+      if (ephemeralMode && createSecretMode && Object.keys(ephemeralSecretData).length > 0) {
+        finalSecretName = `${flowName}-credentials`;
+        const encodedData: Record<string, string> = {};
+        for (const [k, v] of Object.entries(ephemeralSecretData)) {
+          if (v) encodedData[k] = btoa(v);
+        }
+        const secretObj = {
+          apiVersion: 'v1',
+          kind: 'Secret',
+          metadata: { name: finalSecretName, namespace: NAMESPACE },
+          type: 'Opaque',
+          data: encodedData,
+        };
+        const secResp = await k8sFetch(`${API_BASE}/namespaces/${NAMESPACE}/secrets`, {
+          method: 'POST',
+          body: JSON.stringify(secretObj),
+        });
+        if (!secResp.ok) {
+          const errData = await secResp.json().catch(() => ({}));
+          throw new Error(errData.message || `Failed to create secret: HTTP ${secResp.status}`);
+        }
+      }
+
       if (ephemeralMode) {
         spec.deploymentMode = 'EPHEMERAL';
         const ephemeral: Record<string, unknown> = { ttlSeconds };
@@ -293,8 +346,8 @@ const IntegrationFlowPage: React.FC = () => {
           ephemeral.properties = ephemeralProperties;
         }
         spec.ephemeral = ephemeral;
-        if (ephemeralSecretName.trim()) {
-          spec.secrets = [{ name: ephemeralSecretName.trim(), envFrom: true }];
+        if (finalSecretName) {
+          spec.secrets = [{ name: finalSecretName, envFrom: true }];
         }
       } else {
         spec.deploymentMode = 'GITOPS';
@@ -542,6 +595,10 @@ const IntegrationFlowPage: React.FC = () => {
               onSecretNameChange={setEphemeralSecretName}
               templateConfig={templatePropertyConfig}
               templateName={templateLoaded || undefined}
+              createSecretMode={createSecretMode}
+              onCreateSecretModeChange={setCreateSecretMode}
+              secretData={ephemeralSecretData}
+              onSecretDataChange={setEphemeralSecretData}
             />
           </div>
         </div>

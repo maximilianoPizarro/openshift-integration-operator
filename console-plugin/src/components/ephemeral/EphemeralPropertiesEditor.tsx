@@ -7,6 +7,7 @@ import {
   FormSelect,
   FormSelectOption,
   TextInput,
+  Radio,
 } from '@patternfly/react-core';
 import { PlusCircleIcon, MinusCircleIcon } from '@patternfly/react-icons';
 import { NAMESPACE, API_BASE as K8S_FLOW_API } from '../../constants';
@@ -28,6 +29,10 @@ export interface EphemeralPropertiesEditorProps {
   onSecretNameChange: (name: string) => void;
   templateConfig: TemplatePropertyConfig | null;
   templateName?: string;
+  createSecretMode: boolean;
+  onCreateSecretModeChange: (create: boolean) => void;
+  secretData: Record<string, string>;
+  onSecretDataChange: (data: Record<string, string>) => void;
 }
 
 const EphemeralPropertiesEditor: React.FC<EphemeralPropertiesEditorProps> = ({
@@ -38,12 +43,32 @@ const EphemeralPropertiesEditor: React.FC<EphemeralPropertiesEditorProps> = ({
   onSecretNameChange,
   templateConfig,
   templateName,
+  createSecretMode,
+  onCreateSecretModeChange,
+  secretData,
+  onSecretDataChange,
 }) => {
   const [expanded, setExpanded] = React.useState(false);
   const [secrets, setSecrets] = React.useState<string[]>([]);
   const [loadingSecrets, setLoadingSecrets] = React.useState(false);
 
   const entries = React.useMemo(() => recordToPropertyEntries(properties), [properties]);
+  const secretEntries = React.useMemo(() => recordToPropertyEntries(secretData), [secretData]);
+
+  const updateSecretEntry = (index: number, field: 'key' | 'value', value: string) => {
+    const next = [...secretEntries];
+    next[index] = { ...next[index], [field]: value };
+    onSecretDataChange(propertyEntriesToRecord(next));
+  };
+
+  const addSecretEntry = () => {
+    onSecretDataChange(propertyEntriesToRecord([...secretEntries, { key: '', value: '' }]));
+  };
+
+  const removeSecretEntry = (index: number) => {
+    const next = secretEntries.filter((_, i) => i !== index);
+    onSecretDataChange(propertyEntriesToRecord(next));
+  };
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -152,29 +177,94 @@ const EphemeralPropertiesEditor: React.FC<EphemeralPropertiesEditorProps> = ({
         </Button>
       </div>
 
-      <FormGroup label="Secret (envFrom)" fieldId="ephemeral-secret">
-        <FormSelect
-          id="ephemeral-secret"
-          value={secretName}
-          onChange={(_e, value) => onSecretNameChange(value)}
-          aria-label="Kubernetes secret for envFrom"
-        >
-          <FormSelectOption value="" label={loadingSecrets ? 'Loading secrets...' : '— None (use property placeholders only) —'} />
-          {secrets.map(name => (
-            <FormSelectOption key={name} value={name} label={name} />
-          ))}
-          {templateConfig?.defaultSecretName &&
-            !secrets.includes(templateConfig.defaultSecretName) && (
-            <FormSelectOption
-              value={templateConfig.defaultSecretName}
-              label={`${templateConfig.defaultSecretName} (create before deploy)`}
-            />
-          )}
-        </FormSelect>
-        <p style={{ fontSize: '11px', color: 'var(--integration-text-subtle)', marginTop: '4px' }}>
-          Maps to <code>spec.secrets[].envFrom: true</code>. Do not paste API keys in property values.
-        </p>
-      </FormGroup>
+      <div style={{ marginTop: '16px', borderTop: '1px solid var(--integration-border)', paddingTop: '12px' }}>
+        <div style={{ marginBottom: '12px', display: 'flex', gap: '16px' }}>
+          <Radio
+            isChecked={!createSecretMode}
+            name="secret-mode"
+            onChange={() => onCreateSecretModeChange(false)}
+            label="Use existing Secret"
+            id="secret-mode-existing"
+          />
+          <Radio
+            isChecked={createSecretMode}
+            name="secret-mode"
+            onChange={() => onCreateSecretModeChange(true)}
+            label="Create new Secret"
+            id="secret-mode-create"
+          />
+        </div>
+
+        {!createSecretMode ? (
+          <FormGroup label="Select Secret (envFrom)" fieldId="ephemeral-secret">
+            <FormSelect
+              id="ephemeral-secret"
+              value={secretName}
+              onChange={(_e, value) => onSecretNameChange(value)}
+              aria-label="Kubernetes secret for envFrom"
+            >
+              <FormSelectOption value="" label={loadingSecrets ? 'Loading secrets...' : '— None (use property placeholders only) —'} />
+              {secrets.map(name => (
+                <FormSelectOption key={name} value={name} label={name} />
+              ))}
+              {templateConfig?.defaultSecretName &&
+                !secrets.includes(templateConfig.defaultSecretName) && (
+                <FormSelectOption
+                  value={templateConfig.defaultSecretName}
+                  label={`${templateConfig.defaultSecretName} (create before deploy)`}
+                />
+              )}
+            </FormSelect>
+            <p style={{ fontSize: '11px', color: 'var(--integration-text-subtle)', marginTop: '4px' }}>
+              Maps to <code>spec.secrets[].envFrom: true</code>. Do not paste API keys in property values.
+            </p>
+          </FormGroup>
+        ) : (
+          <FormGroup label="New Secret Data" fieldId="ephemeral-secret-data">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {secretEntries.length === 0 ? (
+                <p style={{ fontSize: '12px', color: 'var(--integration-text-subtle)', margin: 0 }}>
+                  No keys defined. Add keys like OPENAI_API_KEY.
+                </p>
+              ) : (
+                secretEntries.map((entry, index) => (
+                  <div key={`sec-${index}`} style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <TextInput
+                      value={entry.key}
+                      onChange={(_e, v) => updateSecretEntry(index, 'key', v)}
+                      placeholder="OPENAI_API_KEY"
+                      aria-label={`Secret key ${index + 1}`}
+                      style={{ flex: '1 1 200px', fontFamily: 'monospace', fontSize: '12px' }}
+                    />
+                    <TextInput
+                      value={entry.value}
+                      onChange={(_e, v) => updateSecretEntry(index, 'value', v)}
+                      placeholder="sk-..."
+                      type="password"
+                      aria-label={`Secret value ${index + 1}`}
+                      style={{ flex: '1 1 200px', fontFamily: 'monospace', fontSize: '12px' }}
+                    />
+                    <Button
+                      variant="plain"
+                      aria-label="Remove secret key"
+                      onClick={() => removeSecretEntry(index)}
+                      style={{ padding: '4px' }}
+                    >
+                      <MinusCircleIcon />
+                    </Button>
+                  </div>
+                ))
+              )}
+              <Button variant="link" icon={<PlusCircleIcon />} onClick={addSecretEntry} style={{ alignSelf: 'flex-start', paddingLeft: 0 }}>
+                Add secret key
+              </Button>
+            </div>
+            <p style={{ fontSize: '11px', color: 'var(--integration-text-subtle)', marginTop: '4px' }}>
+              A Secret named <code>{templateName ? `${templateName}-credentials` : 'flow-credentials'}</code> will be created automatically.
+            </p>
+          </FormGroup>
+        )}
+      </div>
     </ExpandableSection>
   );
 };
