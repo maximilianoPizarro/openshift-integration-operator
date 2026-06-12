@@ -38,15 +38,26 @@
 .integration-workspace__main .pf-v5-c-tabs__content,
 .integration-workspace__main .pf-v6-c-tabs__content {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
 }
 
-.integration-workspace__main [role='tabpanel'],
-.integration-workspace__main .pf-v5-c-tab-content,
-.integration-workspace__main .pf-v6-c-tab-content {
-  flex: 1;
+/*
+ * Patternfly hides inactive panels with [hidden]. Do NOT set display:flex on all
+ * tabpanels — that overrides [hidden] and stacks every visited tab vertically.
+ */
+.integration-workspace__main .pf-v5-c-tab-content[hidden],
+.integration-workspace__main .pf-v6-c-tab-content[hidden],
+.integration-workspace__main [role='tabpanel'][hidden] {
+  display: none !important;
+}
+
+.integration-workspace__main .pf-v5-c-tab-content:not([hidden]),
+.integration-workspace__main .pf-v6-c-tab-content:not([hidden]),
+.integration-workspace__main [role='tabpanel']:not([hidden]) {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -62,7 +73,9 @@
 }
 
 .integration-tab-panel--scroll {
+  flex: 1;
   overflow: auto;
+  min-height: 0;
 }
 
 .integration-tab-panel__body {
@@ -125,10 +138,6 @@
   display: block;
   width: 260px;
   border-radius: 0;
-}
-
-.integration-workspace--fullscreen:fullscreen .integration-tab-panel__canvas {
-  min-height: 0;
 }
 
 .integration-workspace--fullscreen:fullscreen .integration-zoom-toolbar {

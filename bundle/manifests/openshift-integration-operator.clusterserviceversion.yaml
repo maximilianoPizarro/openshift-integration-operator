@@ -59,7 +59,7 @@ metadata:
       ]
     capabilities: Basic Install
     categories: Integration & Delivery
-    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.3
+    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.4
     createdAt: "2026-06-08T18:00:00Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry observability
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
@@ -67,7 +67,7 @@ metadata:
     repository: https://github.com/maximilianoPizarro/openshift-integration-operator
     support: Community
     console.openshift.io/plugins: '["integration-console-plugin"]'
-  name: openshift-integration-operator.v0.6.3
+  name: openshift-integration-operator.v0.6.4
   namespace: placeholder
 spec:
   replaces: openshift-integration-operator.v0.6.0
@@ -439,7 +439,7 @@ spec:
               serviceAccountName: openshift-integration-operator
               containers:
               - name: operator
-                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.3
+                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.4
                 imagePullPolicy: Always
                 ports:
                 - containerPort: 8080
@@ -541,7 +541,7 @@ spec:
             spec:
               containers:
               - name: console-plugin
-                image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.3
+                image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.4
                 imagePullPolicy: Always
                 ports:
                 - containerPort: 9443
@@ -602,13 +602,13 @@ spec:
   provider:
     name: maximilianoPizarro
     url: https://github.com/maximilianoPizarro
-  version: 0.6.3
+  version: 0.6.4
   relatedImages:
   - name: operator
-    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.3
+    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.4
   - name: console-plugin
-    image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.3
+    image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.4
   - name: camel-worker-core
-    image: quay.io/maximilianopizarro/camel-worker-core:v0.6.3
+    image: quay.io/maximilianopizarro/camel-worker-core:v0.6.4
   - name: camel-worker-full
-    image: quay.io/maximilianopizarro/camel-worker-full:v0.6.3
+    image: quay.io/maximilianopizarro/camel-worker-full:v0.6.4
