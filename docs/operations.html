@@ -313,16 +313,28 @@ curl -s -u "user1:password" \
         </p>
         <h3>Default (no extra RoleBindings)</h3>
         <p>
-          The CRD ships with aggregation labels (<code>aggregate-to-admin/edit/view</code>) so standard OpenShift project
-          roles can manage flows in namespaces where the user already has edit or admin.
+          On install, the operator creates ClusterRole
+          <code>openshift-integration-integrationflow-user</code> bound to
+          <code>system:authenticated</code>, so any logged-in user can manage
+          <code>IntegrationFlow</code> resources in their active OpenShift project via the console.
+          Standard project roles (<code>edit</code>/<code>admin</code>) also inherit CRUD via CRD aggregation labels.
         </p>
-        <pre><code><span class="comment"># Developer in project team-a creates a flow in team-a</span>
+        <pre><code><span class="comment"># Verify self-service RBAC (installed with the operator)</span>
+oc get clusterrole,clusterrolebinding openshift-integration-integrationflow-user
+
+<span class="comment"># Developer in project team-a creates a flow in team-a</span>
 oc project team-a
 oc apply -f my-flow.yaml
 
 <span class="comment"># Cluster admin sees all flows in the console Integration Flows tab</span>
 oc get integrationflows -A</code></pre>
-        <h3>Optional tighten (ResourceQuota)</h3>
+        <h3>Optional tighten (post-install)</h3>
+        <p>
+          Platform engineers can remove the default binding and require explicit RoleBindings per namespace:
+        </p>
+        <pre><code>oc delete clusterrolebinding openshift-integration-integrationflow-user</code></pre>
+        <p>Then grant only selected users/groups via namespace <code>RoleBinding</code> to <code>edit</code> or a custom role.</p>
+        <h3>Optional quota (ResourceQuota)</h3>
         <p>Limit flows per namespace with a native <code>ResourceQuota</code> (opt-in):</p>
         <pre><code>apiVersion: v1
 kind: ResourceQuota

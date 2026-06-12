@@ -32,10 +32,11 @@ import { resolveMinimalTemplateProperties, type TemplatePropertyConfig } from '.
 import ConfirmDeleteModal from './modals/ConfirmDeleteModal';
 import ConfirmLifecycleModal from './modals/ConfirmLifecycleModal';
 import TemplateCatalogModal, { TemplateSelection } from './modals/TemplateCatalogModal';
-import { API_BASE as K8S_FLOW_API, PLATFORM_NAMESPACE, PROXY_BASE } from '../constants';
+import { API_BASE as K8S_FLOW_API, PROXY_BASE } from '../constants';
 import { buildPodLinks } from '../utils/podLinks';
 import { useFlowNamespace } from '../hooks/useFlowNamespace';
 import { designerRoute, flowApiPath, integrationFlowUrl, integrationFlowsUrl } from '../utils/k8sUrls';
+import { canListAllIntegrationFlows } from '../utils/accessReview';
 
 const API_BASE = K8S_FLOW_API;
 
@@ -220,21 +221,32 @@ const IntegrationFlowPage: React.FC = () => {
   const [page, setPage] = React.useState(1);
 
   const fetchFlows = React.useCallback(async () => {
+    if (!flowNamespace) {
+      setFlows([]);
+      setClusterWide(false);
+      setError('Select an OpenShift project to view or create integration flows.');
+      setLoading(false);
+      return;
+    }
     try {
-      let resp = await k8sFetch(integrationFlowsUrl());
+      let resp = await k8sFetch(integrationFlowsUrl(flowNamespace));
       if (resp.ok) {
         const data = await resp.json();
         setFlows(data.items || []);
-        setClusterWide(true);
+        setClusterWide(false);
         setError(null);
-        return;
+      } else {
+        throw new Error(`HTTP ${resp.status}`);
       }
-      resp = await k8sFetch(integrationFlowsUrl(flowNamespace));
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      setFlows(data.items || []);
-      setClusterWide(false);
-      setError(null);
+
+      if (await canListAllIntegrationFlows()) {
+        const clusterResp = await k8sFetch(integrationFlowsUrl());
+        if (clusterResp.ok) {
+          const data = await clusterResp.json();
+          setFlows(data.items || []);
+          setClusterWide(true);
+        }
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -319,6 +331,10 @@ const IntegrationFlowPage: React.FC = () => {
   const handleCreate = async () => {
     const flowName = newName.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-|-$/g, '');
     if (!flowName) return;
+    if (!flowNamespace) {
+      alert('Select an OpenShift project before creating a flow.');
+      return;
+    }
     setCreating(true);
     try {
       const spec: Record<string, unknown> = {
@@ -601,6 +617,7 @@ const IntegrationFlowPage: React.FC = () => {
               onTtlChange={setTtlSeconds}
             />
             <EphemeralPropertiesEditor
+              flowNamespace={flowNamespace}
               enabled={ephemeralMode}
               properties={ephemeralProperties}
               onPropertiesChange={setEphemeralProperties}

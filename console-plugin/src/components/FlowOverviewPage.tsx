@@ -15,6 +15,7 @@ import { ExternalLinkAltIcon, ArrowRightIcon } from '@patternfly/react-icons';
 import { DOCS_BASE_URL, GITHUB_REPO_URL, PLATFORM_NAMESPACE, PLUGIN_NAME } from '../constants';
 import { integrationFlowsUrl } from '../utils/k8sUrls';
 import { useFlowNamespace } from '../hooks/useFlowNamespace';
+import { canListAllIntegrationFlows } from '../utils/accessReview';
 import { loadPlatformConfig } from '../utils/flowCatalog';
 
 const API_BASE = '/api/kubernetes/apis/platform.io/v1alpha1';
@@ -189,17 +190,20 @@ const FlowOverviewPage: React.FC = () => {
 
   const fetchAll = React.useCallback(async () => {
     try {
-      let flowResp = await fetch(integrationFlowsUrl());
-      if (flowResp.ok) {
-        const data = await flowResp.json();
-        setFlows(data.items || []);
-        setClusterWide(true);
-      } else {
-        flowResp = await fetch(integrationFlowsUrl(flowNamespace));
+      if (flowNamespace) {
+        const flowResp = await fetch(integrationFlowsUrl(flowNamespace));
         if (flowResp.ok) {
           const data = await flowResp.json();
           setFlows(data.items || []);
           setClusterWide(false);
+        }
+      }
+      if (await canListAllIntegrationFlows()) {
+        const clusterResp = await fetch(integrationFlowsUrl());
+        if (clusterResp.ok) {
+          const data = await clusterResp.json();
+          setFlows(data.items || []);
+          setClusterWide(true);
         }
       }
       const prResp = await fetch(`${K8S_TEKTON}/namespaces/${PLATFORM_NAMESPACE}/pipelineruns?labelSelector=platform.io%2Fcomponent%3Dbuild&limit=50`);

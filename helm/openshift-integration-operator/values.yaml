@@ -1,7 +1,7 @@
 operator:
   image:
     repository: quay.io/maximilianopizarro/openshift-integration-operator
-    tag: v0.6.0
+    tag: v0.6.1
     pullPolicy: IfNotPresent
   replicas: 1
   resources:
@@ -16,6 +16,12 @@ operator:
     name: integration-operator-sa
   proxyPort: 8443
   watchedNamespaces: []   # empty = cluster-wide watch
+
+rbac:
+  selfService:
+    # When true (default), any authenticated user can manage IntegrationFlows in their active project.
+    # Set false and bind Role/ClusterRole explicitly to tighten access post-install.
+    enabled: true
 
 workers:
   # Default thresholds for per-flow HPAs (one HPA per IntegrationFlow worker Deployment)
@@ -109,7 +115,7 @@ consolePlugin:
   enabled: true
   image:
     repository: quay.io/maximilianopizarro/integration-console-plugin
-    tag: v0.6.0
+    tag: v0.6.1
   replicas: 1
 
 sonataflow:
@@ -128,14 +134,14 @@ ephemeral:
   defaultTtlSeconds: 3600
   maxTtlSeconds: 86400
   preferFullWorker: false
-  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.6.0
-  camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.6.0
-  camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.6.0
-  camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.6.0
-  camelWorkerCloudImage: quay.io/maximilianopizarro/camel-worker-cloud:v0.6.0
-  camelWorkerAiImage: quay.io/maximilianopizarro/camel-worker-ai:v0.6.0
-  camelWorkerFullImage: quay.io/maximilianopizarro/camel-worker-full:v0.6.0
-  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.6.0
+  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.6.1
+  camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.6.1
+  camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.6.1
+  camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.6.1
+  camelWorkerCloudImage: quay.io/maximilianopizarro/camel-worker-cloud:v0.6.1
+  camelWorkerAiImage: quay.io/maximilianopizarro/camel-worker-ai:v0.6.1
+  camelWorkerFullImage: quay.io/maximilianopizarro/camel-worker-full:v0.6.1
+  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.6.1
   camelK:
     detect: true
 

@@ -10,7 +10,7 @@ import {
   Radio,
 } from '@patternfly/react-core';
 import { PlusCircleIcon, MinusCircleIcon } from '@patternfly/react-icons';
-import { NAMESPACE, API_BASE as K8S_FLOW_API } from '../../constants';
+import { API_BASE as K8S_FLOW_API } from '../../constants';
 import type { TemplatePropertyConfig } from '../../utils/templateProperties';
 import { recordToPropertyEntries, propertyEntriesToRecord } from '../../utils/templateProperties';
 
@@ -22,6 +22,7 @@ function getCsrfToken(): string {
 }
 
 export interface EphemeralPropertiesEditorProps {
+  flowNamespace: string;
   enabled: boolean;
   properties: Record<string, string>;
   onPropertiesChange: (properties: Record<string, string>) => void;
@@ -36,6 +37,7 @@ export interface EphemeralPropertiesEditorProps {
 }
 
 const EphemeralPropertiesEditor: React.FC<EphemeralPropertiesEditorProps> = ({
+  flowNamespace,
   enabled,
   properties,
   onPropertiesChange,
@@ -78,9 +80,9 @@ const EphemeralPropertiesEditor: React.FC<EphemeralPropertiesEditorProps> = ({
   }, [enabled, templateName, templateConfig, properties]);
 
   React.useEffect(() => {
-    if (!enabled || !expanded) return;
+    if (!enabled || !expanded || !flowNamespace) return;
     setLoadingSecrets(true);
-    fetch(`${API_BASE}/namespaces/${NAMESPACE}/secrets`, {
+    fetch(`${API_BASE}/namespaces/${flowNamespace}/secrets`, {
       headers: { 'X-CSRFToken': getCsrfToken() },
     })
       .then(r => (r.ok ? r.json() : { items: [] }))
@@ -92,7 +94,7 @@ const EphemeralPropertiesEditor: React.FC<EphemeralPropertiesEditorProps> = ({
       })
       .catch(() => setSecrets([]))
       .finally(() => setLoadingSecrets(false));
-  }, [enabled, expanded]);
+  }, [enabled, expanded, flowNamespace]);
 
   const updateEntry = (index: number, field: 'key' | 'value', value: string) => {
     const next = [...entries];

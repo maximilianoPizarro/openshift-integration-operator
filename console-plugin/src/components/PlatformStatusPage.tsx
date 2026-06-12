@@ -16,6 +16,7 @@ import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
 import { API_BASE, PLATFORM_NAMESPACE, PROXY_BASE } from '../constants';
 import { integrationFlowsUrl } from '../utils/k8sUrls';
 import { useFlowNamespace } from '../hooks/useFlowNamespace';
+import { canListAllIntegrationFlows } from '../utils/accessReview';
 
 const K8S_CORE = '/api/kubernetes/api/v1';
 const K8S_APPS = '/api/kubernetes/apis/apps/v1';
@@ -82,13 +83,21 @@ const PlatformStatusPage: React.FC = () => {
     let giteaRepoCount = 0;
     let flowItems: Array<{ spec?: { deploymentMode?: string; gitRepository?: string } }> = [];
     try {
-      let resp = await fetch(integrationFlowsUrl());
-      if (!resp.ok) {
-        resp = await fetch(integrationFlowsUrl(flowNamespace));
+      if (flowNamespace) {
+        let resp = await fetch(integrationFlowsUrl(flowNamespace));
+        if (resp.ok) {
+          const data = await resp.json();
+          flowItems = data.items || [];
+        }
       }
-      if (resp.ok) {
-        const data = await resp.json();
-        flowItems = data.items || [];
+      if (flowItems.length === 0 && await canListAllIntegrationFlows()) {
+        const resp = await fetch(integrationFlowsUrl());
+        if (resp.ok) {
+          const data = await resp.json();
+          flowItems = data.items || [];
+        }
+      }
+      if (flowItems.length > 0) {
         setFlowCount(flowItems.length);
         setEphemeralCount(flowItems.filter(f => f.spec?.deploymentMode === 'EPHEMERAL').length);
         for (const f of flowItems) {
