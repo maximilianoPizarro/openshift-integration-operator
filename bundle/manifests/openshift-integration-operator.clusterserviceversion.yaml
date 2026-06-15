@@ -57,20 +57,21 @@ metadata:
           }
         }
       ]
-    capabilities: Basic Install
+    capabilities: Full Lifecycle
     categories: Integration & Delivery
-    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.6
-    createdAt: "2026-06-08T18:00:00Z"
-    description: The missing lifecycle layer for Apache Camel on OpenShift — design visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry observability
+    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.7.0
+    createdAt: "2026-06-15T18:00:00Z"
+    description: The missing lifecycle layer for Apache Camel on OpenShift — design visually with Kaoto, deploy with GitOps (Tekton + ArgoCD), observe in real time with OpenTelemetry. Open-source Kubernetes-native alternative to n8n for integration workflows.
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
     operators.operatorframework.io/project_layout: quarkus.javaoperatorsdk.io/v1-alpha
+    operatorframework.io/suggested-namespace: openshift-integration
     repository: https://github.com/maximilianoPizarro/openshift-integration-operator
     support: Community
     console.openshift.io/plugins: '["integration-console-plugin"]'
-  name: openshift-integration-operator.v0.6.6
+  name: openshift-integration-operator.v0.7.0
   namespace: placeholder
 spec:
-  replaces: openshift-integration-operator.v0.6.0
+  replaces: openshift-integration-operator.v0.6.6
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
@@ -132,10 +133,46 @@ spec:
   description: |
     ## OpenShift Integration Operator
 
-    Real-Time Integration & Orchestration Platform for OpenShift that brings
-    **Apache Camel** and **SonataFlow** workflows together with a visual
-    **Kaoto** designer, **GitOps** deployment (Tekton + ArgoCD), **MCP/AI**
-    integration, and **OpenTelemetry** observability.
+    **The missing lifecycle layer for Apache Camel on OpenShift** — an
+    open-source, Kubernetes-native alternative to n8n that unifies
+    integration design, deployment, and observability in a single operator.
+
+    ### What Problem Does It Solve?
+
+    Running integration workflows on Kubernetes requires stitching together
+    multiple tools: a visual designer, CI/CD pipelines, GitOps controllers,
+    and observability stacks. This operator eliminates that glue code by
+    providing a single `IntegrationFlow` CRD that orchestrates the entire
+    lifecycle — from visual design to production deployment with
+    auto-scaling and real-time telemetry.
+
+    ### Platform Components
+
+    | Component | Role |
+    |-----------|------|
+    | **Apache Camel (Quarkus)** | Integration runtime engine — 300+ connectors |
+    | **SonataFlow** | CNCF Serverless Workflow orchestration |
+    | **Kaoto** | Visual drag-and-drop route designer |
+    | **Tekton Pipelines** | CI/CD — builds worker images from scaffolded source |
+    | **ArgoCD** | GitOps multi-cluster deployment |
+    | **OpenTelemetry** | Distributed tracing and real-time SSE telemetry |
+    | **Camel K** | Lightweight runtime for Kamelets and Pipes |
+
+    ### OpenShift Console Dynamic Plugin
+
+    This operator ships an **OpenShift Console dynamic plugin**
+    (`integration-console-plugin`) that provides:
+
+    * Integration Flows list with search, filters, and pagination
+    * Visual SVG flow diagrams with click-to-YAML highlighting
+    * Embedded Kaoto designer for drag-and-drop route editing
+    * Real-time pod logs with container selector and follow mode
+    * Platform Status dashboard (Operator, Kaoto, Gitea, ArgoCD, Tekton, OTel)
+    * Lifecycle controls (Pause, Resume, Stop) with confirmation modals
+    * Overview dashboard with KPI cards and distribution charts
+
+    The plugin registers via the `console.openshift.io/plugins` annotation
+    and requires no manual configuration after installation.
 
     ### Features
 
@@ -144,25 +181,33 @@ spec:
     * **Five integration types** — Camel Route, Kamelet, Pipe, Test,
       and SonataFlow
     * **Ephemeral Quick Try** — deploy flows instantly without Git using
-      domain-specific worker images with configurable TTL
-    * **GitOps pipeline** — automated scaffolding, Tekton builds, and
-      ArgoCD multi-cluster deployment
-    * **Visual design** — embedded Kaoto designer for drag-and-drop
-      flow creation
-    * **OpenShift Console plugin** — integrated dashboard for flow
-      management, live logs, and telemetry
-    * **MCP Bridge** — AI tool discovery and invocation for integration
-      flows
-    * **Resilience** — declarative retry policies and circuit breaker
-      configuration
-    * **Observability** — OpenTelemetry tracing/metrics and
-      PrometheusRule auto-generation
+      domain-specific worker images (core, messaging, http, data, cloud,
+      ai, full) with configurable TTL and auto-image-selection
+    * **GitOps pipeline** — automated scaffolding to Git, Tekton builds,
+      and ArgoCD multi-cluster deployment
+    * **Multi-provider Git** — Gitea, GitHub, and GitLab with auto-detection
+    * **MCP/AI Bridge** — Model Context Protocol for AI tool discovery
+      and invocation within integration flows
+    * **Resilience** — declarative retry policies, circuit breaker, and
+      max inflight exchanges
+    * **Observability** — OpenTelemetry tracing/metrics, PrometheusRule
+      auto-generation, and real-time SSE telemetry overlay
+    * **Auto-scaling** — HPA v2 on CPU and memory for worker pods
+    * **Scheduled execution** — Cron-based flow triggering
+    * **200+ ready flows** — Pre-built templates organized by pattern
+
+    ### Deployment Modes
+
+    * **GITOPS** — Full pipeline: scaffold to Git, Tekton builds Quarkus
+      worker image, ArgoCD syncs to one or multiple clusters
+    * **EPHEMERAL** — Quick Try mode: deploy directly in-cluster without
+      Git, with configurable TTL, extend, and promote-to-GitOps
 
     ### Prerequisites
 
     * OpenShift 4.19+
-    * Red Hat OpenShift Pipelines (Tekton)
-    * Red Hat OpenShift GitOps (ArgoCD)
+    * Red Hat OpenShift Pipelines (Tekton) — for GitOps mode
+    * Red Hat OpenShift GitOps (ArgoCD) — for GitOps mode
     * Camel K Operator (optional, for Kamelet/Pipe types)
     * OpenShift Serverless Logic (optional, for SonataFlow types)
 
@@ -170,8 +215,8 @@ spec:
 
     1. Install the operator from OperatorHub
     2. Create an IntegrationFlow CR with your Camel or SonataFlow design
-    3. The operator scaffolds, builds, and deploys your integration automatically
-    4. Monitor via the OpenShift Console plugin or `oc get integrationflows`
+    3. The operator scaffolds, builds, and deploys your integration
+    4. Monitor via the Console plugin or `oc get integrationflows`
 
     ### Quick Try (Ephemeral Mode)
 
@@ -439,7 +484,7 @@ spec:
               serviceAccountName: openshift-integration-operator
               containers:
               - name: operator
-                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.6
+                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.7.0
                 imagePullPolicy: Always
                 ports:
                 - containerPort: 8080
@@ -541,7 +586,7 @@ spec:
             spec:
               containers:
               - name: console-plugin
-                image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.6
+                image: quay.io/maximilianopizarro/integration-console-plugin:v0.7.0
                 imagePullPolicy: Always
                 ports:
                 - containerPort: 9443
@@ -599,16 +644,44 @@ spec:
     name: Maximiliano Pizarro
   maturity: alpha
   minKubeVersion: 1.32.0
+  nativeAPIs:
+  - group: apps
+    kind: Deployment
+    version: v1
+  - group: ""
+    kind: Service
+    version: v1
+  - group: tekton.dev
+    kind: PipelineRun
+    version: v1
+  - group: argoproj.io
+    kind: ApplicationSet
+    version: v1alpha1
+  - group: route.openshift.io
+    kind: Route
+    version: v1
+  - group: console.openshift.io
+    kind: ConsolePlugin
+    version: v1
+  - group: monitoring.coreos.com
+    kind: PrometheusRule
+    version: v1
+  - group: sonataflow.org
+    kind: SonataFlow
+    version: v1alpha08
+  - group: camel.apache.org
+    kind: Integration
+    version: v1
   provider:
     name: maximilianoPizarro
     url: https://github.com/maximilianoPizarro
-  version: 0.6.6
+  version: 0.7.0
   relatedImages:
   - name: operator
-    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.6.6
+    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.7.0
   - name: console-plugin
-    image: quay.io/maximilianopizarro/integration-console-plugin:v0.6.6
+    image: quay.io/maximilianopizarro/integration-console-plugin:v0.7.0
   - name: camel-worker-core
-    image: quay.io/maximilianopizarro/camel-worker-core:v0.6.6
+    image: quay.io/maximilianopizarro/camel-worker-core:v0.7.0
   - name: camel-worker-full
-    image: quay.io/maximilianopizarro/camel-worker-full:v0.6.6
+    image: quay.io/maximilianopizarro/camel-worker-full:v0.7.0
