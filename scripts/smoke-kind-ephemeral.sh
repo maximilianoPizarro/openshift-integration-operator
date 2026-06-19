@@ -81,7 +81,15 @@ helm upgrade --install openshift-integration-operator ./helm/openshift-integrati
   --set ephemeral.camelWorkerFullImage="${WORKER_REPO_PREFIX}/camel-worker-full:${WORKER_TAG}" \
   --set ephemeral.camelTestImage="${WORKER_REPO_PREFIX}/camel-test-runner:${WORKER_TAG}"
 
-kubectl -n "$NAMESPACE" rollout status deployment/openshift-integration-operator --timeout=240s
+if ! kubectl -n "$NAMESPACE" rollout status deployment/openshift-integration-operator --timeout=600s; then
+  echo "Operator rollout timed out; collecting diagnostics..."
+  kubectl -n "$NAMESPACE" get deployment openshift-integration-operator -o wide || true
+  kubectl -n "$NAMESPACE" describe deployment openshift-integration-operator || true
+  kubectl -n "$NAMESPACE" get pods -o wide || true
+  kubectl -n "$NAMESPACE" describe pods || true
+  kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp || true
+  exit 1
+fi
 kubectl apply -f k8s/examples/09-ephemeral-demo.yaml
 
 echo "Waiting for IntegrationFlow phase=Running..."
