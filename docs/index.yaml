@@ -147,11 +147,11 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.8.2
-    created: "2026-06-19T19:11:43.673471951Z"
+    created: "2026-06-19T19:24:28.264978189Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
-    digest: ad7a8b3bd59580741d72195db8a230db0a7d6d2fa813dfd349907b5f4c5ce55c
+    digest: b2b796dae7a1a90987077e48073ae7403942781e250fad161c926268b6495aaa
     home: https://maximilianopizarro.github.io/openshift-integration-operator/
     icon: https://maximilianopizarro.github.io/openshift-integration-operator/images/chart-icon.png
     keywords:
@@ -330,7 +330,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.8.1
-    created: "2026-06-19T19:11:43.671040293Z"
+    created: "2026-06-19T19:24:28.260459035Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -513,7 +513,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.8.0
-    created: "2026-06-19T19:11:43.668543942Z"
+    created: "2026-06-19T19:24:28.256195655Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -696,7 +696,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.6.6
-    created: "2026-06-19T19:11:43.665535343Z"
+    created: "2026-06-19T19:24:28.251423163Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -877,7 +877,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.6.5
-    created: "2026-06-19T19:11:43.663168336Z"
+    created: "2026-06-19T19:24:28.248528417Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -1058,7 +1058,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.6.4
-    created: "2026-06-19T19:11:43.660808584Z"
+    created: "2026-06-19T19:24:28.24439946Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -1239,7 +1239,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.6.3
-    created: "2026-06-19T19:11:43.657685052Z"
+    created: "2026-06-19T19:24:28.239121223Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -1414,7 +1414,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.6.2
-    created: "2026-06-19T19:11:43.655351018Z"
+    created: "2026-06-19T19:24:28.235475903Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -1565,7 +1565,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.6.1
-    created: "2026-06-19T19:11:43.652368477Z"
+    created: "2026-06-19T19:24:28.233002129Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -1716,7 +1716,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.6.0
-    created: "2026-06-19T19:11:43.64987924Z"
+    created: "2026-06-19T19:24:28.230739436Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -1867,7 +1867,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.5.0
-    created: "2026-06-19T19:11:43.646935878Z"
+    created: "2026-06-19T19:24:28.227755479Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design
       visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow
       with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
@@ -2018,7 +2018,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.3.0
-    created: "2026-06-19T19:11:43.644595863Z"
+    created: "2026-06-19T19:24:28.225427994Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -2157,7 +2157,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: 0.2.0
-    created: "2026-06-19T19:11:43.643372805Z"
+    created: "2026-06-19T19:24:28.223509484Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -2256,7 +2256,7 @@ entries:
         - url: https://artifacthub.io/packages/helm/tektoncd/tekton-pipelines
     apiVersion: v2
     appVersion: v0.1.0
-    created: "2026-06-19T19:11:43.642399107Z"
+    created: "2026-06-19T19:24:28.222477095Z"
     description: Real-Time Integration & Orchestration Platform for OpenShift - Apache
       Camel + SonataFlow with visual Kaoto designer, GitOps, MCP/AI integration, and
       OpenTelemetry observability
@@ -2291,4 +2291,4 @@ entries:
     urls:
     - https://maximilianopizarro.github.io/openshift-integration-operator/openshift-integration-operator-0.1.0.tgz
     version: 0.1.0
-generated: "2026-06-19T19:11:43.640677136Z"
+generated: "2026-06-19T19:24:28.221803663Z"
