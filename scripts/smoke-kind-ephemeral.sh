@@ -70,7 +70,7 @@ helm upgrade --install openshift-integration-operator ./helm/openshift-integrati
   --set kaoto.enabled=false \
   --set sonataflow.enabled=false \
   --set argocd.enabled=false \
-  --set flowCatalog.source=embedded \
+  --set flowCatalog.source=configmap \
   --set ephemeral.camelWorkerImage="${WORKER_REPO_PREFIX}/camel-worker-core:${WORKER_TAG}" \
   --set ephemeral.camelWorkerMessagingImage="${WORKER_REPO_PREFIX}/camel-worker-messaging:${WORKER_TAG}" \
   --set ephemeral.camelWorkerHttpImage="${WORKER_REPO_PREFIX}/camel-worker-http:${WORKER_TAG}" \
