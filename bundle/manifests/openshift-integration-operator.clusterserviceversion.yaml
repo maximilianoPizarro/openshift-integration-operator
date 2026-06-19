@@ -542,6 +542,22 @@ spec:
                   value: flow-catalog
                 - name: FLOW_CATALOG_CONFIG_MAP_KEY
                   value: flow-catalog.json
+                - name: EPHEMERAL_CAMEL_WORKER_IMAGE
+                  value: quay.io/maximilianopizarro/camel-worker-core:latest
+                - name: EPHEMERAL_CAMEL_WORKER_MESSAGING_IMAGE
+                  value: quay.io/maximilianopizarro/camel-worker-messaging:latest
+                - name: EPHEMERAL_CAMEL_WORKER_HTTP_IMAGE
+                  value: quay.io/maximilianopizarro/camel-worker-http:latest
+                - name: EPHEMERAL_CAMEL_WORKER_DATA_IMAGE
+                  value: quay.io/maximilianopizarro/camel-worker-data:latest
+                - name: EPHEMERAL_CAMEL_WORKER_CLOUD_IMAGE
+                  value: quay.io/maximilianopizarro/camel-worker-cloud:latest
+                - name: EPHEMERAL_CAMEL_WORKER_AI_IMAGE
+                  value: quay.io/maximilianopizarro/camel-worker-ai:latest
+                - name: EPHEMERAL_CAMEL_WORKER_FULL_IMAGE
+                  value: quay.io/maximilianopizarro/camel-worker-full:latest
+                - name: EPHEMERAL_CAMEL_WORKER_TEST_IMAGE
+                  value: quay.io/maximilianopizarro/camel-test-runner:latest
                 volumeMounts:
                 - name: tls-certs
                   mountPath: /etc/tls
