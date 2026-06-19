@@ -211,6 +211,14 @@ const CATEGORIES = [
       { num: "098", name: "telegram-to-s3", comp: "telegram, aws2-s3", desc: "Archive Telegram photos to S3" },
       { num: "099", name: "email-to-jira", comp: "imap, jira", desc: "Create JIRA tickets from emails" },
       { num: "100", name: "webhook-to-slack", comp: "platform-http, slack", desc: "Forward webhooks to Slack" }
+    ,
+      { num: "300", name: "slack-oauth-notify", comp: "slack, log", desc: "Slack notification (Secrets: SLACK_WEBHOOK_URL)" },
+      { num: "301", name: "gmail-imap-poll", comp: "imap, log", desc: "Poll Gmail inbox via IMAP (Secrets: GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)" },
+      { num: "302", name: "office365-mail-sync", comp: "imap, log", desc: "Poll Office365 mailbox via IMAP (Secrets: OFFICE365_CLIENT_ID, OFFICE365_CLIENT_SECRET, OFFICE365_REFRESH_TOKEN)" },
+      { num: "303", name: "teams-channel-post", comp: "https, log", desc: "Post to Microsoft Teams incoming webhook (Secrets: TEAMS_WEBHOOK_URL)" },
+      { num: "304", name: "whatsapp-send-message", comp: "https, log", desc: "Send WhatsApp Business API message (Secrets: WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID)" },
+      { num: "305", name: "instagram-graph-post", comp: "https, log", desc: "Publish via Instagram Graph API (Secrets: INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_BUSINESS_ACCOUNT_ID)" },
+      { num: "306", name: "linkedin-share-post", comp: "https, log", desc: "Share update via LinkedIn API (Secrets: LINKEDIN_ACCESS_TOKEN)" },
     ]
   },
   {
