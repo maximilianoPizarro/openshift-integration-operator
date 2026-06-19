@@ -1,5 +1,5 @@
 # Stage 1: Build frontend assets with Node/webpack
-FROM registry.access.redhat.com/ubi9/nodejs-22:latest AS frontend
+FROM registry.access.redhat.com/ubi9/nodejs-24:latest AS frontend
 USER 0
 WORKDIR /app
 COPY package.json package-lock.json ./

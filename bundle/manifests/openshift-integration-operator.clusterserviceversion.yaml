@@ -59,19 +59,19 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Integration & Delivery
-    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.7.0
+    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.0
     createdAt: "2026-06-15T18:00:00Z"
-    description: The missing lifecycle layer for Apache Camel on OpenShift — design visually with Kaoto, deploy with GitOps (Tekton + ArgoCD), observe in real time with OpenTelemetry. Open-source Kubernetes-native alternative to n8n for integration workflows.
+    description: The missing lifecycle layer for Apache Camel on OpenShift — design visually with Kaoto, deploy with GitOps (Tekton + ArgoCD), observe in real time with OpenTelemetry. Enterprise-grade, Kubernetes-native integration lifecycle for platform teams.
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
     operators.operatorframework.io/project_layout: quarkus.javaoperatorsdk.io/v1-alpha
     operatorframework.io/suggested-namespace: openshift-integration
     repository: https://github.com/maximilianoPizarro/openshift-integration-operator
     support: Community
     console.openshift.io/plugins: '["integration-console-plugin"]'
-  name: openshift-integration-operator.v0.7.0
+  name: openshift-integration-operator.v0.8.0
   namespace: placeholder
 spec:
-  replaces: openshift-integration-operator.v0.6.6
+  replaces: openshift-integration-operator.v0.7.0
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
@@ -134,7 +134,7 @@ spec:
     ## OpenShift Integration Operator
 
     **The missing lifecycle layer for Apache Camel on OpenShift** — an
-    open-source, Kubernetes-native alternative to n8n that unifies
+    enterprise-grade, Kubernetes-native platform that unifies
     integration design, deployment, and observability in a single operator.
 
     ### What Problem Does It Solve?
@@ -484,7 +484,7 @@ spec:
               serviceAccountName: openshift-integration-operator
               containers:
               - name: operator
-                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.7.0
+                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.0
                 imagePullPolicy: Always
                 ports:
                 - containerPort: 8080
@@ -586,7 +586,7 @@ spec:
             spec:
               containers:
               - name: console-plugin
-                image: quay.io/maximilianopizarro/integration-console-plugin:v0.7.0
+                image: quay.io/maximilianopizarro/integration-console-plugin:v0.8.0
                 imagePullPolicy: Always
                 ports:
                 - containerPort: 9443
@@ -668,20 +668,20 @@ spec:
     version: v1
   - group: sonataflow.org
     kind: SonataFlow
-    version: v1alpha08
+    version: v1alpha1
   - group: camel.apache.org
     kind: Integration
     version: v1
   provider:
     name: maximilianoPizarro
     url: https://github.com/maximilianoPizarro
-  version: 0.7.0
+  version: 0.8.0
   relatedImages:
   - name: operator
-    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.7.0
+    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.0
   - name: console-plugin
-    image: quay.io/maximilianopizarro/integration-console-plugin:v0.7.0
+    image: quay.io/maximilianopizarro/integration-console-plugin:v0.8.0
   - name: camel-worker-core
-    image: quay.io/maximilianopizarro/camel-worker-core:v0.7.0
+    image: quay.io/maximilianopizarro/camel-worker-core:v0.8.0
   - name: camel-worker-full
-    image: quay.io/maximilianopizarro/camel-worker-full:v0.7.0
+    image: quay.io/maximilianopizarro/camel-worker-full:v0.8.0

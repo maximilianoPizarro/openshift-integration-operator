@@ -1,0 +1,34 @@
+# Ephemeral Google Sheets row trigger demo
+# oc create secret generic google-credentials -n openshift-integration \
+#   --from-literal=GOOGLE_CLIENT_ID=REPLACE --from-literal=GOOGLE_CLIENT_SECRET=REPLACE \
+#   --from-literal=GOOGLE_REFRESH_TOKEN=REPLACE
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-google-sheets
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-full:v0.8.0
+    properties:
+      camel.component.google-sheets.application-name: "integration-operator"
+  secrets:
+    - name: google-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: google-sheets-row-trigger
+        from:
+          uri: "timer:sheetsTick?period=300000"
+          steps:
+            - to:
+                uri: "google-sheets:spreadsheetId"
+            - log:
+                message: "Sheet row data: ${body}"

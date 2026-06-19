@@ -1,0 +1,36 @@
+# Ephemeral Salesforce lead sync demo
+# oc create secret generic salesforce-credentials -n openshift-integration \
+#   --from-literal=SALESFORCE_CLIENT_ID=REPLACE --from-literal=SALESFORCE_CLIENT_SECRET=REPLACE \
+#   --from-literal=SALESFORCE_REFRESH_TOKEN=REPLACE
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-salesforce-leads
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-full:v0.8.0
+    properties:
+      camel.component.salesforce.login-url: "${SALESFORCE_LOGIN_URL:https://login.salesforce.com}"
+      camel.component.salesforce.client-id: "${SALESFORCE_CLIENT_ID}"
+      camel.component.salesforce.client-secret: "${SALESFORCE_CLIENT_SECRET}"
+  secrets:
+    - name: salesforce-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: salesforce-lead-sync
+        from:
+          uri: "timer:sfTick?period=300000"
+          steps:
+            - to:
+                uri: "salesforce:query?sObjectName=Lead"
+            - log:
+                message: "Salesforce lead sync: ${body}"

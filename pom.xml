@@ -6,10 +6,10 @@
 
     <groupId>io.platform</groupId>
     <artifactId>openshift-integration-operator</artifactId>
-    <version>0.6.6</version>
+    <version>0.8.0</version>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <quarkus.platform.version>3.36.1</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>

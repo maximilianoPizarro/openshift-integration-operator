@@ -1,0 +1,75 @@
+# Flagship v0.8.0 demo — inbound message → LLM → MCP tool → Slack auto-reply
+# oc create secret generic mcp-llm-slack-credentials -n openshift-integration \
+#   --from-literal=OPENAI_API_KEY=sk-proj-REPLACE \
+#   --from-literal=SLACK_WEBHOOK_URL=https://hooks.slack.com/services/REPLACE/ME \
+#   --from-literal=MCP_SERVER_URL=https://mcp.example.com \
+#   --from-literal=OPERATOR_MCP_TOKEN=REPLACE
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-messaging-llm-mcp-auto-reply
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.0
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"
+      quarkus.langchain4j.openai.chat-model.model-name: "gpt-4o-mini"
+      quarkus.langchain4j.openai.chat-model.temperature: "0.3"
+      camel.component.slack.webhook-url: "${SLACK_WEBHOOK_URL}"
+      mcp.server.url: "${MCP_SERVER_URL}"
+  secrets:
+    - name: mcp-llm-slack-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: messaging-llm-mcp-auto-reply
+        from:
+          uri: "platform-http:/webhook/inbound-message"
+          parameters:
+            httpMethodRestrict: POST
+          steps:
+            - setProperty:
+                name: userMessage
+                simple: "${body}"
+            - setBody:
+                simple: "Draft a helpful reply for: ${exchangeProperty.userMessage}"
+            - to:
+                uri: "langchain4j-chat:draft"
+            - setProperty:
+                name: draftReply
+                simple: "${body}"
+            - setHeader:
+                name: CamelHttpMethod
+                constant: POST
+            - setHeader:
+                name: Authorization
+                simple: "Bearer ${env:OPERATOR_MCP_TOKEN}"
+            - setHeader:
+                name: Content-Type
+                constant: "application/json"
+            - setBody:
+                simple: '{"query":"${exchangeProperty.userMessage}"}'
+            - to:
+                uri: "https://openshift-integration-operator.openshift-integration.svc:8080/api/mcp/tools/web_search/call?serverUrl=${env:MCP_SERVER_URL}"
+                parameters:
+                  bridgeEndpoint: true
+                  throwExceptionOnFailure: false
+            - setProperty:
+                name: mcpContext
+                simple: "${body}"
+            - setBody:
+                simple: "User: ${exchangeProperty.userMessage}\nDraft: ${exchangeProperty.draftReply}\nContext: ${exchangeProperty.mcpContext}\n\nWrite final reply."
+            - to:
+                uri: "langchain4j-chat:final-reply"
+            - to:
+                uri: "slack:#auto-reply"
+            - log:
+                message: "Auto-reply sent: ${body}"

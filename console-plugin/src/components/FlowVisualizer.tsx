@@ -431,7 +431,7 @@ function renderNode(
             points={`${x + NODE_W / 2},${y} ${x + NODE_W},${y + NODE_H / 2} ${x + NODE_W / 2},${y + NODE_H} ${x},${y + NODE_H / 2}`}
             fill={colors.bg} stroke={isSelected ? '#0066cc' : colors.border} strokeWidth={isSelected ? 3 : 2}
           />
-          <text x={x + NODE_W / 2} y={y + NODE_H / 2 - 6} textAnchor="middle" fill="#e0e0e0" fontSize="13" fontWeight="600">
+          <text x={x + NODE_W / 2} y={y + NODE_H / 2 - 6} textAnchor="middle" fill="var(--integration-text-primary)" fontSize="13" fontWeight="600">
             {colors.icon} {node.label}
           </text>
           {node.detail && (
@@ -449,7 +449,7 @@ function renderNode(
           <circle cx={x + 24} cy={y + NODE_H / 2} r="14" fill={colors.border} opacity="0.3" />
           <text x={x + 24} y={y + NODE_H / 2 + 1} textAnchor="middle" dominantBaseline="central"
             fill={colors.border} fontSize="13" fontWeight="bold">{colors.icon}</text>
-          <text x={x + 46} y={y + 24} fill="#e0e0e0" fontSize="13" fontWeight="600">
+          <text x={x + 46} y={y + 24} fill="var(--integration-text-primary)" fontSize="13" fontWeight="600">
             {node.label.length > 20 ? node.label.substring(0, 20) + '...' : node.label}
           </text>
           {node.detail && (

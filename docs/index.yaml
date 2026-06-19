@@ -1492,7 +1492,6 @@ entries:
     - mcp
     - ai
     - opentelemetry
-    - n8n-alternative
     kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro
@@ -1631,7 +1630,6 @@ entries:
     - mcp
     - ai
     - opentelemetry
-    - n8n-alternative
     kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro
@@ -1730,7 +1728,6 @@ entries:
     - mcp
     - ai
     - opentelemetry
-    - n8n-alternative
     kubeVersion: '>=1.27.0-0'
     maintainers:
     - name: maximilianoPizarro

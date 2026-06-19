@@ -137,6 +137,15 @@ const EphemeralPropertiesEditor: React.FC<EphemeralPropertiesEditorProps> = ({
         </Alert>
       )}
 
+      {templateConfig?.authType && (
+        <Alert variant="info" isInline title={`Credential type: ${templateConfig.authType}`} style={{ marginBottom: '8px' }}>
+          {templateConfig.authType === 'oauth2_refresh' && 'Register an OAuth app and store refresh token + client credentials in the Secret.'}
+          {templateConfig.authType === 'static_token_webhook' && 'Use bot token and webhook verify secret from the provider console.'}
+          {templateConfig.authType === 'api_key' && 'Create an API key in the provider dashboard and add it to the Secret below.'}
+          {templateConfig.authType === 'basic_auth' && 'Store username and API token/password as Secret keys.'}
+        </Alert>
+      )}
+
       {templateConfig?.hints.map(h => (
         <p key={h} style={{ fontSize: '12px', color: 'var(--integration-text-subtle)', margin: '0 0 8px' }}>{h}</p>
       ))}

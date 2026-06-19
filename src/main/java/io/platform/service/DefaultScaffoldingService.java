@@ -59,7 +59,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
     static String generateDockerfileJvm() {
         // Tekton build-maven produces target/quarkus-app; image stage only packages the runtime.
         return """
-                FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.20
+                FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.21
                 COPY target/quarkus-app /deployments/
                 EXPOSE 8080
                 ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0"
@@ -300,7 +300,7 @@ public class DefaultScaffoldingService implements ScaffoldingService {
     }
 
     private static final String POM_JAVA_PROPERTIES = """
-                        <maven.compiler.release>17</maven.compiler.release>
+                        <maven.compiler.release>21</maven.compiler.release>
                         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>""";
 
     private static final String POM_BUILD_BLOCK = """

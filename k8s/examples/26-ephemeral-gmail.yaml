@@ -1,0 +1,34 @@
+# Ephemeral Gmail IMAP poll demo
+# oc create secret generic gmail-credentials -n openshift-integration \
+#   --from-literal=GMAIL_USERNAME=you@gmail.com --from-literal=GMAIL_REFRESH_TOKEN=REPLACE
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-gmail-poll
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 1800
+    workerImage: quay.io/maximilianopizarro/camel-worker-full:v0.8.0
+    properties:
+      camel.component.imap.host: "imap.gmail.com"
+      camel.component.imap.username: "${GMAIL_USERNAME}"
+  secrets:
+    - name: gmail-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: gmail-imap-poll
+        from:
+          uri: "timer:gmailTick?period=180000"
+          steps:
+            - to:
+                uri: "imap:inbox?unseen=true"
+            - log:
+                message: "Gmail poll: ${header.Subject}"

@@ -22,6 +22,8 @@ export interface FlowTemplate {
   kaotoDesign: string;
   suggestedProperties?: Record<string, string>;
   requiredSecrets?: string[];
+  authType?: string;
+  credentialHints?: string;
 }
 
 export interface FlowCategory {
@@ -42,6 +44,8 @@ export interface TemplateSelection {
   description: string;
   suggestedProperties?: Record<string, string>;
   requiredSecrets?: string[];
+  authType?: string;
+  credentialHints?: string;
 }
 
 export interface TemplateCatalogModalProps {
@@ -233,6 +237,16 @@ const TemplateCatalogModal: React.FC<TemplateCatalogModalProps> = ({
                           }}>
                             {flow.type}
                           </span>
+                          {flow.authType && (
+                            <span style={{
+                              fontSize: '10px', padding: '1px 6px', borderRadius: '999px',
+                              background: 'var(--pf-global--palette--gold-50, #fdf7e7)',
+                              color: 'var(--pf-global--palette--gold-700, #795600)',
+                              fontWeight: 600,
+                            }}>
+                              {flow.authType}
+                            </span>
+                          )}
                           {flow.components.split(', ').slice(0, 3).map(c => (
                             <span key={c} style={{
                               fontSize: '10px', padding: '1px 6px', borderRadius: '999px',

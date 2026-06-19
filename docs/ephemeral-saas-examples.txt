@@ -1,0 +1,135 @@
+================================================================================
+  Ephemeral SaaS examples — v0.8.0 catalog integrations
+================================================================================
+
+These flows run in EPHEMERAL mode (no Git). Each example uses timer→log or
+platform-http patterns from docs/flow-catalog.json buckets:
+
+  saas-messaging, crm-support, productivity, devops, commerce-latam,
+  ai-mcp (flagship), identity-secrets
+
+Worker images: quay.io/maximilianopizarro/camel-worker-*:v0.8.0
+
+Prerequisites (per integration)
+--------------------------------
+  Create the Secret named in each YAML before apply. Catalog flows include
+  authType, requiredSecrets, suggestedProperties, and credentialHints.
+
+  oc apply -f k8s/examples/23-ephemeral-slack.yaml
+  oc get integrationflow -n openshift-integration -w
+  oc logs deploy/iflow-ephemeral-slack-notify-worker -n openshift-integration -f
+
+authType cheat sheet
+--------------------
+  oauth2_refresh      Gmail, Office365, Salesforce, Google Workspace, LinkedIn
+  static_token_webhook Slack webhook, Telegram, Discord, Teams, WhatsApp
+  api_key             Twilio, HubSpot, Stripe, Mercado Pago, OpenAI, Vault
+  basic_auth          Zendesk, Freshdesk, WooCommerce, Confluence
+
+Worker image selection
+----------------------
+  camel-worker-messaging  Slack (webhook)
+  camel-worker-full       Telegram, Twilio, Gmail, Salesforce, Google Sheets
+  camel-worker-http       HubSpot, GitLab, Mercado Pago, Shopify webhooks/REST
+  camel-worker-ai         OpenAI / flagship messaging-llm-mcp-auto-reply
+
+See also: docs/ephemeral-ai-examples.txt for LLM-only flows.
+
+================================================================================
+Messaging & Chat (saas-messaging)
+================================================================================
+
+Example 23 — Slack notify
+  File: k8s/examples/23-ephemeral-slack.yaml
+  Secret: slack-credentials (SLACK_WEBHOOK_URL)
+  Worker: camel-worker-messaging:v0.8.0
+
+Example 24 — Telegram bot notify
+  File: k8s/examples/24-ephemeral-telegram.yaml
+  Secret: telegram-credentials (TELEGRAM_BOT_TOKEN)
+  Worker: camel-worker-full:v0.8.0
+
+Example 25 — Twilio SMS alert
+  File: k8s/examples/25-ephemeral-twilio.yaml
+  Secret: twilio-credentials (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+  Worker: camel-worker-full:v0.8.0
+
+Example 26 — Gmail IMAP poll
+  File: k8s/examples/26-ephemeral-gmail.yaml
+  Secret: gmail-credentials (GMAIL_USERNAME, GMAIL_REFRESH_TOKEN, …)
+  Worker: camel-worker-full:v0.8.0
+
+================================================================================
+CRM & Support (crm-support)
+================================================================================
+
+Example 27 — Salesforce lead sync
+  File: k8s/examples/27-ephemeral-salesforce.yaml
+  Secret: salesforce-credentials (SALESFORCE_CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN)
+  Worker: camel-worker-full:v0.8.0
+
+Example 28 — HubSpot contact webhook
+  File: k8s/examples/28-ephemeral-hubspot.yaml
+  Secret: hubspot-credentials (HUBSPOT_API_KEY)
+  Worker: camel-worker-http:v0.8.0
+
+================================================================================
+Productivity (productivity)
+================================================================================
+
+Example 29 — Google Sheets row trigger
+  File: k8s/examples/29-ephemeral-google-sheets.yaml
+  Secret: google-credentials (GOOGLE_CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN)
+  Worker: camel-worker-full:v0.8.0
+
+================================================================================
+DevOps (devops)
+================================================================================
+
+Example 30 — GitLab pipeline trigger
+  File: k8s/examples/30-ephemeral-gitlab.yaml
+  Secret: gitlab-credentials (GITLAB_TOKEN, GITLAB_PROJECT_ID)
+  Worker: camel-worker-http:v0.8.0
+
+================================================================================
+E-commerce LatAm (commerce-latam)
+================================================================================
+
+Example 31 — Mercado Pago payment webhook
+  File: k8s/examples/31-ephemeral-mercadopago.yaml
+  Secret: mercadopago-credentials (MERCADOPAGO_ACCESS_TOKEN)
+  Worker: camel-worker-http:v0.8.0
+
+Example 32 — Shopify order sync
+  File: k8s/examples/32-ephemeral-shopify.yaml
+  Secret: shopify-credentials (SHOPIFY_ACCESS_TOKEN, SHOPIFY_SHOP_DOMAIN)
+  Worker: camel-worker-http:v0.8.0
+
+Stripe (enterprise catalog): stripe-payment-notify — authType api_key
+  See flow-catalog.json enterprise category; STRIPE_WEBHOOK_SECRET + SLACK_WEBHOOK_URL
+
+================================================================================
+Flagship demo — AI / LLM & MCP (ai-mcp)
+================================================================================
+
+Example 25 (AI folder) — messaging-llm-mcp-auto-reply
+  File: k8s/examples/ephemeral-ai/25-messaging-llm-mcp-auto-reply.yaml
+  Secret: mcp-llm-slack-credentials
+    OPENAI_API_KEY, SLACK_WEBHOOK_URL, MCP_SERVER_URL, OPERATOR_MCP_TOKEN
+  Worker: camel-worker-ai:v0.8.0
+  Flow: platform-http inbound → langchain4j-chat → MCP tool → Slack auto-reply
+
+Other ai-mcp catalog flows (YAML from console or catalog):
+  openai-chat-ephemeral, azure-openai-chat, anthropic-claude-chat
+  See docs/ephemeral-ai-examples.txt
+
+================================================================================
+Catalog totals (v0.8.0)
+================================================================================
+
+  New categories: 7
+  New flows added: 36
+  Updated flows: 1 (enterprise/stripe-payment-notify + authType)
+  Total catalog flows: 243 (20 categories)
+
+Browse all templates: docs/ready-flows.html (loads docs/flow-catalog.json)

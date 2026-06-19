@@ -35,7 +35,7 @@ spec:
           steps:
             - setBody:
                 constant: |
-                  Transcript: Team agreed to ship v0.5.0 docs this week. Maria owns the migration guide. Dev will publish Quay images before Friday demo.
+                  Transcript: Team agreed to ship v0.8.0 docs this week. Maria owns the migration guide. Dev will publish Quay images before Friday demo.
             - setBody:
                 simple: "List numbered action items with owner if mentioned:\n${body}"
             - to:

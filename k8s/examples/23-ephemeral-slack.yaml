@@ -1,0 +1,35 @@
+# Ephemeral Slack notification — timer → slack → log
+# oc create secret generic slack-credentials -n openshift-integration \
+#   --from-literal=SLACK_WEBHOOK_URL=https://hooks.slack.com/services/REPLACE/ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-slack-notify
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 1800
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.0
+    properties:
+      camel.component.slack.webhook-url: "${SLACK_WEBHOOK_URL}"
+  secrets:
+    - name: slack-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: slack-notify-ephemeral
+        from:
+          uri: "timer:slackTick?period=120000"
+          steps:
+            - setBody:
+                constant: "Integration operator v0.8.0 Slack demo"
+            - to:
+                uri: "slack:#alerts"
+            - log:
+                message: "Slack notification sent"

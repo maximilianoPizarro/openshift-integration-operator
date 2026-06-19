@@ -108,9 +108,29 @@ public class ComponentPropertiesRegistry {
             // ── SaaS / Integration ─────────────────────────────────────
             entry("salesforce", Map.of(
                     "camel.component.salesforce.login-url",
-                            "${SALESFORCE_LOGIN_URL:https://login.salesforce.com}")),
+                            "${SALESFORCE_LOGIN_URL:https://login.salesforce.com}",
+                    "camel.component.salesforce.client-id", "${SALESFORCE_CLIENT_ID:}",
+                    "camel.component.salesforce.client-secret", "${SALESFORCE_CLIENT_SECRET:}")),
             entry("slack", Map.of(
                     "camel.component.slack.webhook-url", "${SLACK_WEBHOOK_URL:}")),
+            entry("telegram", Map.of(
+                    "camel.component.telegram.authorization-token", "${TELEGRAM_BOT_TOKEN:}")),
+            entry("twilio", Map.of(
+                    "camel.component.twilio.account-sid", "${TWILIO_ACCOUNT_SID:}",
+                    "camel.component.twilio.auth-token", "${TWILIO_AUTH_TOKEN:}")),
+            entry("imap", Map.of(
+                    "camel.component.imap.host", "${IMAP_HOST:imap.gmail.com}",
+                    "camel.component.imap.username", "${IMAP_USERNAME:}",
+                    "camel.component.imap.password", "${IMAP_PASSWORD:}")),
+            entry("mail", Map.of(
+                    "camel.component.mail.host", "${MAIL_HOST:imap.gmail.com}",
+                    "camel.component.mail.username", "${MAIL_USERNAME:}")),
+            entry("google-sheets", Map.of(
+                    "camel.component.google-sheets.application-name", "integration-operator")),
+            entry("google-drive", Map.of(
+                    "camel.component.google-drive.application-name", "integration-operator")),
+            entry("google-calendar", Map.of(
+                    "camel.component.google-calendar.application-name", "integration-operator")),
 
             // ── FTP ────────────────────────────────────────────────────
             entry("ftp", Map.of(

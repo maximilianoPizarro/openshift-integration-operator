@@ -3,16 +3,25 @@
  * ComponentPropertiesRegistry for console create-form prefill.
  */
 
+export type AuthType =
+  | 'oauth2_refresh'
+  | 'static_token_webhook'
+  | 'api_key'
+  | 'basic_auth'
+  | 'none';
+
 export interface TemplatePropertyConfig {
   properties: Record<string, string>;
   requiredSecrets: string[];
   defaultSecretName: string;
   hints: string[];
+  authType?: AuthType;
 }
 
 interface ComponentPropertyEntry {
   properties: Record<string, string>;
   requiredSecrets?: string[];
+  authType?: AuthType;
   hint?: string;
 }
 
@@ -35,6 +44,7 @@ const COMPONENT_PROPERTIES: Record<string, ComponentPropertyEntry> = {
   'langchain4j-chat': {
     properties: { ...OPENAI_CHAT_PROPERTIES },
     requiredSecrets: ['OPENAI_API_KEY'],
+    authType: 'api_key',
     hint: 'OpenAI-compatible API: set base-url (MaaS, Azure, Ollama /v1), api-key, and model-name.',
   },
   'langchain4j-embeddings': {
@@ -123,6 +133,70 @@ const COMPONENT_PROPERTIES: Record<string, ComponentPropertyEntry> = {
   slack: {
     properties: { 'camel.component.slack.webhook-url': '${SLACK_WEBHOOK_URL:}' },
     requiredSecrets: ['SLACK_WEBHOOK_URL'],
+    authType: 'static_token_webhook',
+    hint: 'Slack Incoming Webhook URL from app settings.',
+  },
+  telegram: {
+    properties: { 'camel.component.telegram.authorization-token': '${TELEGRAM_BOT_TOKEN:}' },
+    requiredSecrets: ['TELEGRAM_BOT_TOKEN'],
+    authType: 'static_token_webhook',
+    hint: 'Telegram bot token from @BotFather.',
+  },
+  twilio: {
+    properties: {
+      'camel.component.twilio.account-sid': '${TWILIO_ACCOUNT_SID:}',
+      'camel.component.twilio.auth-token': '${TWILIO_AUTH_TOKEN:}',
+    },
+    requiredSecrets: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN'],
+    authType: 'api_key',
+    hint: 'Twilio Account SID and Auth Token.',
+  },
+  imap: {
+    properties: {
+      'camel.component.imap.host': '${IMAP_HOST:imap.gmail.com}',
+      'camel.component.imap.username': '${IMAP_USERNAME:}',
+      'camel.component.imap.password': '${IMAP_PASSWORD:}',
+    },
+    requiredSecrets: ['IMAP_USERNAME', 'IMAP_PASSWORD'],
+    authType: 'oauth2_refresh',
+    hint: 'IMAP mailbox — prefer OAuth refresh token for Gmail/Office365.',
+  },
+  mail: {
+    properties: {
+      'camel.component.mail.host': '${MAIL_HOST:imap.gmail.com}',
+      'camel.component.mail.username': '${MAIL_USERNAME:}',
+    },
+    requiredSecrets: ['MAIL_USERNAME', 'MAIL_PASSWORD'],
+    authType: 'oauth2_refresh',
+    hint: 'JavaMail/IMAP credentials or OAuth refresh token.',
+  },
+  salesforce: {
+    properties: {
+      'camel.component.salesforce.login-url': '${SALESFORCE_LOGIN_URL:https://login.salesforce.com}',
+      'camel.component.salesforce.client-id': '${SALESFORCE_CLIENT_ID:}',
+      'camel.component.salesforce.client-secret': '${SALESFORCE_CLIENT_SECRET:}',
+    },
+    requiredSecrets: ['SALESFORCE_CLIENT_ID', 'SALESFORCE_CLIENT_SECRET', 'SALESFORCE_REFRESH_TOKEN'],
+    authType: 'oauth2_refresh',
+    hint: 'Salesforce Connected App OAuth refresh token.',
+  },
+  'google-sheets': {
+    properties: { 'camel.component.google-sheets.application-name': 'integration-operator' },
+    requiredSecrets: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REFRESH_TOKEN'],
+    authType: 'oauth2_refresh',
+    hint: 'Google Cloud OAuth app with Sheets API scope.',
+  },
+  'google-drive': {
+    properties: { 'camel.component.google-drive.application-name': 'integration-operator' },
+    requiredSecrets: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REFRESH_TOKEN'],
+    authType: 'oauth2_refresh',
+    hint: 'Google Cloud OAuth app with Drive API scope.',
+  },
+  'google-calendar': {
+    properties: { 'camel.component.google-calendar.application-name': 'integration-operator' },
+    requiredSecrets: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REFRESH_TOKEN'],
+    authType: 'oauth2_refresh',
+    hint: 'Google Cloud OAuth app with Calendar API scope.',
   },
   qdrant: {
     properties: {
@@ -136,7 +210,9 @@ const COMPONENT_PROPERTIES: Record<string, ComponentPropertyEntry> = {
       'camel.component.hashicorp-vault.host': '${VAULT_ADDR:http://localhost:8200}',
       'camel.component.hashicorp-vault.token': '${VAULT_TOKEN:}',
     },
-    requiredSecrets: ['VAULT_TOKEN'],
+    requiredSecrets: ['VAULT_ADDR', 'VAULT_TOKEN'],
+    authType: 'api_key',
+    hint: 'Vault address and token with read policy on target path.',
   },
   ftp: {
     properties: {
@@ -156,6 +232,9 @@ const SECRET_NAME_BY_KEY: Record<string, string> = {
   OPENAI_MODEL: 'openai-credentials',
   OPENAI_BASE_URL: 'openai-credentials',
   OPENAI_EMBEDDING_MODEL: 'openai-credentials',
+  AZURE_OPENAI_API_KEY: 'azure-openai-credentials',
+  AZURE_OPENAI_ENDPOINT: 'azure-openai-credentials',
+  ANTHROPIC_API_KEY: 'anthropic-credentials',
   TAVILY_API_KEY: 'tavily-credentials',
   KAFKA_BOOTSTRAP: 'kafka-credentials',
   DATASOURCE_URL: 'datasource-credentials',
@@ -164,10 +243,33 @@ const SECRET_NAME_BY_KEY: Record<string, string> = {
   AWS_ACCESS_KEY_ID: 'aws-credentials',
   AWS_SECRET_ACCESS_KEY: 'aws-credentials',
   SLACK_WEBHOOK_URL: 'slack-credentials',
+  TELEGRAM_BOT_TOKEN: 'telegram-credentials',
+  TWILIO_ACCOUNT_SID: 'twilio-credentials',
+  TWILIO_AUTH_TOKEN: 'twilio-credentials',
+  GMAIL_REFRESH_TOKEN: 'gmail-credentials',
+  OFFICE365_REFRESH_TOKEN: 'office365-credentials',
+  SALESFORCE_REFRESH_TOKEN: 'salesforce-credentials',
+  GOOGLE_REFRESH_TOKEN: 'google-credentials',
+  VAULT_TOKEN: 'vault-credentials',
+  VAULT_ADDR: 'vault-credentials',
+  HUBSPOT_API_KEY: 'hubspot-credentials',
+  STRIPE_WEBHOOK_SECRET: 'stripe-credentials',
+  MERCADOPAGO_ACCESS_TOKEN: 'mercadopago-credentials',
+  MCP_SERVER_URL: 'mcp-credentials',
+  OPERATOR_MCP_TOKEN: 'mcp-credentials',
   ELASTICSEARCH_HOSTS: 'elasticsearch-credentials',
   QDRANT_HOST: 'qdrant-credentials',
   REDIS_HOST: 'redis-credentials',
 };
+
+/** Prefer the most specific authType when multiple credentialed components are present. */
+const AUTH_TYPE_PRIORITY: AuthType[] = [
+  'oauth2_refresh',
+  'basic_auth',
+  'static_token_webhook',
+  'api_key',
+  'none',
+];
 
 function parseComponentSchemes(components: string): string[] {
   return components
@@ -185,17 +287,20 @@ export function resolveMinimalTemplateProperties(
   components: string,
   catalogSuggested?: Record<string, string>,
   catalogRequiredSecrets?: string[],
+  catalogAuthType?: AuthType,
 ): TemplatePropertyConfig {
   const schemes = parseComponentSchemes(components);
   const properties: Record<string, string> = {};
   const requiredSecrets = new Set<string>();
   const hints: string[] = [];
+  const authTypes = new Set<AuthType>();
 
   for (const scheme of schemes) {
     const entry = resolveSchemeEntry(scheme);
     if (!entry) continue;
     Object.assign(properties, entry.properties);
     entry.requiredSecrets?.forEach(s => requiredSecrets.add(s));
+    if (entry.authType) authTypes.add(entry.authType);
     if (entry.hint) hints.push(entry.hint);
   }
 
@@ -213,11 +318,17 @@ export function resolveMinimalTemplateProperties(
     }
   }
 
+  let authType = catalogAuthType;
+  if (!authType && authTypes.size > 0) {
+    authType = AUTH_TYPE_PRIORITY.find(t => authTypes.has(t));
+  }
+
   return {
     properties,
     requiredSecrets: [...requiredSecrets],
     defaultSecretName,
     hints: [...new Set(hints)],
+    authType,
   };
 }
 

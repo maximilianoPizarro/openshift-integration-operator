@@ -385,7 +385,7 @@ spec:
   deploymentMode: EPHEMERAL
   ephemeral:
     ttlSeconds: 3600
-    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.5.0
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.0
 ```
 
 This is useful when you know the target domain or want to pin a specific image version. Set `ephemeral.preferFullWorker: true` in operator config to always use the full image globally.
@@ -491,11 +491,11 @@ docker build -f src/main/docker/Dockerfile.jvm \
 
 ```bash
 # Publish (CI or local)
-gh workflow run build-push-quay.yml -f image_tag=v0.5.0
-# or: podman login quay.io && VERSION_TAG=v0.5.0 ./scripts/publish-quay.sh
+gh workflow run build-push-quay.yml -f image_tag=v0.8.0
+# or: podman login quay.io && VERSION_TAG=v0.8.0 ./scripts/publish-quay.sh
 
 operator-sdk cleanup openshift-integration-operator -n openshift-integration
-operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.5.0 \
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.0 \
   --namespace openshift-integration \
   --install-mode AllNamespaces \
   --timeout 10m
@@ -512,8 +512,8 @@ helm upgrade --install openshift-integration-operator \
   helm/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.5.0 \
-  --set consolePlugin.image.tag=v0.5.0 \
+  --set operator.image.tag=v0.8.0 \
+  --set consolePlugin.image.tag=v0.8.0 \
   --set gitea.password='your-gitea-password' \
   --set tekton.approvalEnabled=false
 ```
@@ -539,7 +539,7 @@ quay.io/maximilianopizarro/integration-console-plugin:latest
 quay.io/maximilianopizarro/camel-worker-{core,messaging,http,data,cloud,ai,full}:latest
 ```
 
-Version tags (`v0.5.0`) are added on git tag push. Validate flow catalog locally before push:
+Version tags (`v0.8.0`) are added on git tag push. Validate flow catalog locally before push:
 
 ```bash
 node scripts/validate-ready-flows.js

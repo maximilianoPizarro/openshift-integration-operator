@@ -1,6 +1,11 @@
 (function () {
   'use strict';
 
+  var SITE_VERSION = 'v0.8.0';
+  var SITE_CHART_VERSION = '0.8.0';
+  var SITE_RELEASES_URL =
+    'https://github.com/maximilianoPizarro/openshift-integration-operator/releases/tag/' + SITE_VERSION;
+
   var SITE_LINKS = {
     operatorHub: 'https://operatorhub.io/operator/openshift-integration-operator',
     artifactHub: 'https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator',
@@ -215,11 +220,38 @@
     });
   }
 
+  function injectVersionBadges() {
+    document.querySelectorAll('.badge--version, [data-site-version-badge]').forEach(function (el) {
+      el.textContent = SITE_VERSION;
+      if (el.tagName === 'A') {
+        el.setAttribute('href', SITE_RELEASES_URL);
+      }
+    });
+
+    document.querySelectorAll('[data-version-inject]').forEach(function (el) {
+      var template = el.getAttribute('data-version-inject') || el.textContent;
+      el.textContent = template
+        .replace(/\{\{SITE_VERSION\}\}/g, SITE_VERSION)
+        .replace(/\{\{SITE_CHART_VERSION\}\}/g, SITE_CHART_VERSION);
+    });
+
+    document.querySelectorAll('pre code[data-version-inject]').forEach(function (el) {
+      el.innerHTML = el.innerHTML
+        .replace(/v0\.\d+\.\d+/g, SITE_VERSION)
+        .replace(/openshift-integration-operator-\d+\.\d+\.\d+/g,
+          'openshift-integration-operator-' + SITE_CHART_VERSION);
+    });
+  }
+
   function boot() {
     initMasthead();
+    injectVersionBadges();
     initLightbox();
     initCopyButtons();
   }
+
+  window.SITE_VERSION = SITE_VERSION;
+  window.SITE_CHART_VERSION = SITE_CHART_VERSION;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);

@@ -245,7 +245,8 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             status.setPhase(IntegrationFlowStatus.Phase.Building);
             createTektonPipelineRun(namespace, flowName,
                     gitUrlResolver.resolve(spec.getGitRepository()),
-                    spec.getBranch(), commitHash, useEmbeddedScaffold, type);
+                    spec.getBranch(), commitHash, useEmbeddedScaffold, type,
+                    spec.getGitCredentialsSecret());
 
             // Step 4: Reconcile ArgoCD ApplicationSet for multi-cluster deployment
             status.setPhase(IntegrationFlowStatus.Phase.Deploying);
@@ -411,6 +412,8 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         conditions.add(new IntegrationFlowStatus.Condition(type, conditionStatus, reason, message));
     }
 
+    private static final String DEFAULT_GIT_CREDENTIALS_SECRET = "integration-git-basic-auth";
+
     /**
      * Creates a Tekton PipelineRun using the Fabric8 client's generic resource API.
      * The PipelineRun references a cluster Pipeline named "integration-flow-build"
@@ -418,7 +421,8 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
      */
     private void createTektonPipelineRun(String namespace, String flowName,
                                           String gitRepo, String branch, String commitHash,
-                                          boolean useEmbeddedScaffold, IntegrationType integrationType) {
+                                          boolean useEmbeddedScaffold, IntegrationType integrationType,
+                                          String gitCredentialsSecret) {
         var pipelineRun = new io.fabric8.kubernetes.api.model.GenericKubernetesResourceBuilder()
                 .withApiVersion("tekton.dev/v1")
                 .withKind("PipelineRun")
@@ -449,8 +453,11 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                                 "accessModes", java.util.List.of("ReadWriteOnce"),
                                 "resources", Map.of(
                                         "requests", Map.of("storage", "1Gi"))))));
+        String basicAuthSecret = (gitCredentialsSecret != null && !gitCredentialsSecret.isBlank())
+                ? gitCredentialsSecret
+                : DEFAULT_GIT_CREDENTIALS_SECRET;
         workspaces.add(Map.of("name", "basic-auth",
-                "secret", Map.of("secretName", "integration-git-basic-auth")));
+                "secret", Map.of("secretName", basicAuthSecret)));
         if (useEmbeddedScaffold) {
             workspaces.add(Map.of("name", "scaffold-source",
                     "configMap", Map.of("name", scaffoldSourceResolver.scaffoldConfigMapName(integrationType))));

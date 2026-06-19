@@ -7,7 +7,7 @@
     <artifactId>camel-worker-messaging</artifactId>
     <version>0.3.0</version>
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <quarkus.platform.version>3.36.1</quarkus.platform.version>
     </properties>
     <dependencyManagement>
@@ -26,6 +26,8 @@
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-jms</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-aws2-sqs</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-aws2-sns</artifactId></dependency>
+        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-telegram</artifactId></dependency>
+        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-twilio</artifactId></dependency>
         <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc</artifactId></dependency>
     </dependencies>
     <build>

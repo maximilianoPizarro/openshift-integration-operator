@@ -7,7 +7,7 @@
     <artifactId>camel-worker-full</artifactId>
     <version>0.3.0</version>
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <quarkus.platform.version>3.36.1</quarkus.platform.version>
     </properties>
@@ -107,6 +107,10 @@
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-salesforce</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-slack</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-telegram</artifactId></dependency>
+        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-twilio</artifactId></dependency>
+        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-google-sheets</artifactId></dependency>
+        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-google-calendar</artifactId></dependency>
+        <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-google-drive</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-mail</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-git</artifactId></dependency>
         <dependency><groupId>org.apache.camel.quarkus</groupId><artifactId>camel-quarkus-github</artifactId></dependency>

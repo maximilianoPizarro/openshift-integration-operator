@@ -1423,7 +1423,17 @@
         "components": "platform-http, http, jackson, kafka, slack, log",
         "description": "Receive Stripe webhook, update CRM topic, send Slack notification on payment",
         "pattern": "Payment Event Processing",
-        "kaotoDesign": "- route:\n    id: stripe-payment-notify\n    from:\n      uri: \"platform-http:/webhook/stripe\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - unmarshal:\n            json:\n              library: jackson\n        - setProperty:\n            name: eventType\n            jsonpath: \"$.type\"\n        - setProperty:\n            name: amount\n            jsonpath: \"$.data.object.amount\"\n        - setProperty:\n            name: currency\n            jsonpath: \"$.data.object.currency\"\n        - setProperty:\n            name: customerEmail\n            jsonpath: \"$.data.object.receipt_email\"\n        - log:\n            message: \"Stripe event: ${exchangeProperty.eventType} — ${exchangeProperty.amount} ${exchangeProperty.currency}\"\n        - choice:\n            when:\n              - simple: \"${exchangeProperty.eventType} == 'payment_intent.succeeded'\"\n                steps:\n                  - doTry:\n                      steps:\n                        - setBody:\n                            simple: '{\"event\":\"payment_success\",\"email\":\"${exchangeProperty.customerEmail}\",\"amount\":${exchangeProperty.amount},\"currency\":\"${exchangeProperty.currency}\",\"timestamp\":\"${date:now:yyyy-MM-dd HH:mm:ss}\"}'\n                        - to:\n                            uri: \"kafka:crm-payments\"\n                            parameters:\n                              brokers: \"my-cluster-kafka-bootstrap:9092\"\n                        - setBody:\n                            simple: \"💰 *Payment Received*\\nCustomer: ${exchangeProperty.customerEmail}\\nAmount: ${exchangeProperty.amount} ${exchangeProperty.currency}\\nTime: ${date:now:yyyy-MM-dd HH:mm:ss}\"\n                        - to:\n                            uri: \"slack:#payments\"\n                            parameters:\n                              webhookUrl: \"https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK\"\n                      doCatch:\n                        - exception:\n                            - \"java.lang.Exception\"\n                          steps:\n                            - log:\n                                message: \"Payment notification failed: ${exception.message}\"\n                                loggingLevel: ERROR\n              - simple: \"${exchangeProperty.eventType} == 'payment_intent.payment_failed'\"\n                steps:\n                  - setBody:\n                      simple: '{\"event\":\"payment_failed\",\"email\":\"${exchangeProperty.customerEmail}\",\"amount\":${exchangeProperty.amount}}'\n                  - to:\n                      uri: \"kafka:crm-payment-failures\"\n                      parameters:\n                        brokers: \"my-cluster-kafka-bootstrap:9092\"\n                  - log:\n                      message: \"Payment FAILED for ${exchangeProperty.customerEmail}\"\n                      loggingLevel: WARN\n        - setBody:\n            simple: '{\"received\":true}'"
+        "kaotoDesign": "- route:\n    id: stripe-payment-notify\n    from:\n      uri: \"platform-http:/webhook/stripe\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - unmarshal:\n            json:\n              library: jackson\n        - setProperty:\n            name: eventType\n            jsonpath: \"$.type\"\n        - setProperty:\n            name: amount\n            jsonpath: \"$.data.object.amount\"\n        - setProperty:\n            name: currency\n            jsonpath: \"$.data.object.currency\"\n        - setProperty:\n            name: customerEmail\n            jsonpath: \"$.data.object.receipt_email\"\n        - log:\n            message: \"Stripe event: ${exchangeProperty.eventType} — ${exchangeProperty.amount} ${exchangeProperty.currency}\"\n        - choice:\n            when:\n              - simple: \"${exchangeProperty.eventType} == 'payment_intent.succeeded'\"\n                steps:\n                  - doTry:\n                      steps:\n                        - setBody:\n                            simple: '{\"event\":\"payment_success\",\"email\":\"${exchangeProperty.customerEmail}\",\"amount\":${exchangeProperty.amount},\"currency\":\"${exchangeProperty.currency}\",\"timestamp\":\"${date:now:yyyy-MM-dd HH:mm:ss}\"}'\n                        - to:\n                            uri: \"kafka:crm-payments\"\n                            parameters:\n                              brokers: \"my-cluster-kafka-bootstrap:9092\"\n                        - setBody:\n                            simple: \"💰 *Payment Received*\\nCustomer: ${exchangeProperty.customerEmail}\\nAmount: ${exchangeProperty.amount} ${exchangeProperty.currency}\\nTime: ${date:now:yyyy-MM-dd HH:mm:ss}\"\n                        - to:\n                            uri: \"slack:#payments\"\n                            parameters:\n                              webhookUrl: \"https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK\"\n                      doCatch:\n                        - exception:\n                            - \"java.lang.Exception\"\n                          steps:\n                            - log:\n                                message: \"Payment notification failed: ${exception.message}\"\n                                loggingLevel: ERROR\n              - simple: \"${exchangeProperty.eventType} == 'payment_intent.payment_failed'\"\n                steps:\n                  - setBody:\n                      simple: '{\"event\":\"payment_failed\",\"email\":\"${exchangeProperty.customerEmail}\",\"amount\":${exchangeProperty.amount}}'\n                  - to:\n                      uri: \"kafka:crm-payment-failures\"\n                      parameters:\n                        brokers: \"my-cluster-kafka-bootstrap:9092\"\n                  - log:\n                      message: \"Payment FAILED for ${exchangeProperty.customerEmail}\"\n                      loggingLevel: WARN\n        - setBody:\n            simple: '{\"received\":true}'",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "STRIPE_WEBHOOK_SECRET",
+          "SLACK_WEBHOOK_URL"
+        ],
+        "suggestedProperties": {
+          "stripe.webhook.secret": "${STRIPE_WEBHOOK_SECRET}",
+          "camel.component.slack.webhook-url": "${SLACK_WEBHOOK_URL}"
+        },
+        "credentialHints": "Stripe Dashboard → Webhooks signing secret; Slack Incoming Webhook for payment alerts"
       },
       {
         "name": "github-issue-triage-ai",
@@ -1744,6 +1754,638 @@
         "description": "Polls Open-Meteo every 2 min for Madrid weather — logs heat alert when temperature exceeds 30°C (no API key)",
         "pattern": "Scheduled Public API Poll",
         "kaotoDesign": "- route:\n    id: open-meteo-weather-poll\n    from:\n      uri: \"timer:meteoPoll\"\n      parameters:\n        period: \"120000\"\n      steps:\n        - doTry:\n            steps:\n              - setHeader:\n                  name: CamelHttpMethod\n                  constant: GET\n              - to:\n                  uri: \"https://api.open-meteo.com/v1/forecast?latitude=40.42&longitude=-3.70&current=temperature_2m,wind_speed_10m\"\n              - unmarshal:\n                  json: {}\n              - setProperty:\n                  name: temperature\n                  jsonpath:\n                    expression: \"$.current.temperature_2m\"\n              - setProperty:\n                  name: windSpeed\n                  jsonpath:\n                    expression: \"$.current.wind_speed_10m\"\n              - choice:\n                  when:\n                    - simple: \"${exchangeProperty.temperature} > 30\"\n                      steps:\n                        - log:\n                            message: \"HEAT ALERT: ${exchangeProperty.temperature}°C, wind ${exchangeProperty.windSpeed} km/h (Madrid)\"\n                  otherwise:\n                    steps:\n                      - log:\n                          message: \"Weather OK: ${exchangeProperty.temperature}°C, wind ${exchangeProperty.windSpeed} km/h (Madrid)\"\n            doCatch:\n              - exception:\n                  - \"java.lang.Exception\"\n                steps:\n                  - log:\n                      message: \"Open-Meteo API error: ${exception.message}\""
+      }
+    ]
+  },
+  {
+    "id": "saas-messaging",
+    "icon": "💬",
+    "title": "Messaging & Chat",
+    "flows": [
+      {
+        "name": "slack-notify-ephemeral",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, slack, log",
+        "description": "Timer-driven Slack notification via Incoming Webhook",
+        "pattern": "Scheduled Notification",
+        "authType": "static_token_webhook",
+        "requiredSecrets": [
+          "SLACK_WEBHOOK_URL"
+        ],
+        "suggestedProperties": {
+          "camel.component.slack.webhook-url": "${SLACK_WEBHOOK_URL}"
+        },
+        "credentialHints": "Slack app → Incoming Webhooks → copy webhook URL into Secret",
+        "kaotoDesign": "- route:\n    id: slack-notify-ephemeral\n    from:\n      uri: \"timer:slack-notify-ephemeral\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"slack:#alerts\"\n            parameters:\n              webhookUrl: \"{{slack.webhook.url}}\"\n        - log:\n            message: \"Slack notification sent\""
+      },
+      {
+        "name": "telegram-bot-notify",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, telegram, log",
+        "description": "Send a demo message via Telegram Bot API",
+        "pattern": "Bot Notification",
+        "authType": "static_token_webhook",
+        "requiredSecrets": [
+          "TELEGRAM_BOT_TOKEN"
+        ],
+        "suggestedProperties": {
+          "camel.component.telegram.authorization-token": "${TELEGRAM_BOT_TOKEN}"
+        },
+        "credentialHints": "Create bot via @BotFather; store bot token in Secret",
+        "kaotoDesign": "- route:\n    id: telegram-bot-notify\n    from:\n      uri: \"timer:telegram-bot-notify\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"telegram:demo-chat\"\n        - log:\n            message: \"Telegram message sent\""
+      },
+      {
+        "name": "discord-webhook",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Post a message to Discord via channel webhook URL",
+        "pattern": "Webhook Notification",
+        "authType": "static_token_webhook",
+        "requiredSecrets": [
+          "DISCORD_WEBHOOK_URL"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Discord channel → Integrations → Webhooks → copy URL",
+        "kaotoDesign": "- route:\n    id: discord-webhook\n    from:\n      uri: \"timer:discord-webhook\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:discord-webhook\"\n        - log:\n            message: \"Discord webhook posted\""
+      },
+      {
+        "name": "twilio-sms-alert",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, twilio, log",
+        "description": "Send SMS alert via Twilio on a timer tick",
+        "pattern": "SMS Alert",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "TWILIO_ACCOUNT_SID",
+          "TWILIO_AUTH_TOKEN"
+        ],
+        "suggestedProperties": {
+          "camel.component.twilio.account-sid": "${TWILIO_ACCOUNT_SID}",
+          "camel.component.twilio.auth-token": "${TWILIO_AUTH_TOKEN}"
+        },
+        "credentialHints": "Twilio Console → Account SID + Auth Token",
+        "kaotoDesign": "- route:\n    id: twilio-sms-alert\n    from:\n      uri: \"timer:twilio-sms-alert\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"twilio:+15551234567\"\n        - log:\n            message: \"Twilio SMS sent\""
+      },
+      {
+        "name": "gmail-imap-poll",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, imap, log",
+        "description": "Poll Gmail inbox via IMAP and log new unseen messages",
+        "pattern": "Mail Poll",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "GMAIL_CLIENT_ID",
+          "GMAIL_CLIENT_SECRET",
+          "GMAIL_REFRESH_TOKEN"
+        ],
+        "suggestedProperties": {
+          "camel.component.imap.host": "imap.gmail.com",
+          "camel.component.imap.username": "${GMAIL_USERNAME}"
+        },
+        "credentialHints": "Google Cloud OAuth app with Gmail scope; store refresh token",
+        "kaotoDesign": "- route:\n    id: gmail-imap-poll\n    from:\n      uri: \"timer:gmail-imap-poll\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"imap:inbox?unseen=true\"\n        - log:\n            message: \"Gmail poll: ${header.Subject}\""
+      },
+      {
+        "name": "office365-mail-sync",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, imap, log",
+        "description": "Poll Office365 mailbox via IMAP and log subjects",
+        "pattern": "Mail Sync",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "OFFICE365_CLIENT_ID",
+          "OFFICE365_CLIENT_SECRET",
+          "OFFICE365_REFRESH_TOKEN"
+        ],
+        "suggestedProperties": {
+          "camel.component.imap.host": "outlook.office365.com",
+          "camel.component.imap.username": "${OFFICE365_USERNAME}"
+        },
+        "credentialHints": "Azure AD app with IMAP/SMTP OAuth; store refresh token",
+        "kaotoDesign": "- route:\n    id: office365-mail-sync\n    from:\n      uri: \"timer:office365-mail-sync\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"imap:office365-inbox?unseen=true\"\n        - log:\n            message: \"Office365 mail: ${header.Subject}\""
+      },
+      {
+        "name": "teams-channel-post",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Post adaptive card payload to Microsoft Teams incoming webhook",
+        "pattern": "Teams Notification",
+        "authType": "static_token_webhook",
+        "requiredSecrets": [
+          "TEAMS_WEBHOOK_URL"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Teams channel → Connectors → Incoming Webhook URL",
+        "kaotoDesign": "- route:\n    id: teams-channel-post\n    from:\n      uri: \"timer:teams-channel-post\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:teams-webhook\"\n        - log:\n            message: \"Teams channel post sent\""
+      },
+      {
+        "name": "whatsapp-send-message",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Send WhatsApp Business Cloud API text message",
+        "pattern": "WhatsApp Outbound",
+        "authType": "static_token_webhook",
+        "requiredSecrets": [
+          "WHATSAPP_ACCESS_TOKEN",
+          "WHATSAPP_PHONE_NUMBER_ID"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Meta Developer → WhatsApp Business → permanent access token + phone number ID",
+        "kaotoDesign": "- route:\n    id: whatsapp-send-message\n    from:\n      uri: \"timer:whatsapp-send-message\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:graph.facebook.com/v18.0/messages\"\n        - log:\n            message: \"WhatsApp message sent\""
+      },
+      {
+        "name": "instagram-graph-post",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Publish media caption via Instagram Graph API",
+        "pattern": "Social Publish",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "INSTAGRAM_ACCESS_TOKEN",
+          "INSTAGRAM_BUSINESS_ACCOUNT_ID"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Meta Business → Instagram Graph API long-lived token + business account ID",
+        "kaotoDesign": "- route:\n    id: instagram-graph-post\n    from:\n      uri: \"timer:instagram-graph-post\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:graph.facebook.com/v18.0/media\"\n        - log:\n            message: \"Instagram post published\""
+      },
+      {
+        "name": "linkedin-share-post",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Share text update via LinkedIn Marketing API",
+        "pattern": "Social Share",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "LINKEDIN_ACCESS_TOKEN"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "LinkedIn Developer app → OAuth access token with w_member_social scope",
+        "kaotoDesign": "- route:\n    id: linkedin-share-post\n    from:\n      uri: \"timer:linkedin-share-post\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:api.linkedin.com/v2/ugcPosts\"\n        - log:\n            message: \"LinkedIn share posted\""
+      }
+    ]
+  },
+  {
+    "id": "crm-support",
+    "icon": "🎯",
+    "title": "CRM & Support",
+    "flows": [
+      {
+        "name": "salesforce-lead-sync",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, salesforce, log",
+        "description": "Poll Salesforce for new leads and log Lead Id",
+        "pattern": "CRM Sync",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "SALESFORCE_CLIENT_ID",
+          "SALESFORCE_CLIENT_SECRET",
+          "SALESFORCE_REFRESH_TOKEN"
+        ],
+        "suggestedProperties": {
+          "camel.component.salesforce.login-url": "${SALESFORCE_LOGIN_URL:https://login.salesforce.com}",
+          "camel.component.salesforce.client-id": "${SALESFORCE_CLIENT_ID}",
+          "camel.component.salesforce.client-secret": "${SALESFORCE_CLIENT_SECRET}"
+        },
+        "credentialHints": "Salesforce Connected App → OAuth refresh token in Secret",
+        "kaotoDesign": "- route:\n    id: salesforce-lead-sync\n    from:\n      uri: \"timer:salesforce-lead-sync\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"salesforce:query?sObjectName=Lead\"\n        - log:\n            message: \"Salesforce lead synced\""
+      },
+      {
+        "name": "hubspot-contact-webhook",
+        "type": "CAMEL_ROUTE",
+        "components": "platform-http, https, log",
+        "description": "Receive HubSpot contact webhook and log contact id",
+        "pattern": "CRM Webhook",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "HUBSPOT_API_KEY"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "HubSpot Private App → access token as HUBSPOT_API_KEY",
+        "kaotoDesign": "- route:\n    id: hubspot-contact-webhook\n    from:\n      uri: \"platform-http:/webhook/hubspot/contact\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - log:\n            message: \"HubSpot contact event: ${body}\""
+      },
+      {
+        "name": "zendesk-ticket-create",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Create Zendesk support ticket via REST API",
+        "pattern": "Ticket Create",
+        "authType": "basic_auth",
+        "requiredSecrets": [
+          "ZENDESK_SUBDOMAIN",
+          "ZENDESK_EMAIL",
+          "ZENDESK_API_TOKEN"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Zendesk Admin → API token; use email/token as basic auth",
+        "kaotoDesign": "- route:\n    id: zendesk-ticket-create\n    from:\n      uri: \"timer:zendesk-ticket-create\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:zendesk-api/tickets.json\"\n        - log:\n            message: \"Zendesk ticket created\""
+      },
+      {
+        "name": "freshdesk-ticket-sync",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Sync Freshdesk tickets on a schedule",
+        "pattern": "Ticket Sync",
+        "authType": "basic_auth",
+        "requiredSecrets": [
+          "FRESHDESK_DOMAIN",
+          "FRESHDESK_API_KEY"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Freshdesk Profile → API key as basic auth password",
+        "kaotoDesign": "- route:\n    id: freshdesk-ticket-sync\n    from:\n      uri: \"timer:freshdesk-ticket-sync\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:freshdesk-api/tickets\"\n        - log:\n            message: \"Freshdesk tickets synced\""
+      }
+    ]
+  },
+  {
+    "id": "productivity",
+    "icon": "📋",
+    "title": "Productivity & Workspace",
+    "flows": [
+      {
+        "name": "google-sheets-row-trigger",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, google-sheets, log",
+        "description": "Poll Google Sheet for new rows and log row data",
+        "pattern": "Sheet Trigger",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "GOOGLE_CLIENT_ID",
+          "GOOGLE_CLIENT_SECRET",
+          "GOOGLE_REFRESH_TOKEN"
+        ],
+        "suggestedProperties": {
+          "camel.component.google-sheets.application-name": "integration-operator"
+        },
+        "credentialHints": "Google Cloud OAuth app with Sheets scope; refresh token in Secret",
+        "kaotoDesign": "- route:\n    id: google-sheets-row-trigger\n    from:\n      uri: \"timer:google-sheets-row-trigger\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"google-sheets:spreadsheetId\"\n        - log:\n            message: \"New sheet row: ${body}\""
+      },
+      {
+        "name": "google-drive-upload",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, google-drive, log",
+        "description": "Upload demo file metadata to Google Drive folder",
+        "pattern": "Drive Upload",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "GOOGLE_CLIENT_ID",
+          "GOOGLE_CLIENT_SECRET",
+          "GOOGLE_REFRESH_TOKEN"
+        ],
+        "suggestedProperties": {
+          "camel.component.google-drive.application-name": "integration-operator"
+        },
+        "credentialHints": "Google Cloud OAuth app with Drive scope",
+        "kaotoDesign": "- route:\n    id: google-drive-upload\n    from:\n      uri: \"timer:google-drive-upload\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"google-drive:folderId\"\n        - log:\n            message: \"Google Drive upload complete\""
+      },
+      {
+        "name": "google-calendar-event",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, google-calendar, log",
+        "description": "List upcoming Google Calendar events and log titles",
+        "pattern": "Calendar Poll",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "GOOGLE_CLIENT_ID",
+          "GOOGLE_CLIENT_SECRET",
+          "GOOGLE_REFRESH_TOKEN"
+        ],
+        "suggestedProperties": {
+          "camel.component.google-calendar.application-name": "integration-operator"
+        },
+        "credentialHints": "Google Cloud OAuth app with Calendar scope",
+        "kaotoDesign": "- route:\n    id: google-calendar-event\n    from:\n      uri: \"timer:google-calendar-event\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"google-calendar:primary/events\"\n        - log:\n            message: \"Calendar event: ${body}\""
+      },
+      {
+        "name": "notion-page-create",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Create Notion page via REST API",
+        "pattern": "Page Create",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "NOTION_API_KEY",
+          "NOTION_DATABASE_ID"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Notion Integrations → Internal integration secret token",
+        "kaotoDesign": "- route:\n    id: notion-page-create\n    from:\n      uri: \"timer:notion-page-create\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:api.notion.com/v1/pages\"\n        - log:\n            message: \"Notion page created\""
+      },
+      {
+        "name": "trello-card-create",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Create Trello card on a list via REST API",
+        "pattern": "Card Create",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "TRELLO_API_KEY",
+          "TRELLO_TOKEN",
+          "TRELLO_LIST_ID"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Trello Power-Up → API key + user token",
+        "kaotoDesign": "- route:\n    id: trello-card-create\n    from:\n      uri: \"timer:trello-card-create\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:api.trello.com/1/cards\"\n        - log:\n            message: \"Trello card created\""
+      },
+      {
+        "name": "asana-task-create",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Create Asana task in a project",
+        "pattern": "Task Create",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "ASANA_ACCESS_TOKEN",
+          "ASANA_PROJECT_ID"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Asana Developer Console → Personal Access Token",
+        "kaotoDesign": "- route:\n    id: asana-task-create\n    from:\n      uri: \"timer:asana-task-create\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:app.asana.com/api/1.0/tasks\"\n        - log:\n            message: \"Asana task created\""
+      },
+      {
+        "name": "monday-item-update",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Update Monday.com board item column value",
+        "pattern": "Board Update",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "MONDAY_API_TOKEN",
+          "MONDAY_BOARD_ID"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Monday Developer → API token v2",
+        "kaotoDesign": "- route:\n    id: monday-item-update\n    from:\n      uri: \"timer:monday-item-update\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:api.monday.com/v2\"\n        - log:\n            message: \"Monday item updated\""
+      }
+    ]
+  },
+  {
+    "id": "devops",
+    "icon": "🔧",
+    "title": "DevOps & ITSM",
+    "flows": [
+      {
+        "name": "gitlab-pipeline-trigger",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Trigger GitLab CI pipeline via pipeline trigger token",
+        "pattern": "CI Trigger",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "GITLAB_TOKEN",
+          "GITLAB_PROJECT_ID"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "GitLab Project → CI/CD → Pipeline triggers token",
+        "kaotoDesign": "- route:\n    id: gitlab-pipeline-trigger\n    from:\n      uri: \"timer:gitlab-pipeline-trigger\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:gitlab.com/api/v4/projects/trigger/pipeline\"\n        - log:\n            message: \"GitLab pipeline triggered\""
+      },
+      {
+        "name": "confluence-page-update",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Update Confluence page body via REST API",
+        "pattern": "Wiki Update",
+        "authType": "basic_auth",
+        "requiredSecrets": [
+          "CONFLUENCE_BASE_URL",
+          "CONFLUENCE_EMAIL",
+          "CONFLUENCE_API_TOKEN"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Atlassian API token + site URL for basic auth",
+        "kaotoDesign": "- route:\n    id: confluence-page-update\n    from:\n      uri: \"timer:confluence-page-update\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:confluence-api/rest/api/content\"\n        - log:\n            message: \"Confluence page updated\""
+      },
+      {
+        "name": "pagerduty-incident",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Create PagerDuty incident via Events API v2",
+        "pattern": "Incident Create",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "PAGERDUTY_ROUTING_KEY"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "PagerDuty Service → Integrations → Events API v2 routing key",
+        "kaotoDesign": "- route:\n    id: pagerduty-incident\n    from:\n      uri: \"timer:pagerduty-incident\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:events.pagerduty.com/v2/enqueue\"\n        - log:\n            message: \"PagerDuty incident created\""
+      },
+      {
+        "name": "opsgenie-alert",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Raise Opsgenie alert via REST API",
+        "pattern": "Alert Create",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "OPSGENIE_API_KEY"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Opsgenie Settings → API key management",
+        "kaotoDesign": "- route:\n    id: opsgenie-alert\n    from:\n      uri: \"timer:opsgenie-alert\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:api.opsgenie.com/v2/alerts\"\n        - log:\n            message: \"Opsgenie alert raised\""
+      }
+    ]
+  },
+  {
+    "id": "commerce-latam",
+    "icon": "🛒",
+    "title": "E-commerce & Payments (LatAm)",
+    "flows": [
+      {
+        "name": "mercadolibre-order-webhook",
+        "type": "CAMEL_ROUTE",
+        "components": "platform-http, https, log",
+        "description": "Receive Mercado Libre order notification webhook",
+        "pattern": "Order Webhook",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "ML_CLIENT_ID",
+          "ML_CLIENT_SECRET",
+          "ML_ACCESS_TOKEN"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Mercado Libre Developers → OAuth app + user access token",
+        "kaotoDesign": "- route:\n    id: mercadolibre-order-webhook\n    from:\n      uri: \"platform-http:/webhook/mercadolibre/orders\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - log:\n            message: \"ML order: ${body}\""
+      },
+      {
+        "name": "mercadopago-payment-notify",
+        "type": "CAMEL_ROUTE",
+        "components": "platform-http, https, log",
+        "description": "Receive Mercado Pago payment IPN webhook",
+        "pattern": "Payment Webhook",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "MERCADOPAGO_ACCESS_TOKEN"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Mercado Pago Developers → production access token",
+        "kaotoDesign": "- route:\n    id: mercadopago-payment-notify\n    from:\n      uri: \"platform-http:/webhook/mercadopago/payments\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - log:\n            message: \"Mercado Pago payment: ${body}\""
+      },
+      {
+        "name": "shopify-order-sync",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Poll Shopify orders REST API and log order name",
+        "pattern": "Order Sync",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "SHOPIFY_ACCESS_TOKEN",
+          "SHOPIFY_SHOP_DOMAIN"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Shopify Admin → Custom app → Admin API access token",
+        "kaotoDesign": "- route:\n    id: shopify-order-sync\n    from:\n      uri: \"timer:shopify-order-sync\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:shopify-admin/orders.json\"\n        - log:\n            message: \"Shopify order synced\""
+      },
+      {
+        "name": "woocommerce-order-hook",
+        "type": "CAMEL_ROUTE",
+        "components": "platform-http, https, log",
+        "description": "Receive WooCommerce order webhook and log order id",
+        "pattern": "Order Webhook",
+        "authType": "basic_auth",
+        "requiredSecrets": [
+          "WOOCOMMERCE_CONSUMER_KEY",
+          "WOOCOMMERCE_CONSUMER_SECRET"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "WooCommerce → Settings → Advanced → REST API keys",
+        "kaotoDesign": "- route:\n    id: woocommerce-order-hook\n    from:\n      uri: \"platform-http:/webhook/woocommerce/order\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - log:\n            message: \"WooCommerce order: ${body}\""
+      }
+    ]
+  },
+  {
+    "id": "ai-mcp",
+    "icon": "🧠",
+    "title": "AI / LLM & MCP",
+    "flows": [
+      {
+        "name": "openai-chat-ephemeral",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, langchain4j-chat, log",
+        "description": "Timer-driven OpenAI chat completion via langchain4j",
+        "pattern": "LLM Chat",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "OPENAI_API_KEY"
+        ],
+        "suggestedProperties": {
+          "quarkus.langchain4j.openai.api-key": "${OPENAI_API_KEY}",
+          "quarkus.langchain4j.openai.chat-model.model-name": "${OPENAI_MODEL:gpt-4o-mini}"
+        },
+        "credentialHints": "OpenAI platform → API key in Secret",
+        "kaotoDesign": "- route:\n    id: openai-chat-ephemeral\n    from:\n      uri: \"timer:openai-chat-ephemeral\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"langchain4j-chat:openai\"\n        - log:\n            message: \"OpenAI response: ${body}\""
+      },
+      {
+        "name": "azure-openai-chat",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, langchain4j-chat, log",
+        "description": "Azure OpenAI chat via langchain4j with custom base-url",
+        "pattern": "Azure LLM",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "AZURE_OPENAI_API_KEY",
+          "AZURE_OPENAI_ENDPOINT"
+        ],
+        "suggestedProperties": {
+          "quarkus.langchain4j.openai.api-key": "${AZURE_OPENAI_API_KEY}",
+          "quarkus.langchain4j.openai.base-url": "${AZURE_OPENAI_ENDPOINT}",
+          "quarkus.langchain4j.openai.chat-model.model-name": "${AZURE_OPENAI_DEPLOYMENT:gpt-4o}"
+        },
+        "credentialHints": "Azure OpenAI resource → endpoint + deployment + API key",
+        "kaotoDesign": "- route:\n    id: azure-openai-chat\n    from:\n      uri: \"timer:azure-openai-chat\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"langchain4j-chat:azure\"\n        - log:\n            message: \"Azure OpenAI response: ${body}\""
+      },
+      {
+        "name": "anthropic-claude-chat",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, langchain4j-chat, log",
+        "description": "Anthropic Claude chat via langchain4j (OpenAI-compatible proxy or direct)",
+        "pattern": "Claude Chat",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "ANTHROPIC_API_KEY"
+        ],
+        "suggestedProperties": {
+          "quarkus.langchain4j.anthropic.api-key": "${ANTHROPIC_API_KEY}",
+          "quarkus.langchain4j.anthropic.chat-model.model-name": "${ANTHROPIC_MODEL:claude-3-5-sonnet-20241022}"
+        },
+        "credentialHints": "Anthropic Console → API key",
+        "kaotoDesign": "- route:\n    id: anthropic-claude-chat\n    from:\n      uri: \"timer:anthropic-claude-chat\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"langchain4j-chat:claude\"\n        - log:\n            message: \"Claude response: ${body}\""
+      },
+      {
+        "name": "messaging-llm-mcp-auto-reply",
+        "type": "CAMEL_ROUTE",
+        "components": "platform-http, slack, langchain4j-chat, https, log",
+        "description": "Flagship v0.8.0: inbound message → LLM → MCP tool → auto-reply to channel",
+        "pattern": "Messaging + LLM + MCP",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "OPENAI_API_KEY",
+          "SLACK_WEBHOOK_URL",
+          "MCP_SERVER_URL",
+          "OPERATOR_MCP_TOKEN"
+        ],
+        "suggestedProperties": {
+          "quarkus.langchain4j.openai.api-key": "${OPENAI_API_KEY}",
+          "quarkus.langchain4j.openai.chat-model.model-name": "gpt-4o-mini",
+          "camel.component.slack.webhook-url": "${SLACK_WEBHOOK_URL}",
+          "mcp.server.url": "${MCP_SERVER_URL}"
+        },
+        "credentialHints": "OpenAI key + Slack webhook + operator MCP bridge token; flagship demo for v0.8.0",
+        "kaotoDesign": "- route:\n    id: messaging-llm-mcp-auto-reply\n    from:\n      uri: \"platform-http:/webhook/inbound-message\"\n      parameters:\n        httpMethodRestrict: POST\n      steps:\n        - setProperty:\n            name: userMessage\n            simple: \"${body}\"\n        - setBody:\n            simple: \"Classify intent and draft a helpful reply for: ${exchangeProperty.userMessage}\"\n        - to:\n            uri: \"langchain4j-chat:reply-model\"\n        - setProperty:\n            name: draftReply\n            simple: \"${body}\"\n        - setHeader:\n            name: CamelHttpMethod\n            constant: POST\n        - setHeader:\n            name: Authorization\n            simple: \"Bearer ${env:OPERATOR_MCP_TOKEN}\"\n        - setBody:\n            simple: '{\"query\":\"${exchangeProperty.userMessage}\"}'\n        - to:\n            uri: \"https:operator-mcp/tools/web_search/call\"\n        - setProperty:\n            name: mcpContext\n            simple: \"${body}\"\n        - setBody:\n            simple: \"Reply to user using context. User: ${exchangeProperty.userMessage} Draft: ${exchangeProperty.draftReply} Context: ${exchangeProperty.mcpContext}\"\n        - to:\n            uri: \"langchain4j-chat:final-reply\"\n        - to:\n            uri: \"slack:#auto-reply\"\n            parameters:\n              webhookUrl: \"{{slack.webhook.url}}\"\n        - log:\n            message: \"Auto-reply sent: ${body}\""
+      }
+    ]
+  },
+  {
+    "id": "identity-secrets",
+    "icon": "🔐",
+    "title": "Identity & Secrets",
+    "flows": [
+      {
+        "name": "vault-secret-rotation",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, hashicorp-vault, log",
+        "description": "Read secret from Vault KV and log rotation timestamp",
+        "pattern": "Secret Rotation",
+        "authType": "api_key",
+        "requiredSecrets": [
+          "VAULT_ADDR",
+          "VAULT_TOKEN"
+        ],
+        "suggestedProperties": {
+          "camel.component.hashicorp-vault.host": "${VAULT_ADDR:http://localhost:8200}",
+          "camel.component.hashicorp-vault.token": "${VAULT_TOKEN}"
+        },
+        "credentialHints": "Vault policy token with read on secret/data path",
+        "kaotoDesign": "- route:\n    id: vault-secret-rotation\n    from:\n      uri: \"timer:vault-secret-rotation\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"hashicorp-vault:secret/data/demo\"\n        - log:\n            message: \"Vault secret read at ${date:now:yyyy-MM-dd HH:mm:ss}\""
+      },
+      {
+        "name": "okta-user-provision",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Provision demo user via Okta SCIM/Admin API",
+        "pattern": "User Provision",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "OKTA_DOMAIN",
+          "OKTA_API_TOKEN"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Okta Admin → API token or OAuth service app",
+        "kaotoDesign": "- route:\n    id: okta-user-provision\n    from:\n      uri: \"timer:okta-user-provision\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:okta-api/api/v1/users\"\n        - log:\n            message: \"Okta user provisioned\""
+      },
+      {
+        "name": "azure-ad-group-sync",
+        "type": "CAMEL_ROUTE",
+        "components": "timer, https, log",
+        "description": "Sync Azure AD group members via Microsoft Graph",
+        "pattern": "Group Sync",
+        "authType": "oauth2_refresh",
+        "requiredSecrets": [
+          "AZURE_TENANT_ID",
+          "AZURE_CLIENT_ID",
+          "AZURE_CLIENT_SECRET"
+        ],
+        "suggestedProperties": {},
+        "credentialHints": "Azure AD app registration → client credentials or delegated token",
+        "kaotoDesign": "- route:\n    id: azure-ad-group-sync\n    from:\n      uri: \"timer:azure-ad-group-sync\"\n      parameters:\n        period: \"60000\"\n      steps:\n        - to:\n            uri: \"https:graph.microsoft.com/v1.0/groups\"\n        - log:\n            message: \"Azure AD group synced\""
       }
     ]
   }

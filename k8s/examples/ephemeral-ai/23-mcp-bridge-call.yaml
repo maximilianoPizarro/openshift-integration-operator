@@ -12,7 +12,7 @@ spec:
   engine: CAMEL
   ephemeral:
     ttlSeconds: 3600
-    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.0
     properties:
       platform.operator.url: "${OPERATOR_URL:http://openshift-integration-operator.openshift-integration.svc:8080}"
       mcp.server.url: "${MCP_SERVER_URL:https://mcp.example.com}"

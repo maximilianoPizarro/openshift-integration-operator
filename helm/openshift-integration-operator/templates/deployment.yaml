@@ -41,26 +41,34 @@ spec:
               value: {{ .Values.git.url | default .Values.gitea.url | default "" }}
             - name: GIT_USERNAME
               value: {{ .Values.git.username | default .Values.gitea.username | default "" }}
+            {{- if ne .Values.secrets.provider "external-secrets" }}
             - name: GIT_PASSWORD
               value: {{ .Values.git.password | default .Values.gitea.password | default "" }}
+            {{- end }}
             - name: GIT_ORG
               value: {{ .Values.git.org | default .Values.gitea.org | default "" }}
             - name: GITEA_URL
               value: {{ .Values.gitea.url | default .Values.git.url | default "" }}
             - name: GITEA_USERNAME
               value: {{ .Values.gitea.username | default .Values.git.username | default "" }}
+            {{- if ne .Values.secrets.provider "external-secrets" }}
             - name: GITEA_PASSWORD
               value: {{ .Values.gitea.password | default .Values.git.password | default "" }}
+            {{- end }}
             - name: GITEA_ORG
               value: {{ .Values.gitea.org | default .Values.git.org | default "" }}
             - name: GITHUB_URL
               value: {{ .Values.github.url | default "https://api.github.com" }}
+            {{- if ne .Values.secrets.provider "external-secrets" }}
             - name: GITHUB_TOKEN
               value: {{ .Values.github.token | default "" | quote }}
+            {{- end }}
             - name: GITLAB_URL
               value: {{ .Values.gitlab.url | default "https://gitlab.com" }}
+            {{- if ne .Values.secrets.provider "external-secrets" }}
             - name: GITLAB_TOKEN
               value: {{ .Values.gitlab.token | default "" | quote }}
+            {{- end }}
             - name: EPHEMERAL_ENABLED
               value: {{ .Values.ephemeral.enabled | quote }}
             - name: EPHEMERAL_DEFAULT_TTL_SECONDS
@@ -140,6 +148,12 @@ spec:
               value: /etc/serving-cert/tls.key
             - name: QUARKUS_HTTP_INSECURE_REQUESTS
               value: enabled
+          {{- if eq .Values.secrets.provider "external-secrets" }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secrets.externalSecrets.gitCredentialsSecretName | default "integration-git-basic-auth" }}
+                optional: true
+          {{- end }}
           volumeMounts:
             - name: serving-cert
               readOnly: true

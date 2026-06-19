@@ -102,6 +102,75 @@
       </section>
 
       <div id="sec-tables"></div>
+
+      <section class="doc-section" id="secrets-management">
+        <h2>Secrets Management</h2>
+        <p class="section-lead">
+          Credentials for Git push, Tekton builds, and ephemeral workers never belong in Git or Helm values in production.
+          The platform supports three patterns — pick one per environment.
+        </p>
+
+        <h3>1. Kubernetes Secret (dev / per-flow)</h3>
+        <p>
+          Create Secrets in the flow namespace and reference them from the IntegrationFlow CR.
+          Properties use <code>${ENV_VAR}</code> placeholders; the operator injects Secrets as env vars or volume mounts.
+        </p>
+        <pre><code>oc create secret generic openai-credentials -n openshift-integration \
+  --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+
+<span class="comment"># In IntegrationFlow CR</span>
+spec:
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  ephemeral:
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"</code></pre>
+        <p>GitOps operator credentials (dev only): <code>--set gitea.password=...</code> creates <code>integration-git-basic-auth</code>.</p>
+
+        <h3>2. External Secrets Operator + Vault</h3>
+        <p>
+          Recommended for production GitOps. ESO syncs Vault (or AWS Secrets Manager / Azure Key Vault) into
+          Kubernetes Secrets on a refresh interval. The Helm chart renders
+          <code>ExternalSecret integration-git-basic-auth</code> when
+          <code>secrets.provider: external-secrets</code>.
+        </p>
+        <pre><code>secrets:
+  provider: external-secrets
+  externalSecrets:
+    enabled: true
+    secretStoreRef: cluster-secret-store
+    refreshInterval: 1h</code></pre>
+        <p>
+          Vault paths: <code>integration-platform/git</code>, optional GitHub/GitLab tokens.
+          Full setup: <a href="operations.html#vault-eso">Operations — Vault &amp; ESO</a> and
+          <a href="quickstart.html#track-b-eso">Quick Start Track B.2a</a>.
+        </p>
+        <p>
+          For ephemeral SaaS integrations (Slack, Stripe, etc.), create namespace-scoped
+          <code>ExternalSecret</code> resources that target the same Secret names referenced in
+          <code>spec.secrets</code>.
+        </p>
+
+        <h3>3. Camel Vault components (runtime fetch)</h3>
+        <p>
+          Routes can read secrets at runtime without mounting them as env vars — useful for rotation handled by the vault backend:
+        </p>
+        <ul>
+          <li><code>hashicorp-vault:</code> — HashiCorp Vault KV secrets (<code>VAULT_ADDR</code>, <code>VAULT_TOKEN</code>)</li>
+          <li><code>aws-secrets-manager:</code> — AWS Secrets Manager</li>
+          <li><code>azure-key-vault:</code> — Azure Key Vault</li>
+        </ul>
+        <pre><code>- to:
+    uri: "hashicorp-vault:secret/data/my-app/credentials"
+    parameters:
+      operation: getSecret</code></pre>
+        <p>
+          The <code>ComponentPropertiesRegistry</code> auto-injects base URL properties when these components
+          are detected. Prefer ESO for static credentials needed at Quarkus startup; use Camel vault components
+          for secrets fetched inside the route.
+        </p>
+      </section>
     </div>
   </main>
 

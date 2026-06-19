@@ -134,7 +134,7 @@
         <div class="result-box">
           <h3>Recommended Image</h3>
           <p>Based on your selection, you should use:</p>
-          <div class="result-image" id="resultImage">quay.io/maximilianopizarro/camel-worker-core:v0.5.0</div>
+          <div class="result-image" id="resultImage">quay.io/maximilianopizarro/camel-worker-core:v0.8.0</div>
           <p id="resultReason">Reason: Only core components selected.</p>
         </div>
       </section>
@@ -220,9 +220,14 @@
         grid.appendChild(label);
       });
 
+      function workerTag() {
+        return window.SITE_VERSION || 'v0.8.0';
+      }
+
       function calculateImage() {
+        var tag = workerTag();
         if (selectedComponents.size === 0) {
-          resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-core:v0.5.0";
+          resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-core:" + tag;
           resultReason.textContent = "Reason: No components selected, defaulting to core.";
           return;
         }
@@ -237,17 +242,19 @@
         });
 
         if (requiredDomains.size === 0) {
-          resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-core:v0.5.0";
+          resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-core:" + tag;
           resultReason.textContent = "Reason: Only core components selected.";
         } else if (requiredDomains.size === 1) {
           const domain = Array.from(requiredDomains)[0];
-          resultImage.textContent = `quay.io/maximilianopizarro/camel-worker-${domain}:v0.5.0`;
+          resultImage.textContent = `quay.io/maximilianopizarro/camel-worker-${domain}:${tag}`;
           resultReason.textContent = `Reason: All components fit within the '${domain}' domain.`;
         } else {
-          resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-full:v0.5.0";
+          resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-full:" + tag;
           resultReason.textContent = `Reason: Components span multiple domains (${Array.from(requiredDomains).join(', ')}). Falling back to the full image.`;
         }
       }
+
+      resultImage.textContent = "quay.io/maximilianopizarro/camel-worker-core:" + workerTag();
     });
   </script>
 </body>

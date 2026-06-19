@@ -58,7 +58,7 @@
 
   <header class="site-hero">
     <div class="container">
-      <span class="badge">Apache 2.0 · Open Source</span> <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/releases/tag/v0.6.4" class="badge badge--version" style="text-decoration: none; color: inherit; border: 1px solid var(--pf-v5-global--primary-color--100, #0066cc); background: rgba(0,102,204,0.1);">v0.6.4</a>
+      <span class="badge">Apache 2.0 · Open Source</span> <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/releases/tag/v0.8.0" class="badge badge--version" data-site-version-badge style="text-decoration: none; color: inherit; border: 1px solid var(--pf-v5-global--primary-color--100, #0066cc); background: rgba(0,102,204,0.1);">v0.8.0</a>
       <h1>OpenShift Integration Operator</h1>
       <p class="subtitle">The missing lifecycle layer for Apache Camel on OpenShift</p>
       <p class="description">
@@ -81,12 +81,14 @@
       </p>
       <div class="hero-links">
         <a class="btn btn-primary" href="try-it-now.html">Try it now — no prerequisites</a>
-        <a class="btn btn-secondary" href="security.html">Security report</a>
-        <a class="btn btn-secondary" href="comparison.html">Compare platforms</a>
-        <a class="btn btn-tertiary" href="contributing.html">Contribute a Flow</a>
-        <a class="btn btn-tertiary" href="migrating-from-camel-k.html">Migrating from Camel K</a>
-        <a class="btn btn-tertiary" href="https://github.com/maximilianoPizarro/openshift-integration-operator">View on GitHub</a>
+        <a class="btn btn-secondary" href="https://github.com/maximilianoPizarro/openshift-integration-operator">View on GitHub</a>
       </div>
+      <p class="hero-secondary-links" style="margin-top: 1rem; text-align: center; font-size: 0.9rem;">
+        <a href="security.html">Security report</a> ·
+        <a href="comparison.html">Compare platforms</a> ·
+        <a href="contributing.html">Contribute a Flow</a> ·
+        <a href="migrating-from-camel-k.html">Migrating from Camel K</a>
+      </p>
     </div>
   </header>
 
@@ -94,7 +96,7 @@
     <section id="ephemeral">
       <div class="container">
         <h2>Test any Camel route in 30 seconds</h2>
-        <p class="section-lead">No Git, no pipeline, no friction — ephemeral Quick Try with TTL, ownerReference cleanup (v0.5.0), and one-click promote to GitOps.</p>
+        <p class="section-lead">No Git, no pipeline, no friction — ephemeral Quick Try with TTL, automatic ownerReference cleanup, and one-click promote to GitOps.</p>
         <div class="card-grid">
           <article class="card">
             <div class="card-icon">⚡</div>
@@ -104,7 +106,7 @@
           <article class="card">
             <div class="card-icon">⏱</div>
             <h3>TTL &amp; cleanup</h3>
-            <p>Configurable TTL with extend in the console. Delete the CR — no orphaned Deployments (v0.5.0 ownerReferences).</p>
+            <p>Configurable TTL with extend in the console. Delete the CR — no orphaned Deployments thanks to built-in ownerReferences.</p>
           </article>
           <article class="card">
             <div class="card-icon">🔀</div>
@@ -144,9 +146,13 @@
 
 
     <div class="container" style="margin: 2rem auto;">
-      <div class="video-placeholder" style="border: 2px dashed var(--pf-global--BorderColor--100, #3c3f42); border-radius: 8px; padding: 2rem; text-align: center; background: var(--pf-global--BackgroundColor--200, #1b1d21);">
-        <p style="margin: 0 0 0.5rem; font-weight: 600;">3-minute platform demo (coming soon)</p>
-        <p style="margin: 0; color: var(--pf-global--Color--200, #8a8d90);">Recording script available in <a href="demo-script.md">docs/demo-script.md</a>. YouTube embed placeholder.</p>
+      <div class="screenshot-teaser" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: center; padding: 1rem; border-radius: 8px; background: var(--pf-global--BackgroundColor--200, #1b1d21);">
+        <a href="#screenshots" style="display: flex; gap: 0.75rem; align-items: center; text-decoration: none; color: inherit;">
+          <img src="images/console-plugin.png" alt="Integration Flows list in OpenShift Console" width="160" height="90" loading="lazy" style="border-radius: 4px; border: 1px solid var(--pf-global--BorderColor--100, #3c3f42);">
+          <img src="images/console-plugin-saga.png" alt="Visual saga flow diagram" width="160" height="90" loading="lazy" style="border-radius: 4px; border: 1px solid var(--pf-global--BorderColor--100, #3c3f42);">
+          <img src="images/console-plugin-kaoto.png" alt="Kaoto designer embedded in console" width="160" height="90" loading="lazy" style="border-radius: 4px; border: 1px solid var(--pf-global--BorderColor--100, #3c3f42);">
+        </a>
+        <p style="margin: 0; font-size: 0.95rem;"><a href="#screenshots"><strong>See all 9 console screenshots ↓</strong></a></p>
       </div>
     </div>
 
@@ -274,7 +280,7 @@
                 <td style="padding: 0.5rem;"><strong>Yes (Apache 2.0)</strong></td>
               </tr>
               <tr>
-                <td style="padding: 0.5rem;">Low-code iPaaS (e.g. n8n-style)</td>
+                <td style="padding: 0.5rem;">Low-code iPaaS</td>
                 <td style="padding: 0.5rem;">No</td>
                 <td style="padding: 0.5rem;">No</td>
                 <td style="padding: 0.5rem;">Different category</td>
@@ -291,8 +297,8 @@
       <div class="container">
         <h2>Quick Start</h2>
         <p class="section-lead">Evaluators: <a href="quickstart.html#track-a">Track A — 10 minutes with ephemeral</a>. Production: <a href="quickstart.html#track-b">Track B — full GitOps stack</a>.</p>
-        <pre><code><span class="comment"># Install v0.5.0 from Quay (OLM)</span>
-operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.5.0 \
+        <pre><code><span class="comment"># Install v0.8.0 from Quay (OLM)</span>
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.0 \
   --namespace openshift-integration \
   --install-mode AllNamespaces \
   --timeout 10m
@@ -304,7 +310,7 @@ oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></
           See the full <a href="quickstart.html">Quick Start Guide</a> for GitOps examples, console plugin access, and verification steps.
           Browse <a href="ready-flows.html"><strong>250+ Ready Flows</strong></a> or the
           <a href="examples-catalog.html">Examples Catalog</a> (310 Apache Camel Quarkus components).
-            <li><a href="security.html">Security Report</a></li>
+          See the <a href="security.html">Security Report</a>.
         </p>
       </div>
     </section>
@@ -386,34 +392,39 @@ oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></
         <h2>Precompiled Worker Images</h2>
         <p class="section-lead">Domain-specific Camel Quarkus workers on Quay — auto-selected from your route, or pin with <code>spec.ephemeral.workerImage</code>.</p>
         <pre><code><span class="comment"># Default (all domains — 80+ extensions)</span>
-quay.io/maximilianopizarro/camel-worker-full:v0.5.0
+quay.io/maximilianopizarro/camel-worker-full:v0.8.0
 
 <span class="comment"># Domain-specific (smaller, faster startup)</span>
-quay.io/maximilianopizarro/camel-worker-core:v0.5.0        <span class="comment"># timer, log, direct, seda, bean</span>
-quay.io/maximilianopizarro/camel-worker-messaging:v0.5.0   <span class="comment"># kafka, amqp, jms, mqtt, nats</span>
-quay.io/maximilianopizarro/camel-worker-http:v0.5.0        <span class="comment"># platform-http, rest, graphql, grpc</span>
-quay.io/maximilianopizarro/camel-worker-data:v0.5.0        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
-quay.io/maximilianopizarro/camel-worker-cloud:v0.5.0       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
-quay.io/maximilianopizarro/camel-worker-ai:v0.5.0          <span class="comment"># langchain4j-chat, djl</span></code></pre>
+quay.io/maximilianopizarro/camel-worker-core:v0.8.0        <span class="comment"># timer, log, direct, seda, bean</span>
+quay.io/maximilianopizarro/camel-worker-messaging:v0.8.0   <span class="comment"># kafka, amqp, jms, mqtt, nats</span>
+quay.io/maximilianopizarro/camel-worker-http:v0.8.0        <span class="comment"># platform-http, rest, graphql, grpc</span>
+quay.io/maximilianopizarro/camel-worker-data:v0.8.0        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
+quay.io/maximilianopizarro/camel-worker-cloud:v0.8.0       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
+quay.io/maximilianopizarro/camel-worker-ai:v0.8.0          <span class="comment"># langchain4j-chat, djl</span></code></pre>
         <h4>Override auto-selection</h4>
         <pre><code>spec:
   deploymentMode: EPHEMERAL
   ephemeral:
     ttlSeconds: 3600
-    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.5.0</code></pre>
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.0</code></pre>
 
-        <h3>Full Worker — Included Extensions</h3>
-        <p>
-          Core &amp; EIP: timer, log, direct, seda, bean, mock, quartz, cron, exec, controlbus, scheduler<br>
-          Messaging: kafka, amqp, jms, activemq, mqtt5, nats, pulsar, stomp, sjms2, azure-servicebus, google-pubsub, knative<br>
-          HTTP/API: platform-http, http, rest, rest-openapi, vertx-http, netty-http, graphql, grpc, websocket, coap<br>
-          Data: sql, jdbc, mongodb, cassandra, couchdb, infinispan, redis, elasticsearch, solr, minio, file, ftp<br>
-          Cloud: aws2-s3/sqs/sns/ddb/lambda/kinesis/ses/bedrock, azure-blob/cosmos/eventhubs, google-storage/bigquery/pubsub<br>
-          AI/ML: langchain4j-chat, djl<br>
-          SaaS: debezium-mysql/postgres/mongodb, salesforce, slack, telegram, mail, git, github, jira, ssh, hashicorp-vault<br>
-          Healthcare/IoT: fhir, hl7, mllp, snmp<br>
-          Transform: jackson, jsonpath, jaxb, csv, xslt, jolt, jslt, freemarker, mustache, velocity, flatpack, tika<br>
-          Resilience: microprofile-fault-tolerance, microprofile-health, micrometer, opentelemetry
+        <details style="margin-top: 1rem;">
+          <summary><strong>Full Worker — Included Extensions</strong></summary>
+          <p style="margin-top: 0.75rem;">
+            Core &amp; EIP: timer, log, direct, seda, bean, mock, quartz, cron, exec, controlbus, scheduler<br>
+            Messaging: kafka, amqp, jms, activemq, mqtt5, nats, pulsar, stomp, sjms2, azure-servicebus, google-pubsub, knative<br>
+            HTTP/API: platform-http, http, rest, rest-openapi, vertx-http, netty-http, graphql, grpc, websocket, coap<br>
+            Data: sql, jdbc, mongodb, cassandra, couchdb, infinispan, redis, elasticsearch, solr, minio, file, ftp<br>
+            Cloud: aws2-s3/sqs/sns/ddb/lambda/kinesis/ses/bedrock, azure-blob/cosmos/eventhubs, google-storage/bigquery/pubsub<br>
+            AI/ML: langchain4j-chat, djl<br>
+            SaaS: debezium-mysql/postgres/mongodb, salesforce, slack, telegram, mail, git, github, jira, ssh, hashicorp-vault<br>
+            Healthcare/IoT: fhir, hl7, mllp, snmp<br>
+            Transform: jackson, jsonpath, jaxb, csv, xslt, jolt, jslt, freemarker, mustache, velocity, flatpack, tika<br>
+            Resilience: microprofile-fault-tolerance, microprofile-health, micrometer, opentelemetry
+          </p>
+        </details>
+        <p style="margin-top: 1rem;">
+          <a class="btn btn-secondary" href="worker-selector.html">Pick the right worker → Worker Image Selector</a>
         </p>
       </div>
     </section>
@@ -446,7 +457,7 @@ quay.io/maximilianopizarro/camel-worker-ai:v0.5.0          <span class="comment"
         <a href="architecture.html">Architecture</a>
         <a href="ready-flows.html">Ready Flows</a>
         <a href="examples-catalog.html">Examples Catalog</a>
-            <li><a href="security.html">Security Report</a></li>
+        <a href="security.html">Security Report</a>
         <a href="comparison.html">Comparison</a>
         <a href="worker-selector.html">Tools</a>
         <a href="faq.html">FAQ</a>

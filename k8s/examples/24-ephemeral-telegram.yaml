@@ -1,0 +1,35 @@
+# Ephemeral Telegram bot notify — requires camel-worker-full (telegram component)
+# oc create secret generic telegram-credentials -n openshift-integration \
+#   --from-literal=TELEGRAM_BOT_TOKEN=REPLACE_ME
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-telegram-notify
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 1800
+    workerImage: quay.io/maximilianopizarro/camel-worker-full:v0.8.0
+    properties:
+      camel.component.telegram.authorization-token: "${TELEGRAM_BOT_TOKEN}"
+  secrets:
+    - name: telegram-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: telegram-bot-notify
+        from:
+          uri: "timer:telegramTick?period=120000"
+          steps:
+            - setBody:
+                constant: "Hello from OpenShift Integration Operator v0.8.0"
+            - to:
+                uri: "telegram:demo-chat"
+            - log:
+                message: "Telegram message sent"

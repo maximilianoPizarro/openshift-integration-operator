@@ -50,6 +50,7 @@ deadAPIs.forEach(api => {
 });
 
 const GITHUB_USER_RE = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+const AUTH_TYPES = new Set(['oauth2_refresh', 'static_token_webhook', 'api_key', 'basic_auth', 'none']);
 
 // Check all flows have required fields
 let missing = [];
@@ -66,6 +67,13 @@ FLOWS.forEach(cat => {
     if (!flow.pattern) missing.push(`${cat.id}/${flow.name}: missing pattern`);
     if (flow.owner && !GITHUB_USER_RE.test(flow.owner)) {
       missing.push(`${cat.id}/${flow.name}: invalid owner username "${flow.owner}"`);
+    }
+    if (flow.requiredSecrets && flow.requiredSecrets.length > 0) {
+      if (!flow.authType) {
+        missing.push(`${cat.id}/${flow.name}: missing authType (required when requiredSecrets present)`);
+      } else if (!AUTH_TYPES.has(flow.authType)) {
+        missing.push(`${cat.id}/${flow.name}: invalid authType "${flow.authType}"`);
+      }
     }
     // Community flows (new contributions) must declare owner; legacy publicapi-* entries remain valid without it.
     const REQUIRES_OWNER = new Set(['publicapi-open-meteo-weather']);

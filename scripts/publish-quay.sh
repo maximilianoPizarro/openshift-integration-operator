@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 QUAY_ORG="${QUAY_ORG:-maximilianopizarro}"
-VERSION_TAG="${VERSION_TAG:-v0.5.0}"
+VERSION_TAG="${VERSION_TAG:-v0.8.0}"
 OPERATOR_IMAGE="quay.io/${QUAY_ORG}/openshift-integration-operator:${VERSION_TAG}"
 BUNDLE_IMAGE="quay.io/${QUAY_ORG}/openshift-integration-operator-bundle:${VERSION_TAG}"
 CONSOLE_IMAGE="quay.io/${QUAY_ORG}/integration-console-plugin:${VERSION_TAG}"

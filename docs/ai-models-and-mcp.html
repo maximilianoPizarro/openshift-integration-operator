@@ -88,10 +88,31 @@
 
       <section class="doc-section" id="pipeline">
         <h2>How CR properties reach the worker</h2>
+        <p>
+          The <code>EphemeralConfigMerger</code> assembles five layers into
+          <code>application.properties</code> mounted in ConfigMap <code>iflow-&lt;name&gt;-sources</code>.
+          Later layers override earlier ones; Layer 5 removes keys matched by glob patterns.
+        </p>
+        <table class="doc-table" style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid #444;">
+              <th style="text-align:left; padding:0.5rem;">Layer</th>
+              <th style="text-align:left; padding:0.5rem;">Source</th>
+              <th style="text-align:left; padding:0.5rem;">Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:0.5rem;"><strong>1 — Worker built-in</strong></td><td>Baked into the Quay worker image</td><td><code>camel.main.routes-reload-enabled</code></td></tr>
+            <tr><td style="padding:0.5rem;"><strong>2 — Component-required</strong></td><td><code>ComponentPropertiesRegistry</code> from detected route schemes</td><td><code>camel.component.kafka.brokers=${KAFKA_BOOTSTRAP:localhost:9092}</code></td></tr>
+            <tr><td style="padding:0.5rem;"><strong>3 — Scaffold-generated</strong></td><td>OTel endpoint, resilience from <code>spec.resilience</code></td><td><code>quarkus.opentelemetry.enabled=true</code></td></tr>
+            <tr><td style="padding:0.5rem;"><strong>4 — User overrides</strong></td><td><code>spec.ephemeral.properties</code></td><td><code>quarkus.langchain4j.openai.api-key=${OPENAI_API_KEY}</code></td></tr>
+            <tr><td style="padding:0.5rem;"><strong>5 — Disable filter</strong></td><td><code>spec.ephemeral.disableProperties</code> globs remove keys</td><td><code>quarkus.infinispan-client.*</code></td></tr>
+          </tbody>
+        </table>
         <ol>
-          <li>You set <code>spec.ephemeral.properties</code> with Quarkus keys (e.g. <code>quarkus.langchain4j.openai.chat-model.model-name</code>).</li>
-          <li><code>ComponentPropertiesRegistry</code> adds safe defaults when <code>langchain4j-chat</code> is detected in the route.</li>
-          <li><code>EphemeralConfigMerger</code> merges layers into <code>application.properties</code> in ConfigMap <code>iflow-&lt;name&gt;-sources</code>.</li>
+          <li>You set <code>spec.ephemeral.properties</code> with Quarkus/Camel keys.</li>
+          <li><code>ComponentPropertiesRegistry</code> adds safe defaults when components like <code>langchain4j-chat</code> are detected.</li>
+          <li><code>EphemeralConfigMerger</code> merges all layers into the ConfigMap.</li>
           <li>The worker pod mounts the ConfigMap at <code>/deployments/config</code> and sets <code>QUARKUS_CONFIG_LOCATIONS=file:/deployments/config/application.properties</code>.</li>
           <li>Quarkus LangChain4j extensions create <code>ChatModel</code> CDI beans; Camel <code>langchain4j-chat:</code> uses the default or named bean.</li>
         </ol>
@@ -109,13 +130,117 @@
   --from-literal=OPENAI_MODEL=gpt-4o-mini</code></pre>
       </section>
 
+      <section class="doc-section" id="property-prefixes">
+        <h2>Quarkus vs Camel property prefixes</h2>
+        <p>
+          Use the correct prefix in <code>spec.ephemeral.properties</code> (ephemeral) or scaffold
+          <code>src/main/resources/application.properties</code> (GitOps). Mixing prefixes silently ignores values.
+        </p>
+        <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid #444;">
+              <th style="text-align:left; padding:0.5rem;">Prefix</th>
+              <th style="text-align:left; padding:0.5rem;">Use for</th>
+              <th style="text-align:left; padding:0.5rem;">Examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:0.5rem;"><code>quarkus.*</code></td><td>Quarkus core, extensions, LangChain4j</td><td><code>quarkus.log.level</code>, <code>quarkus.langchain4j.openai.api-key</code></td></tr>
+            <tr><td style="padding:0.5rem;"><code>camel.component.&lt;name&gt;.*</code></td><td>Camel component defaults</td><td><code>camel.component.kafka.brokers</code>, <code>camel.component.slack.webhookUrl</code></td></tr>
+            <tr><td style="padding:0.5rem;"><code>camel.main.*</code></td><td>Camel context / route reload</td><td><code>camel.main.routes-reload-enabled</code></td></tr>
+            <tr><td style="padding:0.5rem;"><code>quarkus.opentelemetry.*</code></td><td>Telemetry (Layer 3 scaffold)</td><td><code>quarkus.opentelemetry.tracer.exporter.otlp.endpoint</code></td></tr>
+          </tbody>
+        </table>
+        <p>
+          Reference secrets with <code>${ENV_VAR}</code> or <code>${ENV_VAR:default}</code> — never commit real keys.
+          GitOps parity: the same keys belong in the scaffolded worker repo; use ESO-synced Secrets for env injection.
+        </p>
+      </section>
+
+      <section class="doc-section" id="credential-types">
+        <h2>Credential types by integration (authType)</h2>
+        <p>
+          Catalog flows with external APIs declare an <code>authType</code> so the console create form shows
+          contextual hints. Store credentials in Kubernetes Secrets (or ESO-synced Secrets) and reference via
+          <code>spec.secrets</code>.
+        </p>
+        <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="border-bottom: 1px solid #444;">
+              <th style="text-align:left; padding:0.5rem;">authType</th>
+              <th style="text-align:left; padding:0.5rem;">Integrations</th>
+              <th style="text-align:left; padding:0.5rem;">Registration steps</th>
+              <th style="text-align:left; padding:0.5rem;">Typical Secret keys</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:0.5rem;"><code>oauth2_refresh</code></td>
+              <td>Slack, Gmail, Office365, Teams, Google Workspace, Salesforce, HubSpot, LinkedIn</td>
+              <td>Create OAuth app → authorize → store refresh token in Secret</td>
+              <td><code>SLACK_BOT_TOKEN</code>, <code>GOOGLE_REFRESH_TOKEN</code>, <code>SALESFORCE_CLIENT_SECRET</code></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem;"><code>static_token_webhook</code></td>
+              <td>Telegram, Discord, WhatsApp Business</td>
+              <td>BotFather / Developer Portal → bot token + webhook verify secret</td>
+              <td><code>TELEGRAM_BOT_TOKEN</code>, <code>DISCORD_WEBHOOK_URL</code>, <code>WHATSAPP_TOKEN</code></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem;"><code>api_key</code></td>
+              <td>OpenAI, Anthropic, Stripe, PagerDuty, Notion, Mercado Pago</td>
+              <td>Dashboard → generate API key → <code>oc create secret</code></td>
+              <td><code>OPENAI_API_KEY</code>, <code>STRIPE_API_KEY</code>, <code>MP_ACCESS_TOKEN</code></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem;"><code>basic_auth</code></td>
+              <td>Zendesk, Freshdesk, WooCommerce</td>
+              <td>API token or app password paired with username/email</td>
+              <td><code>ZENDESK_EMAIL</code>, <code>ZENDESK_API_TOKEN</code></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem;"><code>none</code></td>
+              <td>Public timer→log demos</td>
+              <td>No Secret required</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>Example — api_key (OpenAI)</h3>
+        <pre><code>oc create secret generic openai-credentials -n openshift-integration \
+  --from-literal=OPENAI_API_KEY=sk-proj-REPLACE_ME
+
+spec:
+  secrets:
+    - name: openai-credentials
+      envFrom: true
+  ephemeral:
+    properties:
+      quarkus.langchain4j.openai.api-key: "${OPENAI_API_KEY}"</code></pre>
+        <h3>Example — static_token_webhook (Slack)</h3>
+        <pre><code>oc create secret generic slack-credentials -n openshift-integration \
+  --from-literal=SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX
+
+spec:
+  secrets:
+    - name: slack-credentials
+      envFrom: true
+  ephemeral:
+    properties:
+      camel.component.slack.webhookUrl: "${SLACK_WEBHOOK_URL}"</code></pre>
+        <p>
+          Production: sync the same keys from Vault via ESO — see
+          <a href="security.html#secrets-management">Security — Secrets Management</a>.
+        </p>
+      </section>
+
       <section class="doc-section" id="worker-image">
         <h2>Worker image</h2>
-        <p>Routes with <code>langchain4j-chat</code> auto-select <code>camel-worker-ai:v0.5.0</code>. Pin explicitly when needed:</p>
+        <p>Routes with <code>langchain4j-chat</code> auto-select <code>camel-worker-ai:v0.8.0</code>. Pin explicitly when needed:</p>
         <pre><code>spec:
   ephemeral:
-    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0</code></pre>
-        <p><strong>Baked into <code>camel-worker-ai</code> (v0.5.0+):</strong> Quarkus LangChain4j OpenAI, Ollama, Camel HTTP/Jackson (for MCP bridge calls).</p>
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.0</code></pre>
+        <p><strong>Baked into <code>camel-worker-ai</code>:</strong> Quarkus LangChain4j OpenAI, Ollama, Camel HTTP/Jackson (for MCP bridge calls).</p>
         <p><strong>GitOps custom workers:</strong> add extra Quarkus extensions to your worker <code>pom.xml</code> for Anthropic, Azure OpenAI, Mistral, Hugging Face, Vertex AI, Bedrock — property keys below still apply via scaffold <code>application.properties</code>.</p>
       </section>
 
@@ -245,7 +370,7 @@ oc create secret generic mcp-flow-credentials -n openshift-integration \
     - name: mcp-flow-credentials
       envFrom: true
   ephemeral:
-    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.5.0</code></pre>
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.0</code></pre>
         <p>Examples:</p>
         <ul>
           <li><code>k8s/examples/ephemeral-ai/23-mcp-bridge-call.yaml</code> — list tools + invoke <code>web_search</code></li>
@@ -267,12 +392,12 @@ oc create secret generic mcp-flow-credentials -n openshift-integration \
 
       <section class="doc-section" id="validate">
         <h2>Validate on cluster</h2>
-        <pre><code># Publish v0.5.0 images (Quay login required)
+        <pre><code># Publish v0.8.0 images (Quay login required)
 podman login quay.io
-VERSION_TAG=v0.5.0 ./scripts/publish-quay.sh
+VERSION_TAG=v0.8.0 ./scripts/publish-quay.sh
 
 operator-sdk cleanup openshift-integration-operator -n openshift-integration
-operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.5.0 \
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.0 \
   --namespace openshift-integration --install-mode AllNamespaces --timeout 10m
 
 # AI smoke test

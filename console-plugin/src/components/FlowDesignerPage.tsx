@@ -546,7 +546,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                       </span>
                       <Button variant="plain" onClick={() => setSelectedYamlRange(null)} style={{ padding: '2px 4px', fontSize: '12px' }}>{'\u2716'}</Button>
                     </div>
-                    <pre style={{ flex: 1, margin: 0, padding: '8px', overflow: 'auto', fontSize: '12px', lineHeight: 1.6, fontFamily: 'var(--pf-global--FontFamily--monospace, monospace)', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
+                    <pre style={{ flex: 1, margin: 0, padding: '8px', overflow: 'auto', fontSize: '12px', lineHeight: 1.6, fontFamily: 'var(--pf-global--FontFamily--monospace, monospace)', color: 'var(--integration-text-primary)' }}>
                       {designLines.map((line, idx) => {
                         const inRange = idx >= selectedYamlRange.start && idx <= selectedYamlRange.end;
                         return (
@@ -595,7 +595,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                           Current kaotoDesign
                         </span>
                       </div>
-                      <pre style={{ flex: 1, margin: 0, padding: '8px', overflow: 'auto', fontSize: '11px', lineHeight: 1.5, fontFamily: 'var(--pf-global--FontFamily--monospace, monospace)', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
+                      <pre style={{ flex: 1, margin: 0, padding: '8px', overflow: 'auto', fontSize: '11px', lineHeight: 1.5, fontFamily: 'var(--pf-global--FontFamily--monospace, monospace)', color: 'var(--integration-text-primary)' }}>
                         {design || '(empty)'}
                       </pre>
                     </div>
@@ -670,13 +670,13 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                   fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
                   fontSize: '13px', lineHeight: 1.6, border: 'none', resize: 'none', outline: 'none',
                   backgroundColor: 'var(--integration-bg-dark)',
-                  color: 'var(--pf-global--Color--light-100, #e0e0e0)',
+                  color: 'var(--integration-text-primary)',
                 }} />
             </Tab>
 
             <Tab eventKey="history" title={<TabTitleText>History</TabTitleText>}>
               <div style={{ padding: '16px', backgroundColor: 'var(--integration-bg-dark)', minHeight: '300px' }}>
-                <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
+                <Title headingLevel="h3" size="md" style={{ marginBottom: '12px', color: 'var(--integration-text-primary)' }}>
                   Version History
                 </Title>
                 <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '16px' }}>
@@ -705,7 +705,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                           placeholder="Commit hash..."
                           aria-label="Rollback commit hash"
                           id="rollback-hash"
-                          style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'var(--integration-bg-dark)', color: '#e0e0e0', border: '1px solid var(--integration-border)' }}
+                          style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'var(--integration-bg-dark)', color: 'var(--integration-text-primary)', border: '1px solid var(--integration-border)' }}
                         />
                         <Button variant="warning" style={{ fontSize: '12px' }}
                           onClick={async () => {
@@ -734,7 +734,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
 
             <Tab eventKey="dependencies" title={<TabTitleText>Dependencies</TabTitleText>}>
               <div style={{ padding: '16px', backgroundColor: 'var(--integration-bg-dark)', minHeight: '300px' }}>
-                <Title headingLevel="h3" size="md" style={{ marginBottom: '8px', color: 'var(--pf-global--Color--light-100, #e0e0e0)' }}>
+                <Title headingLevel="h3" size="md" style={{ marginBottom: '8px', color: 'var(--integration-text-primary)' }}>
                   Dependency Graph
                 </Title>
                 <div style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)', marginBottom: '16px' }}>
@@ -770,14 +770,14 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                   fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
                   fontSize: '13px', lineHeight: 1.6,
                   backgroundColor: 'var(--integration-bg-dark)',
-                  color: 'var(--pf-global--Color--light-100, #e0e0e0)',
+                  color: 'var(--integration-text-primary)',
                 }}>{JSON.stringify(flow.spec, null, 2)}</pre>
                 {isEphemeral && (
                   <div style={{
                     width: '320px', borderLeft: '1px solid var(--integration-border)',
                     padding: '16px', overflow: 'auto',
                     backgroundColor: 'var(--integration-bg-dark)',
-                    color: 'var(--pf-global--Color--light-100, #e0e0e0)',
+                    color: 'var(--integration-text-primary)',
                   }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: '#2b9af3' }}>
                       {'\u2699'} Ephemeral Properties Guide
@@ -848,7 +848,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                 fontFamily: 'var(--pf-global--FontFamily--monospace, "Liberation Mono", consolas, monospace)',
                 fontSize: '13px', lineHeight: 1.6,
                 backgroundColor: 'var(--integration-bg-dark)',
-                color: 'var(--pf-global--Color--light-100, #e0e0e0)',
+                color: 'var(--integration-text-primary)',
               }}>{JSON.stringify(flow.status || { phase: 'Pending', message: 'Waiting for reconciliation' }, null, 2)}</pre>
             </Tab>
           </Tabs>

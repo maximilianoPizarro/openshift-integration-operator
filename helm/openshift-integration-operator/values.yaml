@@ -1,7 +1,7 @@
 operator:
   image:
     repository: quay.io/maximilianopizarro/openshift-integration-operator
-    tag: v0.6.6
+    tag: v0.8.0
     pullPolicy: IfNotPresent
   replicas: 1
   resources:
@@ -76,12 +76,16 @@ flowCatalog:
   embedOnInstall: true    # when source=configmap, create ConfigMap from bundled JSON
 
 secrets:
-  provider: values   # values | external-secrets | sealed-secrets
+  # Credential delivery mechanism for Git push (operator) and Tekton git-clone (builds):
+  #   values           — inline Helm values → Deployment env + integration-git-basic-auth Secret (dev only)
+  #   external-secrets — External Secrets Operator syncs Vault/AWS/Azure into integration-git-basic-auth
+  #   sealed-secrets   — no chart templates; apply SealedSecret manually (see docs/operations.html)
+  provider: values
   externalSecrets:
     enabled: false
     secretStoreRef: cluster-secret-store
     refreshInterval: 1h
-    gitCredentialsSecretName: integration-git-credentials
+    gitCredentialsSecretName: integration-git-basic-auth
 
 github:
   url: https://api.github.com
@@ -115,7 +119,7 @@ consolePlugin:
   enabled: true
   image:
     repository: quay.io/maximilianopizarro/integration-console-plugin
-    tag: v0.6.6
+    tag: v0.8.0
   replicas: 1
 
 sonataflow:
@@ -134,14 +138,14 @@ ephemeral:
   defaultTtlSeconds: 3600
   maxTtlSeconds: 86400
   preferFullWorker: false
-  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.6.6
-  camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.6.6
-  camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.6.6
-  camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.6.6
-  camelWorkerCloudImage: quay.io/maximilianopizarro/camel-worker-cloud:v0.6.6
-  camelWorkerAiImage: quay.io/maximilianopizarro/camel-worker-ai:v0.6.6
-  camelWorkerFullImage: quay.io/maximilianopizarro/camel-worker-full:v0.6.6
-  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.6.6
+  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.8.0
+  camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.0
+  camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.8.0
+  camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.8.0
+  camelWorkerCloudImage: quay.io/maximilianopizarro/camel-worker-cloud:v0.8.0
+  camelWorkerAiImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.0
+  camelWorkerFullImage: quay.io/maximilianopizarro/camel-worker-full:v0.8.0
+  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.8.0
   camelK:
     detect: true
 

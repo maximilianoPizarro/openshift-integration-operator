@@ -1,0 +1,36 @@
+# Ephemeral Twilio SMS alert demo
+# oc create secret generic twilio-credentials -n openshift-integration \
+#   --from-literal=TWILIO_ACCOUNT_SID=REPLACE --from-literal=TWILIO_AUTH_TOKEN=REPLACE
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-twilio-sms
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 1800
+    workerImage: quay.io/maximilianopizarro/camel-worker-full:v0.8.0
+    properties:
+      camel.component.twilio.account-sid: "${TWILIO_ACCOUNT_SID}"
+      camel.component.twilio.auth-token: "${TWILIO_AUTH_TOKEN}"
+  secrets:
+    - name: twilio-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: twilio-sms-alert
+        from:
+          uri: "timer:twilioTick?period=300000"
+          steps:
+            - setBody:
+                constant: "Alert from integration operator v0.8.0"
+            - to:
+                uri: "twilio:+15551234567"
+            - log:
+                message: "Twilio SMS sent"

@@ -1,0 +1,31 @@
+# Ephemeral HubSpot contact webhook receiver
+# oc create secret generic hubspot-credentials -n openshift-integration \
+#   --from-literal=HUBSPOT_API_KEY=REPLACE
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-hubspot-webhook
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-http:v0.8.0
+  secrets:
+    - name: hubspot-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: hubspot-contact-webhook
+        from:
+          uri: "platform-http:/webhook/hubspot/contact"
+          parameters:
+            httpMethodRestrict: POST
+          steps:
+            - log:
+                message: "HubSpot contact event: ${body}"

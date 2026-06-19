@@ -3,7 +3,7 @@
 set -euo pipefail
 
 QUAY_ORG="${QUAY_ORG:-maximilianopizarro}"
-KEEP_TAGS="${KEEP_TAGS:-latest,v0.5.0}"
+KEEP_TAGS="${KEEP_TAGS:-latest,v0.8.0}"
 
 resolve_quay_token() {
   if [[ -n "${QUAY_API_TOKEN:-}" ]]; then

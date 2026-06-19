@@ -1,0 +1,36 @@
+# Ephemeral GitLab pipeline trigger demo
+# oc create secret generic gitlab-credentials -n openshift-integration \
+#   --from-literal=GITLAB_TOKEN=REPLACE --from-literal=GITLAB_PROJECT_ID=12345
+apiVersion: platform.io/v1alpha1
+kind: IntegrationFlow
+metadata:
+  name: ephemeral-gitlab-pipeline
+  namespace: openshift-integration
+spec:
+  deploymentMode: EPHEMERAL
+  integrationType: CAMEL_ROUTE
+  engine: CAMEL
+  ephemeral:
+    ttlSeconds: 3600
+    workerImage: quay.io/maximilianopizarro/camel-worker-http:v0.8.0
+  secrets:
+    - name: gitlab-credentials
+      envFrom: true
+  targeting:
+    strategy: explicit
+    clusters: [local]
+  kaotoDesign: |
+    - route:
+        id: gitlab-pipeline-trigger
+        from:
+          uri: "timer:gitlabTick?period=600000"
+          steps:
+            - setHeader:
+                name: CamelHttpMethod
+                constant: POST
+            - setBody:
+                constant: '{"ref":"main"}'
+            - to:
+                uri: "https:gitlab.com/api/v4/projects/trigger/pipeline"
+            - log:
+                message: "GitLab pipeline triggered: ${body}"

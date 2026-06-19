@@ -355,6 +355,109 @@ curl -X POST "https://&lt;operator&gt;/api/namespaces/team-a/flows/my-flow/promo
   -H "Authorization: Bearer &lt;token&gt;" \
   -H "Content-Type: application/json" \
   -d '{"gitRepository":"https://gitea.example.com/org/repo","branch":"main"}'</code></pre>
+
+        <h3>Operator ServiceAccount permissions</h3>
+        <p>
+          The operator runs as <code>integration-operator-sa</code> in
+          <code>openshift-integration</code> (Helm default). It needs cluster-scoped permissions to:
+        </p>
+        <ul>
+          <li>Reconcile <code>IntegrationFlow</code> CRs and ephemeral worker Deployments/Services/ConfigMaps</li>
+          <li>Create Tekton <code>PipelineRun</code> resources in the operator namespace</li>
+          <li>Create Argo CD <code>ApplicationSet</code> resources in <code>openshift-gitops</code></li>
+          <li>Register and serve the OpenShift Console plugin</li>
+        </ul>
+        <pre><code><span class="comment"># Verify operator SA can create IntegrationFlows</span>
+oc auth can-i create integrationflows.platform.io \
+  --as=system:serviceaccount:openshift-integration:integration-operator-sa
+
+<span class="comment"># Verify ApplicationSet permissions in openshift-gitops</span>
+oc auth can-i create applicationsets.argoproj.io \
+  --as=system:serviceaccount:openshift-integration:integration-operator-sa \
+  -n openshift-gitops</code></pre>
+
+        <h3>Tekton build ServiceAccount</h3>
+        <p>
+          PipelineRuns use the <code>pipeline</code> ServiceAccount. It must have the
+          <code>pipelines-scc</code> SCC and read access to <code>integration-git-basic-auth</code>
+          for <code>git-clone</code> tasks:
+        </p>
+        <pre><code>oc get sa pipeline -n openshift-integration
+oc adm policy who-can use scc pipelines-scc | grep pipeline
+oc get rolebinding -n openshift-integration | grep pipeline</code></pre>
+
+        <h3>Ephemeral flow secrets (per namespace)</h3>
+        <p>
+          Developers create Secrets in their project and reference them from
+          <code>spec.secrets</code>. The operator SA needs permission to read Secrets in namespaces
+          where ephemeral flows run (included in the bundled ClusterRole when using default install).
+          Platform teams can scope with <code>operator.watchedNamespaces</code> in Helm.
+        </p>
+      </section>
+
+      <section class="doc-section" id="vault-eso">
+        <h2>Vault &amp; External Secrets Operator</h2>
+        <p>
+          Production GitOps installs should sync Git credentials from a central vault instead of
+          inline Helm values. The Helm chart supports
+          <code>secrets.provider: external-secrets</code> to render an
+          <code>ExternalSecret</code> that materializes <code>integration-git-basic-auth</code>.
+        </p>
+
+        <h3>Step 1 — Install External Secrets Operator</h3>
+        <pre><code><span class="comment"># OpenShift 4.19+ — OperatorHub or oc apply from Red Hat docs</span>
+oc get crd externalsecrets.external-secrets.io
+oc get pods -n external-secrets-operator</code></pre>
+
+        <h3>Step 2 — Configure ClusterSecretStore (Vault example)</h3>
+        <pre><code>apiVersion: external-secrets.io/v1beta1
+kind: ClusterSecretStore
+metadata:
+  name: cluster-secret-store
+spec:
+  provider:
+    vault:
+      server: "https://vault.example.com"
+      path: "secret"
+      version: "v2"
+      auth:
+        kubernetes:
+          mountPath: "kubernetes"
+          role: "integration-platform"
+          serviceAccountRef:
+            name: external-secrets
+            namespace: external-secrets-operator</code></pre>
+
+        <h3>Step 3 — Store Git credentials in Vault</h3>
+        <pre><code><span class="comment"># KV v2 paths expected by the chart ExternalSecret</span>
+vault kv put secret/integration-platform/git username=user1 password='REPLACE_ME'
+vault kv put secret/integration-platform/github token='ghp_REPLACE_ME'
+vault kv put secret/integration-platform/gitlab token='glpat_REPLACE_ME'</code></pre>
+
+        <h3>Step 4 — Enable ESO in Helm</h3>
+        <pre><code>helm upgrade --install openshift-integration-operator \
+  helm/openshift-integration-operator \
+  --namespace openshift-integration \
+  --set secrets.provider=external-secrets \
+  --set secrets.externalSecrets.enabled=true \
+  --set secrets.externalSecrets.secretStoreRef=cluster-secret-store \
+  --set operator.image.tag=v0.8.0 \
+  --set consolePlugin.image.tag=v0.8.0 \
+  --set git.url=https://gitea.example.com</code></pre>
+
+        <h3>Step 5 — Verify</h3>
+        <pre><code>oc get externalsecret integration-git-basic-auth -n openshift-integration
+oc describe externalsecret integration-git-basic-auth -n openshift-integration
+oc get secret integration-git-basic-auth -n openshift-integration -o jsonpath='{.data.username}' | base64 -d; echo
+
+<span class="comment"># Trigger a GitOps flow and confirm git-clone succeeds</span>
+oc get pipelineruns -n openshift-integration -l platform.io/component=build</code></pre>
+        <p>
+          For ephemeral worker credentials (API keys, OAuth tokens), create per-flow Secrets and
+          reference via <code>spec.secrets</code>, or use ExternalSecrets that target the flow namespace.
+          See <a href="security.html#secrets-management">Security — Secrets Management</a> and
+          <a href="ai-models-and-mcp.html#credential-types">AI Models — Credential types</a>.
+        </p>
       </section>
 
       <!-- Section 4b: Ephemeral Quick Try -->
@@ -521,9 +624,9 @@ oc describe pipelinerun &lt;name&gt; -n openshift-integration</code></pre>
 
         <div class="troubleshoot-item">
           <h4>7. Ephemeral resources not deleted with IntegrationFlow</h4>
-          <p><strong>Cause (pre-0.5.0):</strong> Missing <code>ownerReferences</code> and finalizer not persisted on the CR.</p>
-          <p><strong>Fix:</strong> Upgrade to <code>v0.5.0</code> from Quay via OLM bundle:</p>
-          <pre><code>operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.5.0 \
+          <p><strong>Cause:</strong> Missing <code>ownerReferences</code> on ephemeral resources (fixed in v0.5.0+).</p>
+          <p><strong>Fix:</strong> Upgrade to <code>v0.8.0</code> from Quay via OLM bundle:</p>
+          <pre><code>operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.0 \
   --namespace openshift-integration --install-mode AllNamespaces --timeout 10m</code></pre>
           <p><strong>Verify:</strong> After delete, <code>oc get deploy -l platform.io/ephemeral=true</code> returns no resources.</p>
         </div>
