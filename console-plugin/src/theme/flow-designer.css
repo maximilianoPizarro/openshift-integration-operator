@@ -28,3 +28,29 @@
 .integration-workspace--fullscreen:fullscreen .integration-workspace__main > .pf-v6-c-tabs {
   height: 100%;
 }
+
+.integration-workspace__main {
+  min-width: 0;
+}
+
+.integration-workspace__sidebar {
+  flex-shrink: 0;
+}
+
+.integration-kaoto-canvas {
+  min-width: 0;
+}
+
+.integration-kaoto-preview {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1500px) {
+  .integration-workspace--compact .integration-workspace__sidebar {
+    display: none;
+  }
+
+  .integration-workspace--compact .integration-kaoto-preview {
+    display: none;
+  }
+}

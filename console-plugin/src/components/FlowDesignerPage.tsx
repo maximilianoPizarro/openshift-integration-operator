@@ -178,6 +178,11 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
   const [zoom, setZoom] = React.useState(1);
   const [fullscreen, setFullscreen] = React.useState(false);
   const [sidebarInFullscreen, setSidebarInFullscreen] = React.useState(false);
+  const [sidebarVisible, setSidebarVisible] = React.useState(true);
+  const [kaotoPreviewVisible, setKaotoPreviewVisible] = React.useState(false);
+  const [compactLayout, setCompactLayout] = React.useState(
+    typeof window !== 'undefined' ? window.innerWidth < 1500 : false,
+  );
   const contentRef = React.useRef<HTMLDivElement>(null);
   const editorRef = React.useRef<HTMLTextAreaElement>(null);
   const [selectedYamlRange, setSelectedYamlRange] = React.useState<{ start: number; end: number } | null>(null);
@@ -209,6 +214,22 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
     document.addEventListener('fullscreenchange', onFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
+
+  React.useEffect(() => {
+    const onResize = () => setCompactLayout(window.innerWidth < 1500);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  React.useEffect(() => {
+    if (activeTab === 'kaoto') {
+      setSidebarVisible(false);
+      if (compactLayout) {
+        setKaotoPreviewVisible(false);
+      }
+    }
+  }, [activeTab, compactLayout]);
   const [bannerDismissed, setBannerDismissed] = React.useState(false);
 
   const fetchFlow = React.useCallback(async (manual = false) => {
@@ -356,6 +377,8 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
 
   const designLines = flow ? design.split('\n') : [];
   const tabFillHeight = fullscreen ? 'calc(100vh - 88px)' : 'calc(100vh - 260px)';
+  const showSidebarPanel = fullscreen ? sidebarInFullscreen : (activeTab === 'kaoto' ? sidebarVisible : true);
+  const showKaotoPreview = kaotoPreviewVisible && !compactLayout;
 
   const toggleFullscreen = () => {
     if (!fullscreen && contentRef.current) {
@@ -369,6 +392,26 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
     <Toolbar style={{ padding: '0 8px', minHeight: 'auto' }}>
       <ToolbarContent style={{ padding: 0 }}>
         <ToolbarItem style={{ marginLeft: 'auto' }}>
+          {!fullscreen && activeTab === 'kaoto' && (
+            <>
+              <Button
+                variant="plain"
+                onClick={() => setSidebarVisible(v => !v)}
+                title="Toggle details panel"
+                style={{ padding: '4px 8px', fontSize: '11px' }}
+              >
+                {sidebarVisible ? 'Hide details' : 'Details'}
+              </Button>
+              <Button
+                variant="plain"
+                onClick={() => setKaotoPreviewVisible(v => !v)}
+                title="Toggle kaotoDesign preview"
+                style={{ padding: '4px 8px', fontSize: '11px' }}
+              >
+                {showKaotoPreview ? 'Hide preview' : 'Preview'}
+              </Button>
+            </>
+          )}
           {fullscreen && (
             <Button variant="plain" onClick={() => setSidebarInFullscreen(v => !v)} title="Toggle sidebar panel" style={{ padding: '4px 8px', fontSize: '11px' }}>
               {sidebarInFullscreen ? 'Hide panel' : 'Panel'}
@@ -504,7 +547,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
       {/* Tabs + Content + Sidebar */}
       <div
         ref={contentRef}
-        className={`${fullscreen ? 'integration-workspace--fullscreen' : ''}${sidebarInFullscreen ? ' integration-workspace--sidebar-visible' : ''}`}
+        className={`${fullscreen ? 'integration-workspace--fullscreen' : ''}${sidebarInFullscreen ? ' integration-workspace--sidebar-visible' : ''}${compactLayout ? ' integration-workspace--compact' : ''}`}
         style={{ flex: 1, display: 'flex', minHeight: 0, backgroundColor: fullscreen ? 'var(--pf-global--BackgroundColor--dark-300, #151515)' : undefined }}
       >
         {/* Main area with Tabs */}
@@ -570,7 +613,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             {!isSonataFlow && (
               <Tab eventKey="kaoto" title={<TabTitleText>Kaoto Designer</TabTitleText>}>
                 <div style={{ display: 'flex', flexDirection: 'column', height: tabFillHeight }} data-integration-tab-fill>
-                  <div style={{ padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)' }}>
+                  <div style={{ padding: '6px 10px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--integration-border)', backgroundColor: 'var(--integration-bg-dark)' }}>
                     <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
                       Kaoto Designer &mdash; <strong>{flowName}</strong>
                     </span>
@@ -580,16 +623,22 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                     <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontStyle: 'italic' }}>
                       Paste into Kaoto Source tab to sync
                     </span>
+                    {compactLayout && (
+                      <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                        Compact layout active
+                      </span>
+                    )}
                     <Button variant="link" component="a" href={kaotoUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', marginLeft: 'auto' }}>
                       Open in new tab &#x2197;
                     </Button>
                   </div>
                   {renderZoomToolbar()}
-                  <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+                  <div className="integration-kaoto-canvas" style={{ flex: 1, display: 'flex', minHeight: 0, minWidth: 0 }}>
                     <iframe src={kaotoUrl}
-                      style={{ flex: 1, border: 'none', transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
+                      style={{ flex: 1, border: 'none', minWidth: 0, transform: `scale(${zoom})`, transformOrigin: 'top left', width: `${100 / zoom}%`, height: `${100 / zoom}%` }}
                       title="Kaoto Designer" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals" />
-                    <div style={{ width: '280px', borderLeft: '1px solid var(--integration-border)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--integration-bg-dark)' }}>
+                    {showKaotoPreview && (
+                    <div className="integration-kaoto-preview" style={{ width: '280px', borderLeft: '1px solid var(--integration-border)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--integration-bg-dark)' }}>
                       <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--integration-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '11px', color: 'var(--pf-global--Color--200, #6a6e73)', fontWeight: 600, textTransform: 'uppercase' }}>
                           Current kaotoDesign
@@ -599,6 +648,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
                         {design || '(empty)'}
                       </pre>
                     </div>
+                    )}
                   </div>
                 </div>
               </Tab>
@@ -855,6 +905,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
         </div>
 
         {/* Sidebar */}
+        {showSidebarPanel && (
         <Card isCompact isPlain className="integration-workspace__sidebar" style={{ width: '280px', overflow: 'auto', borderTop: '1px solid var(--integration-border)', borderRight: '1px solid var(--integration-border)', borderBottom: '1px solid var(--integration-border)', borderRadius: '0 6px 6px 0' }}>
           <CardBody>
             <TelemetryOverlay flowId={flowName} />
@@ -1076,6 +1127,7 @@ const FlowDesignerPage: React.FC<FlowDesignerPageProps> = ({ match }) => {
             </DescriptionList>
           </CardBody>
         </Card>
+        )}
       </div>
     </PageSection>
   );

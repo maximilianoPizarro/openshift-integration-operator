@@ -36,6 +36,7 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName, heig
   const [data, setData] = React.useState<LogsResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [pendingRuntime, setPendingRuntime] = React.useState(false);
   const [tailLines, setTailLines] = React.useState(500);
   const [follow, setFollow] = React.useState(false);
   const [container, setContainer] = React.useState('');
@@ -50,14 +51,25 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName, heig
       const proxyResp = await proxyFetch(`${flowApiPath(flowNamespace, flowName, '/logs')}?${params}`);
       if (proxyResp.ok) {
         json = await proxyResp.json();
-      } else if (proxyResp.status === 502 || proxyResp.status === 503) {
-        const k8s = await fetchPodLogsViaK8s(flowNamespace, flowName, tailLines, container || undefined);
-        json = {
-          ...k8s,
-          containers: k8s.container ? [k8s.container] : [],
-          timestamp: new Date().toISOString(),
-          name: flowName,
-        } as LogsResponse;
+      } else if (proxyResp.status === 404 || proxyResp.status === 502 || proxyResp.status === 503) {
+        try {
+          const k8s = await fetchPodLogsViaK8s(flowNamespace, flowName, tailLines, container || undefined);
+          json = {
+            ...k8s,
+            containers: k8s.container ? [k8s.container] : [],
+            timestamp: new Date().toISOString(),
+          } as LogsResponse;
+        } catch (_fallbackErr) {
+          const err = await proxyResp.json().catch(() => ({}));
+          const runtimeNotReady = proxyResp.status === 404;
+          const wrapped = new Error(
+            runtimeNotReady
+              ? 'Worker pod is not running yet'
+              : (err.error || `HTTP ${proxyResp.status}`),
+          ) as Error & { status?: number };
+          wrapped.status = proxyResp.status;
+          throw wrapped;
+        }
       } else {
         const err = await proxyResp.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${proxyResp.status}`);
@@ -69,16 +81,18 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName, heig
 
       setData(json);
       setError(null);
+      setPendingRuntime(false);
       if (!container && json.container) {
         setContainer(json.container);
       }
     } catch (e: any) {
       setError(e.message);
+      setPendingRuntime(e?.status === 404);
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [flowName, tailLines, container]);
+  }, [flowName, flowNamespace, tailLines, container]);
 
   React.useEffect(() => {
     setLoading(true);
@@ -86,10 +100,10 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName, heig
   }, [fetchLogs]);
 
   React.useEffect(() => {
-    if (!follow) return undefined;
-    const id = setInterval(fetchLogs, 3000);
+    if (!follow && !pendingRuntime) return undefined;
+    const id = setInterval(fetchLogs, pendingRuntime ? 2000 : 3000);
     return () => clearInterval(id);
-  }, [fetchLogs, follow]);
+  }, [fetchLogs, follow, pendingRuntime]);
 
   React.useEffect(() => {
     if (follow && logRef.current) {
@@ -135,6 +149,13 @@ const FlowLogsTab: React.FC<FlowLogsTabProps> = ({ flowNamespace, flowName, heig
               onChange={(_e, checked) => setFollow(checked)}
             />
           </ToolbarItem>
+          {pendingRuntime && (
+            <ToolbarItem>
+              <span style={{ fontSize: '12px', color: 'var(--pf-global--Color--200, #6a6e73)' }}>
+                Waiting for worker pod startup...
+              </span>
+            </ToolbarItem>
+          )}
           <ToolbarItem align={{ default: 'alignEnd' }}>
             <Button variant="secondary" onClick={fetchLogs}>Refresh</Button>
           </ToolbarItem>

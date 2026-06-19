@@ -769,15 +769,26 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
                         io.platform.ephemeral.EphemeralOwnerReferenceHelper.asList(ownerRef));
             }
 
+            boolean workerReady = isEphemeralWorkerReady(namespace, deployResult.workerRef(), flowName);
             if (type == IntegrationType.SONATAFLOW) {
                 status.setPhase("True".equals(status.getSonataFlowReady())
                         ? IntegrationFlowStatus.Phase.Running
                         : IntegrationFlowStatus.Phase.Building);
-            } else {
+                status.setCurrentState("True".equals(status.getSonataFlowReady()) ? "running" : "deploying");
+            } else if (workerReady) {
                 status.setPhase(IntegrationFlowStatus.Phase.Running);
+                status.setCurrentState("running");
+                updateCondition(status, "EphemeralWorkerReady", "True", "Ready",
+                        "Ephemeral worker pod is running");
+            } else {
+                status.setPhase(IntegrationFlowStatus.Phase.Deploying);
+                status.setCurrentState("deploying");
+                updateCondition(status, "EphemeralWorkerReady", "False", "WaitingForPod",
+                        "Worker deployment created; waiting for pod readiness");
             }
-            status.setCurrentState("running");
-            status.setMessage("Ephemeral flow running (expires " + expiresAt + ")");
+            status.setMessage(workerReady
+                    ? "Ephemeral flow running (expires " + expiresAt + ")"
+                    : "Ephemeral resources deployed; waiting for worker readiness (expires " + expiresAt + ")");
 
         } catch (Exception e) {
             LOG.errorf(e, "Ephemeral reconciliation failed for %s", flowName);
@@ -795,6 +806,26 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             return UpdateControl.patchResource(resource).patchStatus(resource);
         }
         return UpdateControl.patchStatus(resource);
+    }
+
+    private boolean isEphemeralWorkerReady(String namespace, String workerRef, String flowName) {
+        String deploymentName = workerRef;
+        if (deploymentName != null && deploymentName.contains("/")) {
+            String[] parts = deploymentName.split("/", 2);
+            if ("deployment".equalsIgnoreCase(parts[0])) {
+                deploymentName = parts[1];
+            }
+        }
+        if (deploymentName == null || deploymentName.isBlank()) {
+            deploymentName = GitOpsManifestGenerator.ephemeralDeploymentName(flowName);
+        }
+        var deployment = kubernetesClient.apps().deployments().inNamespace(namespace).withName(deploymentName).get();
+        if (deployment == null || deployment.getStatus() == null) {
+            return false;
+        }
+        Integer ready = deployment.getStatus().getReadyReplicas();
+        Integer desired = deployment.getSpec() != null ? deployment.getSpec().getReplicas() : null;
+        return ready != null && ready > 0 && (desired == null || ready >= Math.min(1, desired));
     }
 
     private int resolveTtlSeconds(io.platform.api.v1alpha1.IntegrationFlowSpec spec) {
