@@ -68,10 +68,10 @@ metadata:
     repository: https://github.com/maximilianoPizarro/openshift-integration-operator
     support: Community
     console.openshift.io/plugins: '["integration-console-plugin"]'
-  name: openshift-integration-operator.v0.8.0
+  name: openshift-integration-operator.v0.8.1
   namespace: placeholder
 spec:
-  replaces: openshift-integration-operator.v0.7.0
+  replaces: openshift-integration-operator.v0.8.1
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
@@ -146,7 +146,11 @@ spec:
     lifecycle — from visual design to production deployment with
     auto-scaling and real-time telemetry.
 
-    ### Platform Components
+    ### Optional cluster components (not required to install)
+
+    Tekton Pipelines, OpenShift GitOps (Argo CD), SonataFlow, and Camel K integrate
+    when present — the operator installs without them and enables GitOps or workflow
+    features as those APIs become available.
 
     | Component | Role |
     |-----------|------|
@@ -651,31 +655,16 @@ spec:
   - group: ""
     kind: Service
     version: v1
-  - group: tekton.dev
-    kind: PipelineRun
-    version: v1
-  - group: argoproj.io
-    kind: ApplicationSet
-    version: v1alpha1
   - group: route.openshift.io
     kind: Route
     version: v1
   - group: console.openshift.io
     kind: ConsolePlugin
     version: v1
-  - group: monitoring.coreos.com
-    kind: PrometheusRule
-    version: v1
-  - group: sonataflow.org
-    kind: SonataFlow
-    version: v1alpha1
-  - group: camel.apache.org
-    kind: Integration
-    version: v1
   provider:
     name: maximilianoPizarro
     url: https://github.com/maximilianoPizarro
-  version: 0.8.0
+  version: 0.8.1
   relatedImages:
   - name: operator
     image: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.0

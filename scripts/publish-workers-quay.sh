@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 QUAY_ORG="${QUAY_ORG:-maximilianopizarro}"
-VERSION_TAG="${VERSION_TAG:-v0.8.0}"
+VERSION_TAG="${VERSION_TAG:-v0.8.1}"
 
 WORKERS=(
   camel-worker-core
