@@ -236,10 +236,10 @@ spec:
 
       <section class="doc-section" id="worker-image">
         <h2>Worker image</h2>
-        <p>Routes with <code>langchain4j-chat</code> auto-select <code>camel-worker-ai:v0.8.0</code>. Pin explicitly when needed:</p>
-        <pre><code>spec:
+        <p>Routes with <code>langchain4j-chat</code> auto-select <code>camel-worker-ai</code>. Pin explicitly when needed:</p>
+        <pre><code data-version-inject>spec:
   ephemeral:
-    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.0</code></pre>
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.1</code></pre>
         <p><strong>Baked into <code>camel-worker-ai</code>:</strong> Quarkus LangChain4j OpenAI, Ollama, Camel HTTP/Jackson (for MCP bridge calls).</p>
         <p><strong>GitOps custom workers:</strong> add extra Quarkus extensions to your worker <code>pom.xml</code> for Anthropic, Azure OpenAI, Mistral, Hugging Face, Vertex AI, Bedrock — property keys below still apply via scaffold <code>application.properties</code>.</p>
       </section>
@@ -365,12 +365,12 @@ quarkus.langchain4j.openai.strong.api-key: "${OPENAI_API_KEY}"</code></pre>
 oc create secret generic mcp-flow-credentials -n openshift-integration \
   --from-literal=OPERATOR_MCP_TOKEN="$(cat /tmp/token)" \
   --from-literal=MCP_SERVER_URL=https://mcp.example.com</code></pre>
-        <pre><code>spec:
+        <pre><code data-version-inject>spec:
   secrets:
     - name: mcp-flow-credentials
       envFrom: true
   ephemeral:
-    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.0</code></pre>
+    workerImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.1</code></pre>
         <p>Examples:</p>
         <ul>
           <li><code>k8s/examples/ephemeral-ai/23-mcp-bridge-call.yaml</code> — list tools + invoke <code>web_search</code></li>
@@ -392,12 +392,12 @@ oc create secret generic mcp-flow-credentials -n openshift-integration \
 
       <section class="doc-section" id="validate">
         <h2>Validate on cluster</h2>
-        <pre><code># Publish v0.8.0 images (Quay login required)
+        <pre><code data-version-inject># Publish images (Quay login required)
 podman login quay.io
-VERSION_TAG=v0.8.0 ./scripts/publish-quay.sh
+VERSION_TAG=v0.8.1 ./scripts/publish-quay.sh
 
 operator-sdk cleanup openshift-integration-operator -n openshift-integration
-operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.0 \
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.1 \
   --namespace openshift-integration --install-mode AllNamespaces --timeout 10m
 
 # AI smoke test

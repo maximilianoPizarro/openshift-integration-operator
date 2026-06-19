@@ -58,7 +58,7 @@
 
   <header class="site-hero">
     <div class="container">
-      <span class="badge">Apache 2.0 · Open Source</span> <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/releases/tag/v0.8.0" class="badge badge--version" data-site-version-badge style="text-decoration: none; color: inherit; border: 1px solid var(--pf-v5-global--primary-color--100, #0066cc); background: rgba(0,102,204,0.1);">v0.8.0</a>
+      <span class="badge">Apache 2.0 · Open Source</span> <a href="#" class="badge badge--version" data-site-version-badge style="text-decoration: none; color: inherit; border: 1px solid var(--pf-v5-global--primary-color--100, #0066cc); background: rgba(0,102,204,0.1);">v0.8.1</a>
       <h1>OpenShift Integration Operator</h1>
       <p class="subtitle">The missing lifecycle layer for Apache Camel on OpenShift</p>
       <p class="description">
@@ -297,8 +297,8 @@
       <div class="container">
         <h2>Quick Start</h2>
         <p class="section-lead">Evaluators: <a href="quickstart.html#track-a">Track A — 10 minutes with ephemeral</a>. Production: <a href="quickstart.html#track-b">Track B — full GitOps stack</a>.</p>
-        <pre><code><span class="comment"># Install v0.8.0 from Quay (OLM)</span>
-operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.0 \
+        <pre><code data-version-inject><span class="comment"># Install from Quay (OLM)</span>
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.1 \
   --namespace openshift-integration \
   --install-mode AllNamespaces \
   --timeout 10m
@@ -391,22 +391,22 @@ oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></
       <div class="container">
         <h2>Precompiled Worker Images</h2>
         <p class="section-lead">Domain-specific Camel Quarkus workers on Quay — auto-selected from your route, or pin with <code>spec.ephemeral.workerImage</code>.</p>
-        <pre><code><span class="comment"># Default (all domains — 80+ extensions)</span>
-quay.io/maximilianopizarro/camel-worker-full:v0.8.0
+        <pre><code data-version-inject><span class="comment"># Default (all domains — 80+ extensions)</span>
+quay.io/maximilianopizarro/camel-worker-full:v0.8.1
 
 <span class="comment"># Domain-specific (smaller, faster startup)</span>
-quay.io/maximilianopizarro/camel-worker-core:v0.8.0        <span class="comment"># timer, log, direct, seda, bean</span>
-quay.io/maximilianopizarro/camel-worker-messaging:v0.8.0   <span class="comment"># kafka, amqp, jms, mqtt, nats</span>
-quay.io/maximilianopizarro/camel-worker-http:v0.8.0        <span class="comment"># platform-http, rest, graphql, grpc</span>
-quay.io/maximilianopizarro/camel-worker-data:v0.8.0        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
-quay.io/maximilianopizarro/camel-worker-cloud:v0.8.0       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
-quay.io/maximilianopizarro/camel-worker-ai:v0.8.0          <span class="comment"># langchain4j-chat, djl</span></code></pre>
+quay.io/maximilianopizarro/camel-worker-core:v0.8.1        <span class="comment"># timer, log, direct, seda, bean</span>
+quay.io/maximilianopizarro/camel-worker-messaging:v0.8.1   <span class="comment"># kafka, amqp, jms, mqtt, nats</span>
+quay.io/maximilianopizarro/camel-worker-http:v0.8.1        <span class="comment"># platform-http, rest, graphql, grpc</span>
+quay.io/maximilianopizarro/camel-worker-data:v0.8.1        <span class="comment"># sql, jdbc, mongodb, file, ftp</span>
+quay.io/maximilianopizarro/camel-worker-cloud:v0.8.1       <span class="comment"># aws2-s3/sqs/sns, azure, google</span>
+quay.io/maximilianopizarro/camel-worker-ai:v0.8.1          <span class="comment"># langchain4j-chat, djl</span></code></pre>
         <h4>Override auto-selection</h4>
-        <pre><code>spec:
+        <pre><code data-version-inject>spec:
   deploymentMode: EPHEMERAL
   ephemeral:
     ttlSeconds: 3600
-    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.0</code></pre>
+    workerImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.1</code></pre>
 
         <details style="margin-top: 1rem;">
           <summary><strong>Full Worker — Included Extensions</strong></summary>

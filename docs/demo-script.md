@@ -4,7 +4,7 @@ Use this script when recording a walkthrough for the landing page video placehol
 
 ## 0:00 — Context
 
-- Operator already installed via Quay `v0.5.0` OLM bundle
+- Operator already installed via Quay `v0.8.1` OLM bundle (or Helm equivalent)
 - Open **Integration Platform → Overview** in the OpenShift Console
 - Mention: lifecycle layer for Apache Camel — not an iPaaS
 

@@ -76,12 +76,12 @@
         <p>No Gitea, Tekton, or Argo CD required — only the operator from Quay and an IntegrationFlow CR.</p>
 
         <h3>A.1 Install operator (Quay + OLM)</h3>
-        <pre><code>mvn -B clean package -DskipTests   # optional: validate locally first
+        <pre><code data-version-inject>mvn -B clean package -DskipTests   # optional: validate locally first
 operator-sdk bundle validate ./bundle
 
 operator-sdk cleanup openshift-integration-operator -n openshift-integration
 
-operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.0 \
+operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.1 \
   --namespace openshift-integration \
   --install-mode AllNamespaces \
   --timeout 10m
@@ -149,21 +149,21 @@ helm repo update</code></pre>
       <section class="step" id="step-2">
         <h2><span class="step-num">B.2</span> Install Operator (Helm)</h2>
         <p>Install into <code>openshift-integration</code> using published Quay images:</p>
-        <pre><code>helm upgrade --install openshift-integration-operator \
+        <pre><code data-version-inject>helm upgrade --install openshift-integration-operator \
   helm/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.8.0 \
-  --set consolePlugin.image.tag=v0.8.0 \
+  --set operator.image.tag=v0.8.1 \
+  --set consolePlugin.image.tag=v0.8.1 \
   --set gitea.password='your-gitea-password' \
   --set tekton.approvalEnabled=false</code></pre>
         <p>Optional worker scaling:</p>
-        <pre><code>helm upgrade --install openshift-integration-operator \
+        <pre><code data-version-inject>helm upgrade --install openshift-integration-operator \
   helm/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.8.0 \
-  --set consolePlugin.image.tag=v0.8.0 \
+  --set operator.image.tag=v0.8.1 \
+  --set consolePlugin.image.tag=v0.8.1 \
   --set workers.maxReplicas=20 \
   --set gitea.password='your-gitea-password'</code></pre>
       </section>
@@ -183,12 +183,12 @@ helm repo update</code></pre>
           <li>Vault paths populated: <code>integration-platform/git</code> (username, password) and optional GitHub/GitLab tokens</li>
         </ul>
         <h3>Helm install with ESO</h3>
-        <pre><code>helm upgrade --install openshift-integration-operator \
+        <pre><code data-version-inject>helm upgrade --install openshift-integration-operator \
   helm/openshift-integration-operator \
   --namespace openshift-integration \
   --create-namespace \
-  --set operator.image.tag=v0.8.0 \
-  --set consolePlugin.image.tag=v0.8.0 \
+  --set operator.image.tag=v0.8.1 \
+  --set consolePlugin.image.tag=v0.8.1 \
   --set secrets.provider=external-secrets \
   --set secrets.externalSecrets.enabled=true \
   --set secrets.externalSecrets.secretStoreRef=cluster-secret-store \

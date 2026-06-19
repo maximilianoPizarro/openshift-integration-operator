@@ -435,14 +435,14 @@ vault kv put secret/integration-platform/github token='ghp_REPLACE_ME'
 vault kv put secret/integration-platform/gitlab token='glpat_REPLACE_ME'</code></pre>
 
         <h3>Step 4 — Enable ESO in Helm</h3>
-        <pre><code>helm upgrade --install openshift-integration-operator \
+        <pre><code data-version-inject>helm upgrade --install openshift-integration-operator \
   helm/openshift-integration-operator \
   --namespace openshift-integration \
   --set secrets.provider=external-secrets \
   --set secrets.externalSecrets.enabled=true \
   --set secrets.externalSecrets.secretStoreRef=cluster-secret-store \
-  --set operator.image.tag=v0.8.0 \
-  --set consolePlugin.image.tag=v0.8.0 \
+  --set operator.image.tag=v0.8.1 \
+  --set consolePlugin.image.tag=v0.8.1 \
   --set git.url=https://gitea.example.com</code></pre>
 
         <h3>Step 5 — Verify</h3>
@@ -624,9 +624,9 @@ oc describe pipelinerun &lt;name&gt; -n openshift-integration</code></pre>
 
         <div class="troubleshoot-item">
           <h4>7. Ephemeral resources not deleted with IntegrationFlow</h4>
-          <p><strong>Cause:</strong> Missing <code>ownerReferences</code> on ephemeral resources (fixed in v0.5.0+).</p>
-          <p><strong>Fix:</strong> Upgrade to <code>v0.8.0</code> from Quay via OLM bundle:</p>
-          <pre><code>operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.0 \
+          <p><strong>Cause:</strong> Missing <code>ownerReferences</code> on ephemeral resources (built-in cleanup in current releases).</p>
+          <p><strong>Fix:</strong> Upgrade to the latest release from Quay via OLM bundle:</p>
+          <pre><code data-version-inject>operator-sdk run bundle quay.io/maximilianopizarro/openshift-integration-operator-bundle:v0.8.1 \
   --namespace openshift-integration --install-mode AllNamespaces --timeout 10m</code></pre>
           <p><strong>Verify:</strong> After delete, <code>oc get deploy -l platform.io/ephemeral=true</code> returns no resources.</p>
         </div>
