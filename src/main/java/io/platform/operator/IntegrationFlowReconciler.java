@@ -726,7 +726,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             status.setCurrentState(desiredState);
             status.setMessage("Ephemeral flow " + desiredState + " by user");
             finalizeStatus(resource, status);
-            return ephemeralUpdateControl(resource, finalizerAdded);
+            return ephemeralUpdateControl(resource, status, finalizerAdded);
         }
         if ("running".equals(desiredState) && status.getEphemeralWorkerRef() != null
                 && (status.getPhase() == IntegrationFlowStatus.Phase.Paused
@@ -738,7 +738,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
             status.setPhase(IntegrationFlowStatus.Phase.Error);
             status.setMessage("kaotoDesign is required for ephemeral deployment");
             finalizeStatus(resource, status);
-            return ephemeralUpdateControl(resource, finalizerAdded);
+            return ephemeralUpdateControl(resource, status, finalizerAdded);
         }
 
         int ttl = resolveTtlSeconds(spec);
@@ -746,7 +746,7 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         if (Instant.now().isAfter(expiresAt)) {
             handleExpiredEphemeral(flowName, namespace, status);
             finalizeStatus(resource, status);
-            return ephemeralUpdateControl(resource, finalizerAdded);
+            return ephemeralUpdateControl(resource, status, finalizerAdded);
         }
 
         status.setEphemeralExpiresAt(expiresAt.toString());
@@ -803,14 +803,22 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         }
 
         finalizeStatus(resource, status);
-        return ephemeralUpdateControl(resource, finalizerAdded);
+        return ephemeralUpdateControl(resource, status, finalizerAdded);
     }
 
-    private UpdateControl<IntegrationFlow> ephemeralUpdateControl(IntegrationFlow resource, boolean finalizerAdded) {
-        if (finalizerAdded) {
-            return UpdateControl.patchResource(resource).patchStatus(resource);
+    private UpdateControl<IntegrationFlow> ephemeralUpdateControl(IntegrationFlow resource,
+                                                                  IntegrationFlowStatus status,
+                                                                  boolean finalizerAdded) {
+        UpdateControl<IntegrationFlow> control = finalizerAdded
+                ? UpdateControl.patchResource(resource).patchStatus(resource)
+                : UpdateControl.patchStatus(resource);
+
+        boolean pendingWorker = status.getPhase() == IntegrationFlowStatus.Phase.Building
+                || status.getPhase() == IntegrationFlowStatus.Phase.Deploying;
+        if (pendingWorker) {
+            return control.rescheduleAfter(5000L);
         }
-        return UpdateControl.patchStatus(resource);
+        return control;
     }
 
     private boolean isEphemeralWorkerReady(String namespace, String workerRef, String flowName) {
