@@ -326,7 +326,12 @@ jobs:
           echo "WORKER_TAG=$WORKER_TAG" >> "$GITHUB_ENV"
 
       - name: Install kind
-        uses: engineerd/setup-kind@v0.6.2
+        run: |
+          KIND_VERSION="v0.29.0"
+          curl -Lo ./kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind --version
 
       - name: Install Helm
         uses: azure/setup-helm@v4
