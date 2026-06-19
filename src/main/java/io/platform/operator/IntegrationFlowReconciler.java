@@ -109,16 +109,21 @@ public class IntegrationFlowReconciler implements Reconciler<IntegrationFlow> {
         String desiredState = spec.getDesiredState();
         boolean lifecyclePending = desiredState != null
                 && !desiredState.equals(status.getCurrentState());
+        boolean ephemeralPending = mode == DeploymentMode.EPHEMERAL
+                && status.getPhase() != null
+                && (status.getPhase() == IntegrationFlowStatus.Phase.Building
+                    || status.getPhase() == IntegrationFlowStatus.Phase.Deploying);
         if (!lifecyclePending
                 && !currentDesignHash.isEmpty()
                 && currentDesignHash.equals(status.getLastScaffoldedHash())
                 && status.getPhase() != null
+                && !ephemeralPending
                 && (status.getPhase() == IntegrationFlowStatus.Phase.Running
                     || status.getPhase() == IntegrationFlowStatus.Phase.Building
                     || status.getPhase() == IntegrationFlowStatus.Phase.Deploying
                     || status.getPhase() == IntegrationFlowStatus.Phase.Paused
                     || status.getPhase() == IntegrationFlowStatus.Phase.Stopped
-                    || (mode == DeploymentMode.EPHEMERAL && status.getPhase() != IntegrationFlowStatus.Phase.Expired))) {
+                    || status.getPhase() == IntegrationFlowStatus.Phase.Expired)) {
             LOG.debugf("Design hash unchanged for '%s/%s', skipping reconciliation",
                     resource.getMetadata().getNamespace(), resource.getMetadata().getName());
             return UpdateControl.noUpdate();
