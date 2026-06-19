@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  var SITE_VERSION = 'v0.8.0';
-  var SITE_CHART_VERSION = '0.8.0';
+  var SITE_VERSION = 'v0.8.1';
+  var SITE_CHART_VERSION = '0.8.1';
   var SITE_RELEASES_URL =
     'https://github.com/maximilianoPizarro/openshift-integration-operator/releases/tag/' + SITE_VERSION;
 

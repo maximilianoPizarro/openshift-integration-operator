@@ -22,8 +22,8 @@
     <h1>Ready-to-Use Integration Flows</h1>
     <p>Complete IntegrationFlow CRs with real Camel route logic — copy, apply, run</p>
     <div class="badge-row">
-      <span class="badge" id="totalBadge">140+ Flows</span>
-      <span class="badge">13 Pattern Categories</span>
+      <span class="badge" id="totalBadge">240+ Flows</span>
+      <span class="badge" id="categoryBadge">20 Pattern Categories</span>
       <span class="badge">deploymentMode: EPHEMERAL</span>
       <span class="badge">Camel 4.18 / Quarkus 3.36</span>
     </div>
@@ -56,6 +56,13 @@
     <button class="filter-btn" data-cat="realworld">Real-World APIs</button>
     <button class="filter-btn" data-cat="enterprise">Enterprise</button>
     <button class="filter-btn" data-cat="publicapi">Public APIs</button>
+    <button class="filter-btn" data-cat="saas-messaging">Messaging</button>
+    <button class="filter-btn" data-cat="crm-support">CRM</button>
+    <button class="filter-btn" data-cat="productivity">Productivity</button>
+    <button class="filter-btn" data-cat="devops">DevOps</button>
+    <button class="filter-btn" data-cat="commerce-latam">Commerce</button>
+    <button class="filter-btn" data-cat="ai-mcp">AI / MCP</button>
+    <button class="filter-btn" data-cat="identity-secrets">Identity</button>
     <span class="count-label" id="countLabel">Loading catalog...</span>
   </div>
 
@@ -127,6 +134,8 @@ function loadCatalog() {
         throw new Error("flow-catalog.json has unexpected format (expected array of categories)");
       }
       FLOWS = data;
+      const catBadge = document.getElementById("categoryBadge");
+      if (catBadge) catBadge.textContent = `${data.length} Pattern Categories`;
       renderCatalog();
     })
     .catch(err => {
