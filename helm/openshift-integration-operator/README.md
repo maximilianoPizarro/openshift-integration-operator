@@ -1,8 +1,8 @@
 # OpenShift Integration Operator
 
-![Version: 0.5.0](https://img.shields.io/badge/Version-0.5.0-informational?style=flat-square)
+![Version: 0.8.2](https://img.shields.io/badge/Version-0.8.2-informational?style=flat-square)
 ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
-![AppVersion: 0.5.0](https://img.shields.io/badge/AppVersion-0.5.0-informational?style=flat-square)
+![AppVersion: 0.8.2](https://img.shields.io/badge/AppVersion-0.8.2-informational?style=flat-square)
 ![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg?style=flat-square)
 
 Real-Time Integration & Orchestration Platform for OpenShift — the missing lifecycle layer for Apache Camel: design visually, deploy with GitOps, observe in real time. Apache Camel + CNCF SonataFlow with a visual Kaoto designer embedded in the OpenShift Console.
@@ -20,30 +20,9 @@ Real-Time Integration & Orchestration Platform for OpenShift — the missing lif
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  OpenShift Console                                       │
-│  ┌─────────────────┐ ┌──────────┐ ┌──────────────────┐  │
-│  │ Console Plugin   │ │ Kaoto    │ │ Telemetry Overlay│  │
-│  └────────┬────────┘ └──────────┘ └──────────────────┘  │
-├───────────┼──────────────────────────────────────────────┤
-│  Operator │ (Quarkus + JOSDK + Fabric8)                  │
-│  ┌────────┴────────┐ ┌──────────┐ ┌──────────────────┐  │
-│  │ Reconciler      │ │ Scaffold │ │ MCP Bridge       │  │
-│  │ IntegrationFlow │ │ Service  │ │ AI Tool Gateway  │  │
-│  └────────┬────────┘ └────┬─────┘ └──────────────────┘  │
-├───────────┼───────────────┼──────────────────────────────┤
-│  GitOps   │               │                              │
-│  ┌────────▼────┐  ┌───────▼──────┐  ┌───────────────┐   │
-│  │ Gitea Repo  │→ │ Tekton Build │→ │ ArgoCD Sync   │   │
-│  └─────────────┘  └──────────────┘  └───────┬───────┘   │
-├──────────────────────────────────────────────┼───────────┤
-│  Workers (HPA auto-scaled)                   │           │
-│  ┌─────────────────┐  ┌─────────────────┐   │           │
-│  │ Camel Workers   │  │ SonataFlow      │◄──┘           │
-│  └─────────────────┘  └─────────────────┘               │
-└──────────────────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="https://raw.githubusercontent.com/maximilianoPizarro/openshift-integration-operator/main/docs/images/arch-ecosystem.png" alt="OpenShift Integration Operator Architecture">
+</p>
 
 ## Prerequisites
 
@@ -133,7 +112,7 @@ helm uninstall integration-operator --namespace openshift-integration
 | Parameter | Description | Default |
 |---|---|---|
 | `operator.image.repository` | Operator container image | `quay.io/maximilianopizarro/openshift-integration-operator` |
-| `operator.image.tag` | Image tag | `v0.5.0` |
+| `operator.image.tag` | Image tag | `v0.8.2` |
 | `operator.image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `operator.replicas` | Number of operator replicas | `1` |
 | `operator.resources.requests.cpu` | CPU request | `250m` |
@@ -205,7 +184,7 @@ Helm `workers.*` sets defaults for **one HPA per IntegrationFlow** worker Deploy
 |---|---|---|
 | `consolePlugin.enabled` | Deploy the OpenShift Console Dynamic Plugin | `true` |
 | `consolePlugin.image.repository` | Console plugin container image | `quay.io/maximilianopizarro/integration-console-plugin` |
-| `consolePlugin.image.tag` | Console plugin image tag | `v0.5.0` |
+| `consolePlugin.image.tag` | Console plugin image tag | `v0.8.2` |
 | `consolePlugin.replicas` | Console plugin replicas | `1` |
 
 ### SonataFlow
@@ -227,9 +206,9 @@ Helm `workers.*` sets defaults for **one HPA per IntegrationFlow** worker Deploy
 | `ephemeral.defaultTtlSeconds` | Default TTL when not specified in CR | `3600` |
 | `ephemeral.maxTtlSeconds` | Maximum TTL for extend API | `86400` |
 | `ephemeral.preferFullWorker` | Use full worker for all ephemeral routes | `false` |
-| `ephemeral.camelWorkerImage` | Core tier worker image | `quay.io/.../camel-worker-core:v0.5.0` |
-| `ephemeral.camelWorkerHttpImage` | HTTP tier (http, https, jsonpath, jackson) | `quay.io/.../camel-worker-http:v0.5.0` |
-| `ephemeral.camelTestImage` | Ephemeral Camel test jobs | `quay.io/.../camel-test-runner:v0.5.0` |
+| `ephemeral.camelWorkerImage` | Core tier worker image | `quay.io/.../camel-worker-core:v0.8.2` |
+| `ephemeral.camelWorkerHttpImage` | HTTP tier (http, https, jsonpath, jackson) | `quay.io/.../camel-worker-http:v0.8.2` |
+| `ephemeral.camelTestImage` | Ephemeral Camel test jobs | `quay.io/.../camel-test-runner:v0.8.2` |
 | `ephemeral.camelK.detect` | Auto-detect Camel K for Kamelet/Pipe ephemeral deploys | `true` |
 
 ### Tekton

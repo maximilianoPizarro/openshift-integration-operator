@@ -93,6 +93,26 @@
   </header>
 
   <main class="site-main">
+    <section id="camel-history" style="background-color: var(--rh-light-gray); padding: 3rem 0;">
+      <div class="container">
+        <h2>The Evolution of Apache Camel</h2>
+        <p class="section-lead">From a routing engine to the backbone of modern integration.</p>
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;">
+          <div style="flex: 1; min-width: 300px;">
+            <p>
+              Born in 2007, <strong>Apache Camel</strong> was initially designed to implement the Enterprise Integration Patterns (EIPs) described by Gregor Hohpe and Bobby Woolf. Its goal was simple yet ambitious: to standardize how disparate systems communicate with each other.
+            </p>
+            <p>
+              Over the years, Camel evolved from a Java library into a complete ecosystem. With <strong>Camel K</strong>, it made the leap to Kubernetes, enabling serverless integrations. Today, with <strong>Camel Quarkus</strong>, it offers blazing-fast startup times and minimal memory footprint, ideal for cloud-native architectures.
+            </p>
+            <p>
+              This operator takes all that historical power and wraps it in a modern, GitOps-native, and visual user experience, making enterprise integration accessible to all teams.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="ephemeral">
       <div class="container">
         <h2>Test any Camel route in 30 seconds</h2>
@@ -224,6 +244,32 @@
             <h3>Multi-cluster</h3>
             <p>Target multiple clusters from a single IntegrationFlow spec via ArgoCD ApplicationSets.</p>
           </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="mcp-ia" style="background-color: var(--rh-black); color: var(--pf-v5-global--Color--light-100, #fff); padding: 4rem 0;">
+      <div class="container">
+        <h2 style="color: var(--pf-v5-global--Color--light-100, #fff);">MCP AI Integration: The Future of Automation</h2>
+        <p class="section-lead" style="color: var(--pf-v5-global--Color--light-200, #f0f0f0);">Connecting Model Context Protocol with Apache Camel to create intelligent flows.</p>
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;">
+          <div style="flex: 1; min-width: 300px;">
+            <p style="color: var(--pf-v5-global--Color--light-200, #f0f0f0);">
+              The <strong>Model Context Protocol (MCP)</strong> is an open standard that allows artificial intelligence models to access external tools and data securely. By integrating MCP with Apache Camel, we have created a revolutionary bidirectional bridge.
+            </p>
+            <p style="color: var(--pf-v5-global--Color--light-200, #f0f0f0);">
+              <strong>How does it work?</strong> AI models can now dynamically discover and invoke any Camel route as if it were a native tool. In turn, Camel flows can query AI models to make complex routing decisions, extract data from unstructured text, or generate personalized responses.
+            </p>
+            <p style="color: var(--pf-v5-global--Color--light-200, #f0f0f0);">
+              This transforms static integrations into <strong>intelligent agents</strong> capable of adapting to context in real-time, all while maintaining the robustness and scalability of Kubernetes.
+            </p>
+            <p style="margin-top: 1.5rem;">
+              <a class="btn btn-primary" href="ai-models-and-mcp.html">Discover more about MCP AI →</a>
+            </p>
+          </div>
+          <div style="flex: 1; min-width: 300px; text-align: center;">
+            <img src="images/arch-mcp-ai-flow.png" alt="MCP AI Flow Architecture" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--rh-dark-gray);">
+          </div>
         </div>
       </div>
     </section>
@@ -391,6 +437,11 @@ oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></
       <div class="container">
         <h2>Precompiled Worker Images</h2>
         <p class="section-lead">Domain-specific Camel Quarkus workers on Quay — auto-selected from your route, or pin with <code>spec.ephemeral.workerImage</code>.</p>
+        
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <img src="images/arch-workers.png" alt="Precompiled Worker Images Architecture" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--rh-dark-gray);">
+        </div>
+
         <pre><code data-version-inject><span class="comment"># Default (all domains — 80+ extensions)</span>
 quay.io/maximilianopizarro/camel-worker-full:v0.8.1
 
@@ -442,6 +493,33 @@ quay.io/maximilianopizarro/camel-worker-ai:v0.8.1          <span class="comment"
             </p>
             <a class="btn btn-primary" href="architecture.html">Read Architecture Docs →</a>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="reference-links" style="background-color: var(--pf-v5-global--BackgroundColor--200, #f0f0f0); border-top: 1px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);">
+      <div class="container">
+        <h2>Reference Links</h2>
+        <p class="section-lead">Essential resources to dive deeper into the ecosystem.</p>
+        <div class="card-grid">
+          <article class="card">
+            <div class="card-icon">📚</div>
+            <h3>Official Documentation</h3>
+            <p><a href="https://camel.apache.org/manual/" target="_blank" rel="noopener noreferrer">Apache Camel Manual</a></p>
+            <p><a href="https://camel.apache.org/camel-quarkus/latest/" target="_blank" rel="noopener noreferrer">Camel Quarkus Docs</a></p>
+          </article>
+          <article class="card">
+            <div class="card-icon">🧩</div>
+            <h3>Tools and Design</h3>
+            <p><a href="https://kaoto.io/" target="_blank" rel="noopener noreferrer">Kaoto Visual Designer</a></p>
+            <p><a href="https://modelcontextprotocol.io/" target="_blank" rel="noopener noreferrer">Model Context Protocol (MCP)</a></p>
+          </article>
+          <article class="card">
+            <div class="card-icon">📦</div>
+            <h3>Repositories</h3>
+            <p><a href="https://github.com/maximilianoPizarro/openshift-integration-operator" target="_blank" rel="noopener noreferrer">Operator on GitHub</a></p>
+            <p><a href="https://quay.io/repository/maximilianopizarro/openshift-integration-operator-bundle" target="_blank" rel="noopener noreferrer">Images on Quay.io</a></p>
+          </article>
         </div>
       </div>
     </section>
