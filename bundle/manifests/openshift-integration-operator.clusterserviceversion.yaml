@@ -59,7 +59,7 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: Integration & Delivery
-    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.0
+    containerImage: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.2
     createdAt: "2026-06-15T18:00:00Z"
     description: The missing lifecycle layer for Apache Camel on OpenShift — design visually with Kaoto, deploy with GitOps (Tekton + ArgoCD), observe in real time with OpenTelemetry. Enterprise-grade, Kubernetes-native integration lifecycle for platform teams.
     operators.operatorframework.io/builder: operator-sdk-v1.40.0
@@ -68,7 +68,7 @@ metadata:
     repository: https://github.com/maximilianoPizarro/openshift-integration-operator
     support: Community
     console.openshift.io/plugins: '["integration-console-plugin"]'
-  name: openshift-integration-operator.v0.8.1
+  name: openshift-integration-operator.v0.8.2
   namespace: placeholder
 spec:
   replaces: openshift-integration-operator.v0.8.1
@@ -488,7 +488,7 @@ spec:
               serviceAccountName: openshift-integration-operator
               containers:
               - name: operator
-                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.0
+                image: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.2
                 imagePullPolicy: Always
                 ports:
                 - containerPort: 8080
@@ -543,21 +543,21 @@ spec:
                 - name: FLOW_CATALOG_CONFIG_MAP_KEY
                   value: flow-catalog.json
                 - name: EPHEMERAL_CAMEL_WORKER_IMAGE
-                  value: quay.io/maximilianopizarro/camel-worker-core:latest
+                  value: quay.io/maximilianopizarro/camel-worker-core:v0.8.2
                 - name: EPHEMERAL_CAMEL_WORKER_MESSAGING_IMAGE
-                  value: quay.io/maximilianopizarro/camel-worker-messaging:latest
+                  value: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.2
                 - name: EPHEMERAL_CAMEL_WORKER_HTTP_IMAGE
-                  value: quay.io/maximilianopizarro/camel-worker-http:latest
+                  value: quay.io/maximilianopizarro/camel-worker-http:v0.8.2
                 - name: EPHEMERAL_CAMEL_WORKER_DATA_IMAGE
-                  value: quay.io/maximilianopizarro/camel-worker-data:latest
+                  value: quay.io/maximilianopizarro/camel-worker-data:v0.8.2
                 - name: EPHEMERAL_CAMEL_WORKER_CLOUD_IMAGE
-                  value: quay.io/maximilianopizarro/camel-worker-cloud:latest
+                  value: quay.io/maximilianopizarro/camel-worker-cloud:v0.8.2
                 - name: EPHEMERAL_CAMEL_WORKER_AI_IMAGE
-                  value: quay.io/maximilianopizarro/camel-worker-ai:latest
+                  value: quay.io/maximilianopizarro/camel-worker-ai:v0.8.2
                 - name: EPHEMERAL_CAMEL_WORKER_FULL_IMAGE
-                  value: quay.io/maximilianopizarro/camel-worker-full:latest
+                  value: quay.io/maximilianopizarro/camel-worker-full:v0.8.2
                 - name: EPHEMERAL_CAMEL_WORKER_TEST_IMAGE
-                  value: quay.io/maximilianopizarro/camel-test-runner:latest
+                  value: quay.io/maximilianopizarro/camel-test-runner:v0.8.2
                 volumeMounts:
                 - name: tls-certs
                   mountPath: /etc/tls
@@ -606,7 +606,7 @@ spec:
             spec:
               containers:
               - name: console-plugin
-                image: quay.io/maximilianopizarro/integration-console-plugin:v0.8.0
+                image: quay.io/maximilianopizarro/integration-console-plugin:v0.8.2
                 imagePullPolicy: Always
                 ports:
                 - containerPort: 9443
@@ -680,13 +680,13 @@ spec:
   provider:
     name: maximilianoPizarro
     url: https://github.com/maximilianoPizarro
-  version: 0.8.1
+  version: 0.8.2
   relatedImages:
   - name: operator
-    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.0
+    image: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.2
   - name: console-plugin
-    image: quay.io/maximilianopizarro/integration-console-plugin:v0.8.0
+    image: quay.io/maximilianopizarro/integration-console-plugin:v0.8.2
   - name: camel-worker-core
-    image: quay.io/maximilianopizarro/camel-worker-core:v0.8.0
+    image: quay.io/maximilianopizarro/camel-worker-core:v0.8.2
   - name: camel-worker-full
-    image: quay.io/maximilianopizarro/camel-worker-full:v0.8.0
+    image: quay.io/maximilianopizarro/camel-worker-full:v0.8.2

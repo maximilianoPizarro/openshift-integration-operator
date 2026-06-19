@@ -20,35 +20,35 @@ public class EphemeralWorkerImageResolver {
     boolean preferFullWorker;
 
     @ConfigProperty(name = "ephemeral.camel-worker-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-worker-core:v0.4.1")
+            defaultValue = "quay.io/maximilianopizarro/camel-worker-core:v0.8.2")
     String coreImage;
 
     @ConfigProperty(name = "ephemeral.camel-worker-messaging-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-worker-messaging:v0.4.1")
+            defaultValue = "quay.io/maximilianopizarro/camel-worker-messaging:v0.8.2")
     String messagingImage;
 
     @ConfigProperty(name = "ephemeral.camel-worker-http-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-worker-http:v0.4.1")
+            defaultValue = "quay.io/maximilianopizarro/camel-worker-http:v0.8.2")
     String httpImage;
 
     @ConfigProperty(name = "ephemeral.camel-worker-data-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-worker-data:v0.4.1")
+            defaultValue = "quay.io/maximilianopizarro/camel-worker-data:v0.8.2")
     String dataImage;
 
     @ConfigProperty(name = "ephemeral.camel-worker-cloud-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-worker-cloud:v0.4.1")
+            defaultValue = "quay.io/maximilianopizarro/camel-worker-cloud:v0.8.2")
     String cloudImage;
 
     @ConfigProperty(name = "ephemeral.camel-worker-ai-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-worker-ai:v0.4.1")
+            defaultValue = "quay.io/maximilianopizarro/camel-worker-ai:v0.8.2")
     String aiImage;
 
     @ConfigProperty(name = "ephemeral.camel-worker-full-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-worker-full:v0.4.1")
+            defaultValue = "quay.io/maximilianopizarro/camel-worker-full:v0.8.2")
     String fullImage;
 
     @ConfigProperty(name = "ephemeral.camel-test-image",
-            defaultValue = "quay.io/maximilianopizarro/camel-test-runner:v0.4.1")
+            defaultValue = "quay.io/maximilianopizarro/camel-test-runner:v0.8.2")
     String testImage;
 
     private static final Set<String> CORE_COMPONENTS = Set.of(

@@ -6,7 +6,7 @@
 
     <groupId>io.platform</groupId>
     <artifactId>openshift-integration-operator</artifactId>
-    <version>0.8.1</version>
+    <version>0.8.2</version>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>

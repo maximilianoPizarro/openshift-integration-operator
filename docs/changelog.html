@@ -108,6 +108,19 @@
       
       <div class="changelog-entry">
         <div class="version-header">
+          <h2>v0.8.2</h2>
+          <span class="date-badge">June 2026</span>
+        </div>
+        <ul>
+          <li><span class="tag tag-fix">Fix</span> <strong>Kaoto UX:</strong> Added responsive workspace behavior with collapsible detail and <code>kaotoDesign</code> preview panels so Source/Design remains usable without closing OpenShift navigation.</li>
+          <li><span class="tag tag-fix">Fix</span> <strong>Logs:</strong> Improved transient startup handling with controlled polling/retries and backend readiness checks so ephemeral flows no longer show false “running without logs”.</li>
+          <li><span class="tag tag-fix">Fix</span> <strong>Versioning:</strong> Unified operator, console plugin, Helm, CSV, and ephemeral worker defaults to pinned <code>v0.8.2</code> tags (no <code>latest</code> strategy).</li>
+          <li><span class="tag tag-feature">Feature</span> <strong>CI Smoke:</strong> Added reusable Kind-based ephemeral smoke test script and CI wiring to validate flow startup and runtime logs during image builds.</li>
+        </ul>
+      </div>
+
+      <div class="changelog-entry">
+        <div class="version-header">
           <h2>v0.8.1</h2>
           <span class="date-badge">June 2026</span>
         </div>

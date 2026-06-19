@@ -1,7 +1,7 @@
 operator:
   image:
     repository: quay.io/maximilianopizarro/openshift-integration-operator
-    tag: v0.8.0
+    tag: v0.8.2
     pullPolicy: IfNotPresent
   replicas: 1
   resources:
@@ -119,7 +119,7 @@ consolePlugin:
   enabled: true
   image:
     repository: quay.io/maximilianopizarro/integration-console-plugin
-    tag: v0.8.0
+    tag: v0.8.2
   replicas: 1
 
 sonataflow:
@@ -138,14 +138,14 @@ ephemeral:
   defaultTtlSeconds: 3600
   maxTtlSeconds: 86400
   preferFullWorker: false
-  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.8.0
-  camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.0
-  camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.8.0
-  camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.8.0
-  camelWorkerCloudImage: quay.io/maximilianopizarro/camel-worker-cloud:v0.8.0
-  camelWorkerAiImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.0
-  camelWorkerFullImage: quay.io/maximilianopizarro/camel-worker-full:v0.8.0
-  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.8.0
+  camelWorkerImage: quay.io/maximilianopizarro/camel-worker-core:v0.8.2
+  camelWorkerMessagingImage: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.2
+  camelWorkerHttpImage: quay.io/maximilianopizarro/camel-worker-http:v0.8.2
+  camelWorkerDataImage: quay.io/maximilianopizarro/camel-worker-data:v0.8.2
+  camelWorkerCloudImage: quay.io/maximilianopizarro/camel-worker-cloud:v0.8.2
+  camelWorkerAiImage: quay.io/maximilianopizarro/camel-worker-ai:v0.8.2
+  camelWorkerFullImage: quay.io/maximilianopizarro/camel-worker-full:v0.8.2
+  camelTestImage: quay.io/maximilianopizarro/camel-test-runner:v0.8.2
   camelK:
     detect: true
 

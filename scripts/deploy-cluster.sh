@@ -4,7 +4,7 @@ set -euo pipefail
 
 NAMESPACE="${NAMESPACE:-openshift-integration}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION_TAG="${VERSION_TAG:-v0.8.1}"
+VERSION_TAG="${VERSION_TAG:-v0.8.2}"
 
 echo "==> Deploying from Quay (${VERSION_TAG})..."
 helm upgrade --install openshift-integration-operator \

@@ -2,8 +2,8 @@ apiVersion: v2
 name: openshift-integration-operator
 description: The missing lifecycle layer for Apache Camel on OpenShift — design visually, deploy with GitOps, observe in real time. Apache Camel + SonataFlow with Kaoto designer, GitOps, MCP/AI, and OpenTelemetry.
 type: application
-version: 0.8.1
-appVersion: "0.8.1"
+version: 0.8.2
+appVersion: "0.8.2"
 kubeVersion: ">=1.27.0-0"
 home: https://maximilianopizarro.github.io/openshift-integration-operator/
 sources:
@@ -54,27 +54,27 @@ annotations:
       url: https://github.com/maximilianoPizarro/openshift-integration-operator
   artifacthub.io/images: |
     - name: operator
-      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.0
+      image: quay.io/maximilianopizarro/openshift-integration-operator:v0.8.2
     - name: console-plugin
-      image: quay.io/maximilianopizarro/integration-console-plugin:v0.8.0
+      image: quay.io/maximilianopizarro/integration-console-plugin:v0.8.2
     - name: camel-worker-core
-      image: quay.io/maximilianopizarro/camel-worker-core:v0.8.0
+      image: quay.io/maximilianopizarro/camel-worker-core:v0.8.2
     - name: camel-worker-messaging
-      image: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.0
+      image: quay.io/maximilianopizarro/camel-worker-messaging:v0.8.2
     - name: camel-worker-http
-      image: quay.io/maximilianopizarro/camel-worker-http:v0.8.0
+      image: quay.io/maximilianopizarro/camel-worker-http:v0.8.2
     - name: camel-worker-data
-      image: quay.io/maximilianopizarro/camel-worker-data:v0.8.0
+      image: quay.io/maximilianopizarro/camel-worker-data:v0.8.2
     - name: camel-worker-cloud
-      image: quay.io/maximilianopizarro/camel-worker-cloud:v0.8.0
+      image: quay.io/maximilianopizarro/camel-worker-cloud:v0.8.2
     - name: camel-worker-ai
-      image: quay.io/maximilianopizarro/camel-worker-ai:v0.8.0
+      image: quay.io/maximilianopizarro/camel-worker-ai:v0.8.2
     - name: camel-worker-full
-      image: quay.io/maximilianopizarro/camel-worker-full:v0.8.0
+      image: quay.io/maximilianopizarro/camel-worker-full:v0.8.2
     - name: camel-yaml-worker
-      image: quay.io/maximilianopizarro/camel-yaml-worker:v0.8.0
+      image: quay.io/maximilianopizarro/camel-yaml-worker:v0.8.2
     - name: camel-test-runner
-      image: quay.io/maximilianopizarro/camel-test-runner:v0.8.0
+      image: quay.io/maximilianopizarro/camel-test-runner:v0.8.2
   artifacthub.io/crds: |
     - kind: IntegrationFlow
       version: v1alpha1
