@@ -30,3 +30,4 @@ Maintainers have write access to the repository (the "commit bit") and can merge
 - **Flows**: See `docs/contributing.html` for contributing new flows to the catalog.
 - **Issues**: Search existing issues before opening a new one. Provide reproducible steps for bugs.
 - **Pull Requests**: Keep PRs focused. Write clear commit messages. Ensure tests and linting pass.
+- **Tests for new features**: When adding major operator, Helm, or console-plugin functionality, include or extend automated coverage (for example `mvn test`, workflow validation, or `helm lint`) so CI stays green before merge.

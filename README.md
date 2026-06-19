@@ -19,7 +19,7 @@
   <a href="https://quay.io/repository/maximilianopizarro/openshift-integration-operator"><img src="https://img.shields.io/badge/Quay.io-operator-EE3300?logo=redhat" alt="Quay.io"></a>
   <a href="https://operatorhub.io/operator/openshift-integration-operator"><img src="https://img.shields.io/badge/OperatorHub-openshift--integration--operator-0078d4?logo=redhat" alt="OperatorHub"></a>
   <a href="https://artifacthub.io/packages/helm/openshift-integration-operator/openshift-integration-operator"><img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/openshift-integration-operator" alt="Artifact Hub"></a>
-  [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/XXXX/badge)](https://www.bestpractices.dev/projects/XXXX)
+  <a href="https://www.bestpractices.dev/projects/13312"><img src="https://www.bestpractices.dev/projects/13312/badge" alt="OpenSSF Best Practices"></a>
 </p>
 
 <p align="center">
