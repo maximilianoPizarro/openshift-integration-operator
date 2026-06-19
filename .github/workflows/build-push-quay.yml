@@ -17,7 +17,6 @@ env:
   QUAY_REGISTRY: quay.io
   QUAY_NAMESPACE: maximilianopizarro
   IMAGE_NAME: openshift-integration-operator
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 concurrency:
   group: build-push-quay-${{ github.workflow }}-${{ github.ref }}
@@ -31,10 +30,10 @@ jobs:
         java: [21]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
           distribution: 'temurin'
@@ -47,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Validate examples catalog components
         run: python3 scripts/validate-catalog.py
@@ -62,12 +61,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v3.17.3
+        run: |
+          HELM_VERSION="v3.17.3"
+          curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" -o /tmp/helm.tgz
+          tar -xzf /tmp/helm.tgz -C /tmp
+          sudo mv /tmp/linux-amd64/helm /usr/local/bin/helm
+          helm version --short
 
       - name: Helm lint and template
         run: |
@@ -79,7 +81,7 @@ jobs:
     needs: [test, validate-catalog, helm-lint]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Resolve image tags
         run: |
@@ -98,7 +100,7 @@ jobs:
           echo "VERSION_TAG=$VERSION_TAG" >> "$GITHUB_ENV"
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -156,7 +158,7 @@ jobs:
     needs: [test, validate-catalog, helm-lint]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Resolve image tags
         run: |
@@ -227,7 +229,7 @@ jobs:
           - camel-test-runner
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Resolve worker image tags
         run: |
@@ -276,7 +278,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Resolve native image tags
         run: |
@@ -311,7 +313,7 @@ jobs:
     needs: [build-jvm, build-camel-workers, helm-lint]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Resolve smoke image tags
         run: |
@@ -334,9 +336,12 @@ jobs:
           kind --version
 
       - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v3.17.3
+        run: |
+          HELM_VERSION="v3.17.3"
+          curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" -o /tmp/helm.tgz
+          tar -xzf /tmp/helm.tgz -C /tmp
+          sudo mv /tmp/linux-amd64/helm /usr/local/bin/helm
+          helm version --short
 
       - name: Run kind ephemeral smoke test
         env:
@@ -350,10 +355,10 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -429,15 +434,18 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: main
 
       - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v3.17.3
+        run: |
+          HELM_VERSION="v3.17.3"
+          curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" -o /tmp/helm.tgz
+          tar -xzf /tmp/helm.tgz -C /tmp
+          sudo mv /tmp/linux-amd64/helm /usr/local/bin/helm
+          helm version --short
 
       - name: Package Helm chart
         run: helm package helm/openshift-integration-operator --destination docs/

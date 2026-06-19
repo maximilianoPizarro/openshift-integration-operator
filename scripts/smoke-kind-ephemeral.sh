@@ -88,6 +88,8 @@ helm upgrade --install openshift-integration-operator ./helm/openshift-integrati
   --set argocd.enabled=false \
   --set tekton.enabled=false \
   --set flowCatalog.source=remote \
+  --set git.password=ci-smoke-token \
+  --set gitea.password=ci-smoke-token \
   --set ephemeral.camelWorkerImage="${WORKER_REPO_PREFIX}/camel-worker-core:${WORKER_TAG}" \
   --set ephemeral.camelWorkerMessagingImage="${WORKER_REPO_PREFIX}/camel-worker-messaging:${WORKER_TAG}" \
   --set ephemeral.camelWorkerHttpImage="${WORKER_REPO_PREFIX}/camel-worker-http:${WORKER_TAG}" \
