@@ -59,6 +59,22 @@ fi
 kubectl get nodes
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
+# Kind does not provide OpenShift service-ca cert injection; create a temporary TLS secret
+# expected by the operator Deployment so the pod can mount cert files.
+TMP_CERT_DIR="$(mktemp -d)"
+
+openssl req -x509 -nodes -newkey rsa:2048 \
+  -keyout "${TMP_CERT_DIR}/tls.key" \
+  -out "${TMP_CERT_DIR}/tls.crt" \
+  -subj "/CN=openshift-integration-operator.${NAMESPACE}.svc" \
+  -days 1 >/dev/null 2>&1
+
+kubectl -n "$NAMESPACE" create secret tls openshift-integration-operator-serving-cert \
+  --cert="${TMP_CERT_DIR}/tls.crt" \
+  --key="${TMP_CERT_DIR}/tls.key" \
+  --dry-run=client -o yaml | kubectl apply -f -
+rm -rf "$TMP_CERT_DIR"
+
 kubectl apply -f bundle/manifests/integrationflows.platform.io-v1.crd.yml
 
 helm upgrade --install openshift-integration-operator ./helm/openshift-integration-operator \
