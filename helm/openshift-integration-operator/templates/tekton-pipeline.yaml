@@ -1,3 +1,4 @@
+{{- if .Values.tekton.enabled }}
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
@@ -155,3 +156,4 @@ spec:
       workspaces:
         - name: source
           workspace: shared-workspace
+{{- end }}
