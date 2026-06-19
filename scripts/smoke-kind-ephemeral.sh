@@ -148,7 +148,7 @@ kubectl -n "$NAMESPACE" rollout status "deployment/${WORKER_DEPLOYMENT}" --timeo
 echo "Waiting for expected log line..."
 found="false"
 for _ in $(seq 1 30); do
-  if kubectl -n "$NAMESPACE" logs "deployment/${WORKER_DEPLOYMENT}" --tail=200 | rg -q "Hello from ephemeral Quick Try mode"; then
+  if kubectl -n "$NAMESPACE" logs "deployment/${WORKER_DEPLOYMENT}" --tail=200 | grep -Fq "Hello from ephemeral Quick Try mode"; then
     found="true"
     break
   fi
