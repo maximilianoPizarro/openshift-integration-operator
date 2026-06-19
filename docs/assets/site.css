@@ -251,6 +251,63 @@ body.site-page a:hover {
   padding-block: var(--pf-v5-global--spacer--2xl, 3rem);
 }
 
+.home-with-toc {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  padding-block: 0;
+}
+
+.home-toc {
+  display: none;
+  position: sticky;
+  top: calc(var(--site-header-height) + 2rem);
+  width: 14rem;
+  padding: 1rem 1rem 1rem 1rem;
+  margin-left: max(0px, calc((100vw - var(--site-max-width)) / 2));
+  flex-shrink: 0;
+}
+
+.home-toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-left: 2px solid var(--pf-v5-global--BorderColor--100, #d2d2d2);
+}
+
+.home-toc li {
+  margin-bottom: 0.5rem;
+}
+
+.home-toc a {
+  color: var(--pf-v5-global--Color--200, #6a6e73);
+  font-size: 0.85rem;
+  text-decoration: none;
+  padding-left: 1rem;
+  display: block;
+  transition: color 0.2s;
+  margin-left: -2px;
+  border-left: 2px solid transparent;
+}
+
+.home-toc a:hover,
+.home-toc a.is-active {
+  color: var(--rh-red);
+  font-weight: 600;
+  border-left-color: var(--rh-red);
+}
+
+.home-content {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 1300px) {
+  .home-toc {
+    display: block;
+  }
+}
+
 .site-main--compact {
   padding-block: var(--pf-v5-global--spacer--xl, 2rem) var(--pf-v5-global--spacer--3xl, 4rem);
 }
@@ -1002,6 +1059,11 @@ footer a:hover {
 }
 
 /* ── Architecture diagrams ────────────────────────────────── */
+
+.screenshot-teaser-link img {
+  border-radius: var(--pf-v5-global--BorderRadius--sm, 4px);
+  border: var(--pf-v5-global--BorderWidth--sm, 1px) solid var(--pf-v5-global--BorderColor--100, #3c3f42);
+}
 
 .diagram-placeholder {
   background: var(--pf-v5-global--BackgroundColor--dark-200, #1f1f1f);

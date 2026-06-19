@@ -58,7 +58,7 @@
 
   <header class="site-hero">
     <div class="container">
-      <span class="badge">Apache 2.0 · Open Source</span> <a href="#" class="badge badge--version" data-site-version-badge style="text-decoration: none; color: inherit; border: 1px solid var(--pf-v5-global--primary-color--100, #0066cc); background: rgba(0,102,204,0.1);">v0.8.1</a>
+      <span class="badge">Apache 2.0 · Open Source</span> <a href="https://github.com/maximilianoPizarro/openshift-integration-operator/releases/latest" class="badge badge--version" data-site-version-badge style="text-decoration: none; color: inherit; border: 1px solid var(--pf-v5-global--primary-color--100, #0066cc); background: rgba(0,102,204,0.1);">v0.8.1</a>
       <h1>OpenShift Integration Operator</h1>
       <p class="subtitle">The missing lifecycle layer for Apache Camel on OpenShift</p>
       <p class="description">
@@ -92,7 +92,25 @@
     </div>
   </header>
 
-  <main class="site-main">
+  <main class="site-main home-with-toc">
+    
+    <nav class="home-toc" aria-label="Table of contents">
+      <ul>
+        <li><a href="#camel-history">Evolution</a></li>
+        <li><a href="#ephemeral">Quick Try</a></li>
+        <li><a href="#who-is-this-for">Audience</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#mcp-ia">MCP AI</a></li>
+        <li><a href="#comparison">Comparison</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#workers">Workers</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#reference-links">Links</a></li>
+      </ul>
+    </nav>
+    
+    <div class="home-content">
     <section id="camel-history" style="background-color: var(--rh-light-gray); padding: 3rem 0;">
       <div class="container">
         <h2>The Evolution of Apache Camel</h2>
@@ -100,13 +118,13 @@
         <div style="display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;">
           <div style="flex: 1; min-width: 300px;">
             <p>
-              Born in 2007, <strong>Apache Camel</strong> was initially designed to implement the Enterprise Integration Patterns (EIPs) described by Gregor Hohpe and Bobby Woolf. Its goal was simple yet ambitious: to standardize how disparate systems communicate with each other.
+              Born in 2007, <strong>Apache Camel</strong> evolved from a Java library implementing EIPs into a complete cloud-native ecosystem with <strong>Camel K</strong> and <strong>Camel Quarkus</strong>.
             </p>
             <p>
-              Over the years, Camel evolved from a Java library into a complete ecosystem. With <strong>Camel K</strong>, it made the leap to Kubernetes, enabling serverless integrations. Today, with <strong>Camel Quarkus</strong>, it offers blazing-fast startup times and minimal memory footprint, ideal for cloud-native architectures.
+              This operator takes all that historical power and wraps it in a modern, GitOps-native, and visual user experience.
             </p>
-            <p>
-              This operator takes all that historical power and wraps it in a modern, GitOps-native, and visual user experience, making enterprise integration accessible to all teams.
+            <p style="margin-top: 1rem;">
+              <a class="btn btn-secondary" href="evolution.html">Leer más →</a>
             </p>
           </div>
         </div>
@@ -167,10 +185,10 @@
 
     <div class="container" style="margin: 2rem auto;">
       <div class="screenshot-teaser" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: center; padding: 1rem; border-radius: 8px; background: var(--pf-global--BackgroundColor--200, #1b1d21);">
-        <a href="#screenshots" style="display: flex; gap: 0.75rem; align-items: center; text-decoration: none; color: inherit;">
-          <img src="images/console-plugin.png" alt="Integration Flows list in OpenShift Console" width="160" height="90" loading="lazy" style="border-radius: 4px; border: 1px solid var(--pf-global--BorderColor--100, #3c3f42);">
-          <img src="images/console-plugin-saga.png" alt="Visual saga flow diagram" width="160" height="90" loading="lazy" style="border-radius: 4px; border: 1px solid var(--pf-global--BorderColor--100, #3c3f42);">
-          <img src="images/console-plugin-kaoto.png" alt="Kaoto designer embedded in console" width="160" height="90" loading="lazy" style="border-radius: 4px; border: 1px solid var(--pf-global--BorderColor--100, #3c3f42);">
+        <a href="#screenshots" class="screenshot-teaser-link" style="display: flex; gap: 0.75rem; align-items: center; text-decoration: none; color: inherit;">
+          <img src="images/console-plugin.png" alt="Integration Flows list in OpenShift Console" width="160" height="90" loading="lazy">
+          <img src="images/console-plugin-saga.png" alt="Visual saga flow diagram" width="160" height="90" loading="lazy">
+          <img src="images/console-plugin-kaoto.png" alt="Kaoto designer embedded in console" width="160" height="90" loading="lazy">
         </a>
         <p style="margin: 0; font-size: 0.95rem;"><a href="#screenshots"><strong>See all 9 console screenshots ↓</strong></a></p>
       </div>
@@ -267,8 +285,10 @@
               <a class="btn btn-primary" href="ai-models-and-mcp.html">Discover more about MCP AI →</a>
             </p>
           </div>
-          <div style="flex: 1; min-width: 300px; text-align: center;">
-            <img src="images/arch-mcp-ai-flow.png" alt="MCP AI Flow Architecture" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--rh-dark-gray);">
+          <div class="diagram-placeholder">
+            <a href="images/arch-mcp-ai-flow.png" class="lightbox-link">
+              <img src="images/arch-mcp-ai-flow.png" alt="MCP AI Flow Architecture">
+            </a>
           </div>
         </div>
       </div>
@@ -438,8 +458,10 @@ oc get integrationflow ephemeral-camel-demo -n openshift-integration -w</code></
         <h2>Precompiled Worker Images</h2>
         <p class="section-lead">Domain-specific Camel Quarkus workers on Quay — auto-selected from your route, or pin with <code>spec.ephemeral.workerImage</code>.</p>
         
-        <div style="text-align: center; margin-bottom: 2rem;">
-          <img src="images/arch-workers.png" alt="Precompiled Worker Images Architecture" style="max-width: 100%; border-radius: 8px; border: 1px solid var(--rh-dark-gray);">
+        <div class="diagram-placeholder">
+          <a href="images/arch-workers.png" class="lightbox-link">
+            <img src="images/arch-workers.png" alt="Precompiled Worker Images Architecture">
+          </a>
         </div>
 
         <pre><code data-version-inject><span class="comment"># Default (all domains — 80+ extensions)</span>
@@ -523,6 +545,7 @@ quay.io/maximilianopizarro/camel-worker-ai:v0.8.1          <span class="comment"
         </div>
       </div>
     </section>
+    </div>
   </main>
 
   <footer class="site-footer">
