@@ -87,7 +87,7 @@ helm upgrade --install openshift-integration-operator ./helm/openshift-integrati
   --set sonataflow.enabled=false \
   --set argocd.enabled=false \
   --set tekton.enabled=false \
-  --set flowCatalog.source=configmap \
+  --set flowCatalog.source=remote \
   --set ephemeral.camelWorkerImage="${WORKER_REPO_PREFIX}/camel-worker-core:${WORKER_TAG}" \
   --set ephemeral.camelWorkerMessagingImage="${WORKER_REPO_PREFIX}/camel-worker-messaging:${WORKER_TAG}" \
   --set ephemeral.camelWorkerHttpImage="${WORKER_REPO_PREFIX}/camel-worker-http:${WORKER_TAG}" \
@@ -103,6 +103,13 @@ if ! kubectl -n "$NAMESPACE" rollout status deployment/openshift-integration-ope
   kubectl -n "$NAMESPACE" describe deployment openshift-integration-operator || true
   kubectl -n "$NAMESPACE" get pods -o wide || true
   kubectl -n "$NAMESPACE" describe pods || true
+  OP_POD="$(kubectl -n "$NAMESPACE" get pods -l app.kubernetes.io/name=openshift-integration-operator -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+  if [[ -n "$OP_POD" ]]; then
+    echo "Operator pod current logs (${OP_POD}):"
+    kubectl -n "$NAMESPACE" logs "$OP_POD" --all-containers=true --tail=400 || true
+    echo "Operator pod previous logs (${OP_POD}):"
+    kubectl -n "$NAMESPACE" logs "$OP_POD" --all-containers=true --previous --tail=400 || true
+  fi
   kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp || true
   exit 1
 fi
